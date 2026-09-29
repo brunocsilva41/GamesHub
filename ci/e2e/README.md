@@ -55,7 +55,7 @@ Screenshots: `library.png`, `details.png`, `settings.png` (Installer mode adds `
 * `GAMESHUB_DATA_DIR` isolates settings/library/cache/logs/WebView2 profile **and** the single-instance mutex/pipe, so the
   test never talks to (or is blocked by) a running GamesHub. The env vars are set on the child `ProcessStartInfo` only.
 * The UI is observed only through the DevTools port of the process started here
-  (`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=<free port>`); no keystrokes, no mouse, no desktop capture.
+  (`GAMESHUB_DEVTOOLS_PORT=<free port>`, honoured only by isolated instances); no keystrokes, no mouse, no desktop capture.
 * Only processes started by the script (and their WebView2 children) are ever killed, matched by PID **and** start time.
 * The app writes the taskbar Jump List for AppUserModelID `GamesHub.App`, which a real install shares. The script backs up
   every `CustomDestinations` file that mentions `GamesHub.exe` and restores it after the run.

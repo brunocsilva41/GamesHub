@@ -54,7 +54,7 @@ foreach ($name in $demo.Keys) {
 $lib | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $data 'library.json') -Encoding utf8
 
 $env:GAMESHUB_DATA_DIR = $data
-$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$Port"
+$env:GAMESHUB_DEVTOOLS_PORT = "$Port"
 $proc = Start-Process $exe -ArgumentList '--show' -PassThru
 try {
     $out = Join-Path $root 'docs' 'screenshots'
@@ -65,6 +65,6 @@ try {
 finally {
     Start-Process $exe -ArgumentList '--quit' -Wait
     if (-not $proc.WaitForExit(10000)) { Stop-Process -Id $proc.Id -Force }
-    Remove-Item Env:GAMESHUB_DATA_DIR, Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
+    Remove-Item Env:GAMESHUB_DATA_DIR, Env:GAMESHUB_DEVTOOLS_PORT
     Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
 }

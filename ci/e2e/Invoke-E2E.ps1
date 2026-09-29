@@ -213,7 +213,7 @@ function Start-GamesHub([string]$Exe, [string]$DataDir, [int]$Port, [string]$Arg
     $psi.WorkingDirectory = Split-Path $Exe -Parent
     # Environment for THIS child only (never set on the current session).
     $psi.EnvironmentVariables['GAMESHUB_DATA_DIR'] = $DataDir
-    $psi.EnvironmentVariables['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = "--remote-debugging-port=$Port --remote-allow-origins=*"
+    $psi.EnvironmentVariables['GAMESHUB_DEVTOOLS_PORT'] = "$Port"   # honoured by isolated instances only (WebViewEnv.cs)
     $p = [Diagnostics.Process]::Start($psi)
     $null = $p.Handle # keep a handle so ExitCode stays readable after exit
     Add-Owned $p.Id $p.StartTime

@@ -47,7 +47,7 @@ export function createMockHost() {
 
   function addPath(fileName) {
     const m = /^(.*?)(\.(exe|lnk|url))$/i.exec(fileName);
-    if (!m) return { ok: false, message: `"${fileName}" não é um atalho ou executável (.exe, .lnk, .url).` };
+    if (!m) return { ok: false, message: `"${fileName}" não é um atalho ou executável (.exe, .lnk, .url).`, gameId: null, undoToken: null };
     const id = `folder:${fileName.toLowerCase()}`;
     if (find(id)) return { ok: false, message: `"${m[1]}" já está na biblioteca.`, gameId: id };
     newGame(id, m[1], 'PC', 'folder', m[2].toLowerCase());

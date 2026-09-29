@@ -107,7 +107,7 @@ export function fmtRelative(iso, now = Date.now()) {
   return fmtDate(iso);
 }
 
-/** Bytes in pt-BR units: "12,4 GB". */
+/** Bytes in pt-BR units: "12 GB", "8,5 GB" (one decimal below 10). */
 export function fmtBytes(n) {
   const b = Number(n) || 0;
   if (b <= 0) return '—';

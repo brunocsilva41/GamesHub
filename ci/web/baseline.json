@@ -1,0 +1,4 @@
+{
+  "$comment": "Known issues in web/ tracked by the WEB owner. Each entry downgrades one lint error to a warning. Remove entries when fixed (the lint warns about stale ones). Never add entries for new code.",
+  "known": []
+}

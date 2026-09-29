@@ -6,6 +6,11 @@ import { icon } from '../components/icons.js';
 export async function searchSteamInto(container, query, { trailing = '' } = {}) {
   const q = String(query || '').trim();
   const token = (container._token = (container._token || 0) + 1);
+  if (!container._iconErrors) {
+    // Broken result icons are removed (a listener, not an inline onerror: the page runs under a strict CSP).
+    container._iconErrors = true;
+    container.addEventListener('error', (e) => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+  }
   if (q.length < 2 && !/^\d+$/.test(q)) {
     container.innerHTML = '<p class="muted">Digite pelo menos 2 letras ou um App ID.</p>';
     return;
@@ -29,7 +34,7 @@ export async function searchSteamInto(container, query, { trailing = '' } = {}) 
   }
   container.innerHTML = results.map((r) => `
     <button type="button" class="steam-result" role="option" aria-selected="false" data-nav data-appid="${esc(r.appId)}" data-name="${esc(r.name)}">
-      <span class="steam-ic">${r.iconUrl ? `<img src="${esc(r.iconUrl)}" alt="" loading="lazy" onerror="this.remove()">` : ''}${icon('steam')}</span>
+      <span class="steam-ic">${r.iconUrl ? `<img src="${esc(r.iconUrl)}" alt="" loading="lazy">` : ''}${icon('steam')}</span>
       <span class="steam-name">${esc(r.name)}</span>
       <span class="steam-id">#${esc(r.appId)}</span>
       ${trailing}

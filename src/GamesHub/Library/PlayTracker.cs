@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Detects running games by process image path and accumulates play time.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

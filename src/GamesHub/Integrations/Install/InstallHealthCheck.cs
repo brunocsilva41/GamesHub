@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Fast, non-recursive, offline health check of a game's shortcut / install folder.
 using System;
 using System.IO;
 using System.Runtime.InteropServices;

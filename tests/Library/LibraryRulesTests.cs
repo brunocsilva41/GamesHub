@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Names, ids, platform detection, app id extraction, folder game building.
 using System;
 
 namespace GamesHub.Tests

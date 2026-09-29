@@ -1,4 +1,3 @@
-// OWNER: ART agent.
 using System;
 
 namespace GamesHub

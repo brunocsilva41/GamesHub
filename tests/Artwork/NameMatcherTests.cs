@@ -1,4 +1,3 @@
-// OWNER: ART agent. Pure matcher tests (no network): candidate lists mirror real Steam search results.
 using System.Collections.Generic;
 using System.Linq;
 

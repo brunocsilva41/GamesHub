@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. Template expansion (fake folder resolver) and wildcard / {{p|uid}} resolution (temp dirs).
 using System;
 using System.Collections.Generic;
 using System.IO;

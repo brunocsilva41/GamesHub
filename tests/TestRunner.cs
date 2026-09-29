@@ -1,4 +1,3 @@
-// OWNER: lead. Minimal test runner (no external deps).
 // Convention: any public static class whose name ends with "Tests"; every public static void method
 // whose name starts with "Test" is a test. Use Assert.* below. Exit code = number of failures.
 using System;

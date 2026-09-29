@@ -7,7 +7,7 @@ export const DEFAULT_SETTINGS = {
   startMinimized: false, closeToTray: true, hotkeyEnabled: true, hotkey: 'Ctrl+Alt+G', sortBy: 'name',
   view: 'grid', cardStyle: 'landscape', reduceMotion: false, autoArtwork: true, steamGridDbKey: '',
   trackPlaytime: true, checkUpdates: true, updateRepo: '', language: 'pt-BR',
-  // wave 2
+  // integrations
   importRiot: true, importHydra: true, importSteamPlaytime: true, fetchMetadata: true, pcgwEnabled: true,
   quickLaunchEnabled: true, quickLaunchHotkey: 'Ctrl+Shift+Space', automationEnabled: true,
 };
@@ -92,7 +92,7 @@ export function sortGames(games, sortBy) {
   }
 }
 
-/** Genre filter ('' = all). `genres` is an optional wave-2 GameDto field. */
+/** Genre filter ('' = all). `genres` is an optional GameDto field. */
 export function filterGenre(games, genre) {
   return genre ? games.filter((g) => (g.genres || []).includes(genre)) : games;
 }
@@ -174,7 +174,7 @@ export function createStore(initial = {}) {
     windowState: { maximized: false, fullscreen: false, pinned: false },
     route: { view: 'library', id: null },
     section: 'all', query: '', genre: '', quick: '', clientSort: '',
-    suggestions: [], // wave 2: variantSuggestions groups
+    suggestions: [], // extras: variantSuggestions groups
     bigPicture: false, sidebarCollapsed: false,
     update: null, updatePercent: null, padActive: false,
     ...initial,

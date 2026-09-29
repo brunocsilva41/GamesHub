@@ -1,4 +1,3 @@
-// OWNER: VARIANTS agent.
 using System;
 
 namespace GamesHub.Tests

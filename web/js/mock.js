@@ -2,7 +2,7 @@
 // postMessage, postMessageWithAdditionalObjects, addEventListener('message').
 import { sampleGames, makeArt, STEAM_CATALOG } from './mock-data.js';
 import { DEFAULT_SETTINGS } from './store.js';
-import { wave2Commands } from './mock-wave2.js';
+import { featureCommands } from './mock-features.js';
 
 const LATENCY = 60;
 const ok = (message, gameId = null, undoToken = null) => ({ ok: true, data: { message, gameId, undoToken } });
@@ -224,7 +224,7 @@ export function createMockHost() {
     log({ level = 'info', msg }) { (console[level] || console.log)('[ui]', msg); return { ok: true, data: {} }; },
     quit: () => ({ ok: true, data: {} }), openDataFolder: () => ({ ok: true, data: {} }),
   };
-  Object.assign(commands, wave2Commands({ games, find, emitGames, event, addUndo, settings, ok, fail, wait }));
+  Object.assign(commands, featureCommands({ games, find, emitGames, event, addUndo, settings, ok, fail, wait }));
 
   async function handle(msg, files) {
     if (!msg || msg.type !== 'cmd') return;

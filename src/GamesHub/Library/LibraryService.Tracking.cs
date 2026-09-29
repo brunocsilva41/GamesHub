@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Folder/store watchers and play-time tracking wiring for LibraryService.
 using System;
 using System.Collections.Generic;
 using System.IO;

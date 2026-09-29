@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Dedupe, override merge, legacy playlog mapping, metadata persistence, file ops.
 using System;
 using System.Collections.Generic;
 using System.IO;

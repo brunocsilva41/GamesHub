@@ -1,4 +1,3 @@
-// OWNER: CORE agent.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -45,7 +44,7 @@ namespace GamesHub
                     _app.RunOnUi(_app.Exit); // queued: the reply is posted first
                     return Done(BridgeResult.Success(Empty()));
                 default:
-                    Task<BridgeResult> extra = ExecuteWave2(name, args);
+                    Task<BridgeResult> extra = ExecuteIntegration(name, args);
                     if (extra != null) return extra;
                     Log.Warn("Bridge: unknown command '" + name + "'");
                     return Done(BridgeResult.Fail("Comando desconhecido: " + name));

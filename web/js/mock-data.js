@@ -48,7 +48,7 @@ const SAMPLES = [
   ['folder:assassins creed mirage.lnk', "Assassin's Creed Mirage", 'Ubisoft', 'folder', '.lnk', ['#b98a3b', '#2a1d14'], ['capsule'], { hidden: true }],
   ['folder:the witcher 3.lnk', 'The Witcher 3: Wild Hunt', 'GOG', 'folder', '.lnk', ['#8c2f2f', '#1c1c24'], FULL, { genres: ['RPG', 'Mundo aberto'], sizeBytes: 50 * GB, steamAppId: '292030', collections: ['Single-player'], lastPlayed: ago(120 * DAY), playSeconds: 90 * HOUR }],
   ['folder:retroarch.exe', 'RetroArch', 'PC', 'folder', '.exe', ['#4a4f6b', '#1c1f2e'], ['icon'], {}],
-  // wave 2: a variant member (grouped under Minecraft by mock-wave2), a suggestion pair and a second broken shortcut
+  // extras: a variant member (grouped under Minecraft by mock-features), a suggestion pair and a second broken shortcut
   ['folder:minecraft bedrock.lnk', 'Minecraft Bedrock', 'Minecraft', 'folder', '.lnk', ['#4f8a2b', '#2b4a6b'], ['icon'], { genres: ['Sandbox'], playSeconds: 4 * HOUR, lastPlayed: ago(30 * DAY) }],
   ['folder:the witcher 3 dx11.lnk', 'The Witcher 3: Wild Hunt DirectX 11', 'GOG', 'folder', '.lnk', ['#8c2f2f', '#1c1c24'], ['icon'], { genres: ['RPG', 'Mundo aberto'] }],
   ['folder:need for speed heat.lnk', 'Need for Speed Heat', 'EA', 'folder', '.lnk', ['#d9480f', '#1b1b2f'], [], { genres: ['Corrida'], broken: true, brokenReason: 'A pasta de instalação não existe mais (D:\\Jogos\\NFS Heat).', lastPlayed: ago(200 * DAY), playSeconds: 11 * HOUR }],
@@ -70,7 +70,7 @@ export function sampleGames(extra = 0) {
     installDir: `C:\\Games\\${name.replace(/[^\w ]/g, '')}`,
     launchArgs: '', steamAppId: '', favorite: false, hidden: false, collections: [],
     lastPlayed: null, playSeconds: 0, addedAt: ago((i + 1) * 7 * DAY), running: false,
-    // wave-2 fields
+    // integration fields
     sizeBytes: 0, updatePending: false, broken: false, brokenReason: '', genres: [], variants: [],
     art: makeArt(name, c1, c2, i + 1, kinds),
     ...x,

@@ -1,4 +1,3 @@
-// OWNER: DIST agent. GitHub "releases/latest" JSON parsing, asset selection and .sha256 parsing (pure, testable).
 using System;
 using System.Collections.Generic;
 using System.Linq;

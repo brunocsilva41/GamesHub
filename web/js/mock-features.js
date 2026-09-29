@@ -1,5 +1,5 @@
-// Dev-mode mock of the wave-2 bridge commands (store info, PCGamingWiki, install health, drives,
-// automation, hotkey validation). Variants live in mock-variants.js. Shapes follow BridgeCommands.Wave2.cs.
+// Dev-mode mock of the integration bridge commands (store info, PCGamingWiki, install health, drives,
+// automation, hotkey validation). Variants live in mock-variants.js. Shapes follow BridgeCommands.Integrations.cs.
 import { GAME_INFO } from './mock-data.js';
 import { variantCommands } from './mock-variants.js';
 
@@ -25,7 +25,7 @@ const OPTIONS = {
     .map((id, i) => ({ id, name: `${id.replace('x', ' × ').replace('@', ' @ ')} Hz`, current: i === 0 })),
 };
 
-export function wave2Commands(ctx) {
+export function featureCommands(ctx) {
   const { games, find, emitGames, event, addUndo, settings, ok, fail, wait } = ctx;
   const openable = new Set();
   const profiles = new Map();
@@ -183,7 +183,7 @@ export function wave2Commands(ctx) {
 
     async automationOptions() { await wait(250); return { ok: true, data: clone(OPTIONS) }; },
 
-    // Overrides the wave-1 mock: validates hotkeys like SettingsStore and simulates a taken combination.
+    // Overrides the base mock: validates hotkeys like SettingsStore and simulates a taken combination.
     setSettings({ patch = {} }) {
       for (const k of ['hotkey', 'quickLaunchHotkey']) {
         if (k in patch && !HOTKEY_RE.test(String(patch[k]))) return fail('Atalho inválido. Use algo como Ctrl+Alt+G.');

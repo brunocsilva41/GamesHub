@@ -1,4 +1,3 @@
-// OWNER: LIB agent. User actions: launch, edit, add, remove/undo, reveal.
 using System;
 using System.Collections.Concurrent;
 using System.ComponentModel;

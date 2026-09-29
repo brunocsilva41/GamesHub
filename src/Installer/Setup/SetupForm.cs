@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Setup wizard: welcome → options → progress → done.
 using System;
 using System.Drawing;
 using System.IO;

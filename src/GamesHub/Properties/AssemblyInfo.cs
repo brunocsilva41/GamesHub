@@ -1,4 +1,3 @@
-// OWNER: DIST agent (version bumps). Single source of truth for the app version.
 using System.Reflection;
 using System.Runtime.InteropServices;
 

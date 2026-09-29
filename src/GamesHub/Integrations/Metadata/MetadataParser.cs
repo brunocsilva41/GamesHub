@@ -1,4 +1,3 @@
-// OWNER: META agent. Maps a Steam store "appdetails" JSON response to GameInfo.
 using System;
 using System.Collections;
 using System.Collections.Generic;

@@ -1,7 +1,6 @@
 <#
 .SYNOPSIS
-  Builds GamesHub. OWNER: DIST agent; everyone may run it.
-.EXAMPLE
+  Builds GamesHub. .EXAMPLE
   ./build.ps1                    # app -> dist/app
   ./build.ps1 -Test              # app + tests, runs tests
   ./build.ps1 -Package           # app + Uninstall.exe + single-file installer -> dist/package

@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. Playback devices via the MMDevice API; default device via IPolicyConfig.
 // IPolicyConfig is undocumented (used by the Windows Sound control panel); the GUIDs below are the
 // Windows 10/11 ones. If Microsoft changes them, SetDefault fails with a logged error (listing still works).
 using System;

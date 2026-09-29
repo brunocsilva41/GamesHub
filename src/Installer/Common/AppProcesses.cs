@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Finds and closes running GamesHub / GamesLounge (v1) processes of a given install.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

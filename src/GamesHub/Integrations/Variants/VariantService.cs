@@ -1,4 +1,3 @@
-// OWNER: VARIANTS agent. Launch variants: several library entries shown as one card with a
 // "Jogar ▾" menu (e.g. "LEGO Marvel Super Heroes 2" + "... DirectX 11", "Black Ops 3" + "Plutonium").
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Uninstall.exe entry point.
 //   Uninstall.exe               confirmation window (optionally deletes %LOCALAPPDATA%\GamesHub)
 //   Uninstall.exe /silent       unattended; add /purge to also delete user data
 // Result: %TEMP%\GamesHub\uninstall-result.txt, log: %TEMP%\GamesHub\uninstall.log

@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. Persistence: automation.json (profiles) and automation-state.json (pending restores).
 using System;
 using System.Collections.Generic;
 using System.IO;

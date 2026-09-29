@@ -1,4 +1,3 @@
-// OWNER: META agent. Game info (genres, categories, description, dates, devs) from the Steam store.
 using System;
 using System.Collections.Generic;
 using System.Globalization;

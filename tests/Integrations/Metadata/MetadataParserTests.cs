@@ -1,4 +1,3 @@
-// OWNER: META agent. JSON → GameInfo mapping, HTML stripping, category mapping, genre list.
 using System.Collections.Generic;
 using System.Linq;
 

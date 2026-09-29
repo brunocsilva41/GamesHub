@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Pure scoring of Windows "Uninstall" registry entries against a game.
 using System;
 using System.Collections.Generic;
 using System.IO;

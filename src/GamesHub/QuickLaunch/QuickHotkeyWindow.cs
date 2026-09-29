@@ -1,4 +1,3 @@
-// OWNER: QUICK agent. Message-only window that owns the palette's global hotkey registration.
 using System;
 using System.ComponentModel;
 using System.Windows.Forms;

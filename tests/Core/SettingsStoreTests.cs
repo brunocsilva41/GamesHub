@@ -1,4 +1,3 @@
-// OWNER: CORE agent.
 using System.Collections.Generic;
 
 namespace GamesHub.Tests

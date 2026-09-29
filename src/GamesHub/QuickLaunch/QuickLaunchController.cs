@@ -1,5 +1,4 @@
-// OWNER: QUICK agent. Spotlight-style quick-launch palette: global hotkey + hidden, pre-warmed WebView window.
-// Wiring (lead): construct after the library; call Start() on the UI thread once the main form's handle
+// Wiring: construct after the library; call Start() on the UI thread once the main form's handle
 // exists; call ApplyHotkey(settings.QuickLaunchHotkey) after settings change; Dispose() on exit.
 using System;
 using System.Collections.Generic;

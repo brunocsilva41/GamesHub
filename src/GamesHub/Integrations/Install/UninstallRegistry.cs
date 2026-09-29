@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Read-only enumeration of HKCU/HKLM (64 + 32-bit) Uninstall entries, cached briefly.
 using System;
 using System.Collections.Generic;
 using Microsoft.Win32;

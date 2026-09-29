@@ -1,4 +1,3 @@
-// OWNER: QUICK agent. Borderless, topmost, rounded palette window hosting web/quick/index.html.
 // Created once (hidden) and kept alive so showing it is just position + Show + a web message.
 using System;
 using System.Collections.Generic;

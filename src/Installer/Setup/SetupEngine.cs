@@ -1,4 +1,3 @@
-// OWNER: DIST agent. The actual install/upgrade steps (UI-agnostic; runs on a worker thread).
 using System;
 using System.Collections.Generic;
 using System.Drawing;

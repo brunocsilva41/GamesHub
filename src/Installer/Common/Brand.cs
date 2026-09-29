@@ -1,4 +1,3 @@
-// OWNER: DIST agent. GamesHub brand for the installer windows: colors, fonts, gradients, dark title bar.
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;

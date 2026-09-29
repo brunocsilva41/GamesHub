@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Creates shortcuts in the games folder, moves them to/from the trash, and looks up
 // Steam app names. Never deletes user files.
 using System;
 using System.IO;

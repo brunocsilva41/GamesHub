@@ -1,6 +1,6 @@
-// OWNER: integration (lead). Wave 2 contracts. Do NOT change without the lead's approval.
-// Each interface below is implemented by ONE wave-2 agent in its own folder; the lead wires them
-// into LibraryService/Bridge at integration time. Implementations must not depend on each other.
+// Integration services (Steam local data, install health, PCGamingWiki, store metadata, automation, variants,
+// extra sources, quick launch). Each is implemented in its own folder and must not depend on the others;
+// GameCatalog wires them into the library and the bridge.
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

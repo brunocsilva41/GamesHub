@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Robust parsing of registry UninstallString values into (file, arguments).
 using System;
 using System.IO;
 using System.Text.RegularExpressions;

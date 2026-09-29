@@ -1,4 +1,3 @@
-// OWNER: ART agent. Cache layout, index and URL tests (temp folders only, no network).
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;

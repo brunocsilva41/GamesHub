@@ -1,4 +1,3 @@
-// OWNER: ART agent. Service-level tests with AutoArtwork off (no network), parsing, back-off and images.
 using System;
 using System.Collections.Generic;
 using System.Drawing;

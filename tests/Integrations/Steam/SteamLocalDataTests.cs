@@ -1,4 +1,3 @@
-// OWNER: STEAMDATA agent. Tests for the Steam local-data reader (VDF parser, manifests, users, localconfig).
 using System;
 using System.IO;
 

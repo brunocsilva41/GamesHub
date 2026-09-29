@@ -1,5 +1,4 @@
-// OWNER: integration (lead). Do NOT change signatures here without the lead's approval.
-// Every module compiles against these types. Adding optional members is allowed only by the lead.
+// Every module compiles against these types; change them deliberately (they are the modules' shared API).
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -41,7 +40,7 @@ namespace GamesHub
         public bool Running;
         public Artwork Art = new Artwork();
 
-        // ---- Wave 2 (filled by the integration layer, not by LIB) ----
+        // ---- Integration fields (filled by GameCatalog, not by the library) ----
         /// <summary>Size on disk in bytes; -1 = unknown / not computed yet.</summary>
         public long SizeBytes = -1;
         public bool UpdatePending;
@@ -141,7 +140,7 @@ namespace GamesHub
         public string UpdateRepo = "";
         public string Language = "pt-BR";
 
-        // ---- Wave 2 ----
+        // ---- Integrations ----
         public bool ImportRiot = true;
         public bool ImportHydra = true;
         /// <summary>Import play time / last played from Steam's local files.</summary>

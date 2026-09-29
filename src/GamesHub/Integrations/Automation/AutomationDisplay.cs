@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. Primary display modes via EnumDisplaySettings / ChangeDisplaySettingsEx.
 // Changes are dynamic only (flags 0 = not written to the registry), so a reboot always restores the
 // user's configured mode; the service restores the snapshot explicitly after the game exits.
 using System;

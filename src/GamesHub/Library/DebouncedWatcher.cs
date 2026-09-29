@@ -1,4 +1,3 @@
-// OWNER: LIB agent. FileSystemWatcher whose events collapse into one callback after a quiet period.
 using System;
 using System.IO;
 using System.Threading;

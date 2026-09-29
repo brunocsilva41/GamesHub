@@ -1,4 +1,3 @@
-// OWNER: QUICK agent. Hotkey string parser/formatter (pure, unit-tested).
 // Canonical format: modifiers in the order Ctrl+Alt+Shift+Win, then one key, joined by "+",
 // e.g. "Ctrl+Shift+Space", "Alt+F5", "Win+Num3". web/quick/hotkey-input.js emits the same format.
 using System;

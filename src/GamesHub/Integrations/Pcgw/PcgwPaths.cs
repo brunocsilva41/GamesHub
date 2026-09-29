@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. Expansion of PCGW path templates ({{p|appdata}}\...) into real Windows paths,
 // including wildcard / {{p|uid}} resolution by directory enumeration.
 using System;
 using System.Collections.Generic;

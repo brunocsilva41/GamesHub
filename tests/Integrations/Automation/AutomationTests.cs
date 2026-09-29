@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. Automation: validation, persistence, ordering, snapshot/restore, crash restore.
 using System;
 using System.Collections.Generic;
 using System.IO;

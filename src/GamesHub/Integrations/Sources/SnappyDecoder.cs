@@ -1,4 +1,3 @@
-// OWNER: SOURCES agent. Minimal raw Snappy decompressor (block format, no framing) used for LevelDB tables.
 using System;
 using System.IO;
 

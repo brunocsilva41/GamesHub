@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Pure functions: combine sources, drop duplicates, apply user overrides.
 using System;
 using System.Collections;
 using System.Collections.Generic;

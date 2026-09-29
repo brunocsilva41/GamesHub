@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Minimal read-only .lnk / .url target reader (independent of the Library module).
 using System;
 using System.IO;
 using System.Runtime.InteropServices;

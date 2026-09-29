@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. Fallback data source: the Ludusavi manifest (github.com/mtkennerly/ludusavi-manifest),
 // a YAML dump generated from PCGamingWiki's save/config tables, keyed by PCGW page title, with Steam ids.
 // Used when the PCGW API is unreachable (Cloudflare challenge). ~17 MB on disk (2.4 MB gzip on the wire);
 // only a small index (title → byte offset, steam id → title) is kept in memory.

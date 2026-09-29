@@ -1,4 +1,3 @@
-// OWNER: QUICK agent. Pure fuzzy search/ranking for the quick-launch palette (unit-tested).
 // Matching is accent/case-insensitive. Tiers (best first): exact name, name prefix, compact prefix
 // ("halflife" → "Half-Life"), initials ("lmsh" → LEGO Marvel Super Heroes), every token is a word
 // prefix, substring, tokens matching name/platform/collections, and finally an in-order subsequence.

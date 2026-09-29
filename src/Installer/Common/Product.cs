@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Shared by Setup.exe and Uninstall.exe (compiled into both, not into GamesHub.exe).
 using System;
 using System.IO;
 using System.Reflection;

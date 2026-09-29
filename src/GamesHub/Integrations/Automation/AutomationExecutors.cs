@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. One executor per action type (run, close, wait, and the setting changers).
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -1,4 +1,3 @@
-// OWNER: META agent. Cache freshness, negative results, dedupe, prefetch, back-off and rate limiting (no network).
 using System;
 using System.Collections.Generic;
 using System.IO;

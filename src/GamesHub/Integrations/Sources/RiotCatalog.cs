@@ -1,4 +1,3 @@
-// OWNER: SOURCES agent. Pure helpers for the Riot source: product names, game executables, ids, args.
 using System;
 using System.Collections.Generic;
 using System.Globalization;

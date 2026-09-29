@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Setup.exe entry point.
 //   GamesHub-Setup-x.y.z.exe                     wizard
 //   /silent [/dir <path>] [/games <path>]         unattended install (+ /nodesktop /nostartmenu /autostart)
 //   /update [/dir <path>]                         used by the in-app updater: waits for the app, installs, relaunches

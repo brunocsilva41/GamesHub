@@ -1,4 +1,3 @@
-// OWNER: META agent. Minimum-interval rate limiter with a back-off window (pure logic, injectable clock).
 using System;
 
 namespace GamesHub

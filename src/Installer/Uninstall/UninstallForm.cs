@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Uninstall window: confirm → progress → done.
 using System;
 using System.Drawing;
 using System.IO;

@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Games folder source: top-level .lnk/.url/.exe files, with a parse cache.
 using System;
 using System.Collections.Generic;
 using System.IO;

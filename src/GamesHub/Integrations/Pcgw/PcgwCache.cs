@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. Disk cache in AppPaths.CacheDir\pcgw\: lookups (appid/name → page title) and page rows.
 // Positive entries live 14 days, negative ones 3 days.
 using System;
 using System.Collections.Generic;

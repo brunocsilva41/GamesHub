@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Parsers: VDF, Steam manifests, Epic manifests, .url files, Steam appdetails.
 using System.Linq;
 
 namespace GamesHub.Tests

@@ -1,4 +1,3 @@
-// OWNER: integration (lead).
 using System;
 using System.Collections.Generic;
 

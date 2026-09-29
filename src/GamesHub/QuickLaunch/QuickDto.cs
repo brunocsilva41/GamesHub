@@ -1,4 +1,3 @@
-// OWNER: QUICK agent. Builds the JSON-friendly result objects sent to web/quick (see web/quick/README.md).
 using System;
 using System.Collections.Generic;
 using System.Globalization;

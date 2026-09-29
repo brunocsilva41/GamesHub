@@ -1,4 +1,3 @@
-// OWNER: DIST agent. .lnk read/write via IShellLinkW + IPropertyStore (AppUserModelID), no WSH dependency.
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;

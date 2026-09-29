@@ -1,4 +1,3 @@
-// OWNER: STEAMDATA agent. Steam install root, library folders and appmanifest_*.acf reading.
 using System;
 using System.Collections.Generic;
 using System.IO;

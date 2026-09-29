@@ -1,4 +1,3 @@
-// OWNER: VARIANTS agent. Collapses variant groups into one card per group (never mutates input games).
 using System;
 using System.Collections.Generic;
 using System.Linq;

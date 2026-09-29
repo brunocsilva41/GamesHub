@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Installed Steam games from libraryfolders.vdf + appmanifest_*.acf (read-only).
 using System;
 using System.Collections.Generic;
 using System.IO;

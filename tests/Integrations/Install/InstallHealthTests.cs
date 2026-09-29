@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Health decisions over temp files/dirs and fake Game objects.
 using System;
 using System.IO;
 

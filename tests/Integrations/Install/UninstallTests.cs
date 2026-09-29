@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. UninstallString parsing, registry match scoring (pure), Steam/Epic routing.
 // Never runs an uninstaller.
 using System;
 using System.Collections.Generic;

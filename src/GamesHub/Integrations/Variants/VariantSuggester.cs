@@ -1,4 +1,3 @@
-// OWNER: VARIANTS agent. Finds games that look like launch variants of each other.
 using System;
 using System.Collections.Generic;
 using System.IO;

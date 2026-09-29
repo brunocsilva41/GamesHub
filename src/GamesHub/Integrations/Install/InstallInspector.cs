@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. IInstallInspector facade: health, sizes, drives, uninstallers.
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

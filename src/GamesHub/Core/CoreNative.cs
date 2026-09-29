@@ -1,4 +1,3 @@
-// OWNER: CORE agent.
 using System;
 using System.Runtime.InteropServices;
 

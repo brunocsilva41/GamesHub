@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Updater logic tests (no network).
 using System;
 using System.IO;
 

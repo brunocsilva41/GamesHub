@@ -1,4 +1,3 @@
-// OWNER: integration (lead). Shared infrastructure used by every module.
 using System;
 using System.Collections.Generic;
 using System.IO;

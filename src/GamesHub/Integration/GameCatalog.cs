@@ -1,5 +1,4 @@
-// OWNER: integration (lead).
-// Joins the library (wave 1) with the standalone wave-2 services: Steam local stats, install health/size,
+// Joins the library with the standalone integration services: Steam local stats, install health/size,
 // store metadata, launch variants and before/after automation. The bridge, tray and quick launch read
 // games through here so every surface sees the same enriched list.
 using System;

@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Background, low-priority, cached install-folder sizes.
 using System;
 using System.Collections.Generic;
 using System.IO;

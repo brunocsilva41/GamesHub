@@ -1,4 +1,3 @@
-// OWNER: SOURCES agent. Tolerant reader for the top-level scalar keys of a YAML file (e.g. Riot's
 // product_settings.yaml). Nested maps, lists and multi-line values are ignored.
 using System;
 using System.Collections.Generic;

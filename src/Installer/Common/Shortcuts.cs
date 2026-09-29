@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Finding, creating, re-pointing and deleting GamesHub shortcuts.
 using System;
 using System.Collections.Generic;
 using System.IO;

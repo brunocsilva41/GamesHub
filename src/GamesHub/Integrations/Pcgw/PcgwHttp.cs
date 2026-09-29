@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. HTTP for PCGamingWiki: TLS 1.2, GamesHub User-Agent, 10 s timeout, ≤ 1 request/second
 // globally, Cloudflare-challenge detection (PCGW answers 403 "Just a moment..." to non-browser clients).
 using System;
 using System.IO;

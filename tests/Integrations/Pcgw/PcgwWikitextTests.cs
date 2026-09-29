@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. Wikitext row extraction + API JSON parsing (fixtures modeled on real PCGW pages).
 using System.Collections.Generic;
 using System.Linq;
 

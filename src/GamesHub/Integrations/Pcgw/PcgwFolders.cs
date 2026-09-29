@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. Real IPcgwFolders: Windows Known Folders, Steam root, game install folder.
 using System;
 using System.IO;
 using System.Linq;

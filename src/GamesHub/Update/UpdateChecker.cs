@@ -1,4 +1,3 @@
-// OWNER: DIST agent. GitHub Releases based updater.
 // - CheckOnStartupAsync(): no-op unless settings.CheckUpdates && settings.UpdateRepo.
 // - CheckAsync(): works whenever UpdateRepo is set (manual "check for updates"); never throws, see LastError.
 // - DownloadAndInstallAsync(): downloads GamesHub-Setup-*.exe to %TEMP%\GamesHub, verifies .sha256 when published,

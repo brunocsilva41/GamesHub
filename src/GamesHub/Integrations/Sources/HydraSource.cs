@@ -1,4 +1,3 @@
-// OWNER: SOURCES agent. Imports installed games from Hydra Launcher's local library (read-only).
 // Hydra 3.x+ keeps its data in a LevelDB folder (%APPDATA%\hydralauncher\hydra-db) with keys
 // "!games!<shop>:<objectId>" → JSON. Older versions used SQLite (hydra.db), which is not supported.
 using System;

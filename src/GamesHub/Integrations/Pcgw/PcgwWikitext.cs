@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. Extraction of {{Game data/saves|...}} / {{Game data/config|...}} rows from PCGW wikitext.
 using System;
 using System.Collections.Generic;
 using System.Text;

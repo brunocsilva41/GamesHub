@@ -1,6 +1,6 @@
 // DOM-free model for the automation editor: action types, defaults, normalization and validation.
 // AutomationProfile = { enabled, useDefault, before: AutomationAction[], after: AutomationAction[] }
-// AutomationAction  = { type, target, args, seconds, enabled }  (see Shared/Contracts.Wave2.cs)
+// AutomationAction  = { type, target, args, seconds, enabled }  (see Shared/Contracts.Integrations.cs)
 
 export const ACTION_TYPES = [
   { key: 'run', label: 'Abrir programa' },

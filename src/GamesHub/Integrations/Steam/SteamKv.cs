@@ -1,4 +1,3 @@
-// OWNER: STEAMDATA agent. Small tolerant Valve KeyValues (VDF/ACF text) reader, private to this module.
 // Streaming tokenizer over a TextReader: callers can materialize the whole tree (small files) or only
 // one subtree by key path (localconfig.vdf can be several MB) while every other block is skipped.
 using System;

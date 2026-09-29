@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Compact, non-interactive window shown during "/update" (in-app updater).
 using System;
 using System.Drawing;
 using System.Threading;

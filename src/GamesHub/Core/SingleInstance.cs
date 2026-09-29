@@ -1,4 +1,3 @@
-// OWNER: CORE agent.
 using System;
 using System.Collections;
 using System.IO;
@@ -18,7 +17,18 @@ namespace GamesHub
     /// </summary>
     internal sealed class SingleInstance : IDisposable
     {
-        private const string MutexName = @"Local\GamesHub.SingleInstance";
+        /// <summary>"" for the normal install; a stable suffix when GAMESHUB_DATA_DIR isolates a test/portable
+        /// instance, so it never talks to (or is blocked by) the user's running app.</summary>
+        private static readonly string Scope = ScopeSuffix();
+        private static string MutexName => @"Local\GamesHub.SingleInstance" + Scope;
+
+        private static string ScopeSuffix()
+        {
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GAMESHUB_DATA_DIR"))) return "";
+            uint h = 2166136261;
+            foreach (char c in AppPaths.DataDir.ToLowerInvariant()) h = (h ^ c) * 16777619;
+            return "." + h.ToString("x8");
+        }
         private const int MaxPayload = 64 * 1024;
 
         private readonly Mutex _mutex;
@@ -41,7 +51,7 @@ namespace GamesHub
             get
             {
                 string user = new string(Environment.UserName.Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray());
-                return "GamesHub.Activate." + user;
+                return "GamesHub.Activate." + user + Scope;
             }
         }
 

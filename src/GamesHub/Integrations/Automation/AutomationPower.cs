@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. Power plans via powrprof.dll (no console window, localized names as the OS gives them).
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;

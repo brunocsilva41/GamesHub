@@ -1,4 +1,4 @@
-/* Wave 2: store info, saves, variants, automation, library notices & quick filters, drives, hotkeys. */
+/* Extended features: store info, saves, variants, automation, library notices & quick filters, drives, hotkeys. */
 
 .panel-title { display: flex; align-items: center; gap: var(--sp-2); }
 .panel-title .ico { color: var(--text-3); }

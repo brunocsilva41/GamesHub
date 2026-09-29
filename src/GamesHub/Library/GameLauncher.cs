@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Turns a Game into a process start.
 using System;
 using System.Diagnostics;
 using System.IO;

@@ -1,4 +1,3 @@
-// OWNER: integration (lead). One shared WebView2 environment for every WebView in the process
 // (main window + quick-launch palette). Environments sharing a user-data folder must use identical
 // options, so everyone MUST go through this class instead of calling CoreWebView2Environment.CreateAsync.
 using System.Threading.Tasks;

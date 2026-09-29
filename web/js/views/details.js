@@ -1,5 +1,5 @@
 // Game details: hero + logo, play, stats + store info, collections, variants, saves, automation, edit form,
-// images, actions (wave-2 panels live in gameinfo/saves/variants/automation.js).
+// images, actions (extra panels live in gameinfo/saves/variants/automation.js).
 import { store } from '../store.js';
 import { createHero, updateHero, playButtonHtml } from '../components/hero.js';
 import { icon } from '../components/icons.js';

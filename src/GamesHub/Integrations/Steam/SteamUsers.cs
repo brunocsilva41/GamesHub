@@ -1,4 +1,3 @@
-// OWNER: STEAMDATA agent. Active Steam user (loginusers.vdf) and per-user play stats (localconfig.vdf).
 using System;
 using System.Collections.Generic;
 using System.IO;

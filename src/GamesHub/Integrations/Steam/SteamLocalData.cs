@@ -1,4 +1,3 @@
-// OWNER: STEAMDATA agent. ISteamLocalData: Steam play time / last played (active user's localconfig.vdf),
 // update-pending flag and size on disk (appmanifest_*.acf). Read-only; never writes Steam files/registry.
 using System;
 using System.Collections.Generic;

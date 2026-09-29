@@ -1,4 +1,3 @@
-// OWNER: META agent. Trimmed real Steam store appdetails responses (l=brazilian, cc=br), captured 2026-09.
 namespace GamesHub.Tests
 {
     public static class MetadataFixtures

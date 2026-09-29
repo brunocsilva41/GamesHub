@@ -1,4 +1,3 @@
-// OWNER: META agent. Memory + disk cache for GameInfo (cache\meta\<appid>.json), incl. negative results.
 using System;
 using System.Collections.Generic;
 using System.IO;

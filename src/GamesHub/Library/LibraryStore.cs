@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Per-game user metadata persisted in AppPaths.LibraryFile (library.json).
 using System;
 using System.Collections;
 using System.Collections.Generic;

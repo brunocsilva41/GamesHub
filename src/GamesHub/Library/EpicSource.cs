@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Installed Epic Games Store games from the launcher's .item manifests (read-only).
 using System;
 using System.Collections;
 using System.Collections.Generic;

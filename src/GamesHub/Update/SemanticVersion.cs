@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Minimal SemVer 2.0 parsing/comparison for release tags ("v2.1.0", "2.1.0-beta.2", "2.1").
 using System;
 using System.Globalization;
 

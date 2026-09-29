@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. Name normalization, conservative title matching, Ludusavi manifest entry parsing.
 using System.Collections.Generic;
 using System.Linq;
 

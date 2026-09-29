@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Tolerant Valve KeyValues (VDF/ACF text) parser.
 using System;
 using System.Collections.Generic;
 using System.Text;

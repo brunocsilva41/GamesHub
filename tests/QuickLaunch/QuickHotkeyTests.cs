@@ -1,4 +1,3 @@
-// OWNER: QUICK agent.
 namespace GamesHub.Tests
 {
     public static class QuickHotkeyTests

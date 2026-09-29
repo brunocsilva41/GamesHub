@@ -13,7 +13,7 @@ const subText = (g) => {
   return parts.join(' · ');
 };
 
-// Status badges (wave-2 fields are optional: updatePending, broken/brokenReason).
+// Status badges (optional fields: updatePending, broken/brokenReason).
 const FLAGS = '<span class="badge badge-live" hidden><i class="pulse"></i>Em execução</span>' +
   '<span class="badge badge-warn" data-flag="update" hidden>Atualização pendente</span>' +
   '<span class="badge badge-err" data-flag="broken" hidden>Atalho quebrado</span>';

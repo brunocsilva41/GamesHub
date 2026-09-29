@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. Real IAutomationSettingsAccess backed by the Windows APIs.
 using System;
 
 namespace GamesHub

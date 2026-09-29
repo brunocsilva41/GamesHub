@@ -1,4 +1,4 @@
-// Wave-2 user operations: launch variants, suggestions, broken-shortcut cleanup, uninstall / validate.
+// Extended user operations: launch variants, suggestions, broken-shortcut cleanup, uninstall / validate.
 import { store } from './store.js';
 import { toast } from './components/toast.js';
 import { confirm } from './components/modal.js';

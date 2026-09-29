@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. PCGamingWiki MediaWiki/Cargo API calls (page lookup by Steam appid or name, wikitext).
 using System;
 using System.Collections;
 using System.Collections.Generic;

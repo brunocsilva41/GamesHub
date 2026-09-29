@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Wizard window shell (header, pages, footer buttons) shared by Setup and Uninstall.
 using System;
 using System.Collections.Generic;
 using System.Drawing;

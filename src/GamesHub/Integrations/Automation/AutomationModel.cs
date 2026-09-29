@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. Automation data model: action types, validation/sanitizing, resolution specs.
 using System;
 using System.Collections.Generic;
 using System.Globalization;

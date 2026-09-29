@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Removes GamesHub: app files (only files we own), shortcuts, Run value, uninstall key,
 // optionally %LOCALAPPDATA%\GamesHub. Never touches the games folder.
 using System;
 using System.Collections.Generic;

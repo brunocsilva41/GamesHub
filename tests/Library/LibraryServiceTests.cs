@@ -1,4 +1,3 @@
-// OWNER: LIB agent. End-to-end LibraryService behaviour against a temp games folder (no real data touched).
 using System;
 using System.Collections.Generic;
 using System.IO;

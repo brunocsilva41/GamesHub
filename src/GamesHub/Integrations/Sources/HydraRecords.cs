@@ -1,4 +1,3 @@
-// OWNER: SOURCES agent. Pure parsing of Hydra Launcher library records (LevelDB "!games!<shop>:<objectId>"
 // keys whose values are JSON objects) into Game objects.
 using System;
 using System.Collections.Generic;

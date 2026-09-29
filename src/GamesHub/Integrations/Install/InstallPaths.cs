@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Path normalization + "obviously wrong root" detection (shared by sizes and uninstall matching).
 using System;
 using System.Collections.Generic;
 using System.IO;

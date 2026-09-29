@@ -1,4 +1,3 @@
-// OWNER: DIST agent. Small owner-drawn WinForms controls in the GamesHub style (DPI-aware via DeviceDpi).
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;

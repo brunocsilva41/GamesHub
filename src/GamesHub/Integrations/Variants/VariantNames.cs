@@ -1,4 +1,3 @@
-// OWNER: VARIANTS agent. Name parsing: splits "LEGO Marvel Super Heroes 2 DirectX 11" into a base
 // name ("LEGO Marvel Super Heroes 2") and a launch qualifier ("DirectX 11").
 using System;
 using System.Collections.Generic;

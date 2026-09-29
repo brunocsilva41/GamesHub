@@ -1,4 +1,3 @@
-// OWNER: SOURCES agent. Imports installed Riot Games products (League of Legends, VALORANT, 2XKO, ...)
 // from C:\ProgramData\Riot Games (read-only). Launch goes through RiotClientServices.exe.
 using System;
 using System.Collections.Generic;

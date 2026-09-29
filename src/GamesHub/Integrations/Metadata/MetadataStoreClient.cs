@@ -1,4 +1,3 @@
-// OWNER: META agent. HTTP access to the Steam store appdetails endpoint.
 using System;
 using System.Net;
 using System.Net.Http;

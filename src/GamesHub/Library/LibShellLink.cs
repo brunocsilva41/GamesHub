@@ -1,4 +1,3 @@
-// OWNER: LIB agent. .lnk read/write via IShellLinkW + IPersistFile (no WScript), and .url parsing.
 using System;
 using System.IO;
 using System.Runtime.InteropServices;

@@ -1,4 +1,3 @@
-// OWNER: INSTALL agent. Forbidden roots, recursive size, cache + invalidation, dedupe.
 using System;
 using System.IO;
 using System.Threading.Tasks;

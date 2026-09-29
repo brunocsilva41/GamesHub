@@ -1,4 +1,3 @@
-// OWNER: SOURCES agent. Tiny read-only LevelDB reader: scans every table (.ldb/.sst) and write-ahead log
 // (.log) in a database folder and returns the newest live value of each key (by sequence number).
 // Files are opened with full sharing, so it works while the owning app has the DB open. It does not
 // consult the MANIFEST; obsolete files left behind by an interrupted compaction are harmless because

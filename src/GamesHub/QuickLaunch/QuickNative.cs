@@ -1,4 +1,3 @@
-// OWNER: QUICK agent. Win32 interop used only by the quick-launch palette.
 using System;
 using System.Runtime.InteropServices;
 

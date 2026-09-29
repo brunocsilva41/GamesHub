@@ -1,4 +1,3 @@
-// OWNER: VARIANTS agent. Persistence of variant groups (AppPaths.DataDir\variants.json).
 using System;
 using System.Collections.Generic;
 using System.IO;

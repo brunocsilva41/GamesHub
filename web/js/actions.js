@@ -66,7 +66,7 @@ export async function launch(id, variantId) {
   if (data) report(data, `Iniciando ${g.name}…`);
 }
 
-/** Launch variants (optional wave-2 field): [{ id, label }]. */
+/** Launch variants (optional field): [{ id, label }]. */
 export const variantsOf = (g) => (Array.isArray(g?.variants) ? g.variants.filter((v) => v && v.id) : []);
 
 export function variantMenuItems(id) {

@@ -1,4 +1,3 @@
-// OWNER: integration (lead). Bridge commands for the wave-2 services (see docs/ARCHITECTURE.md → Wave 2).
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -19,8 +18,8 @@ namespace GamesHub
 
         private GameCatalog Cat => _app.Catalog;
 
-        /// <summary>Returns null when the command is not a wave-2 command.</summary>
-        private Task<BridgeResult> ExecuteWave2(string name, IDictionary<string, object> args)
+        /// <summary>Returns null when the command is not an integration command.</summary>
+        private Task<BridgeResult> ExecuteIntegration(string name, IDictionary<string, object> args)
         {
             switch (name)
             {

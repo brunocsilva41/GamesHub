@@ -1,4 +1,3 @@
-// OWNER: AUTO agent. Before/after game automations with snapshot + restore of changed system settings.
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Pure rules used by the library sources (no I/O): names, ids, platforms, app ids.
 using System;
 using System.Collections.Generic;
 using System.IO;

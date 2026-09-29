@@ -1,4 +1,3 @@
-// OWNER: PCGW agent. IPcgwService: PCGamingWiki link + save/config locations.
 // Lookup order: disk cache → PCGW API (Cargo by Steam appid / opensearch by name, then wikitext) →
 // Ludusavi manifest (PCGW-derived) when the API is unreachable (PCGW sits behind a Cloudflare challenge).
 using System;

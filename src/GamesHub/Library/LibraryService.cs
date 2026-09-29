@@ -1,4 +1,3 @@
-// OWNER: LIB agent. Library state: sources → merged snapshot, events, watchers, play tracking.
 // User actions (launch/add/remove/undo/update) live in LibraryService.Actions.cs.
 using System;
 using System.Collections.Generic;

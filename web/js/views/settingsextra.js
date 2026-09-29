@@ -1,4 +1,4 @@
-// Settings additions (wave 2): hotkey editors (<gh-hotkey-input>), sources & data toggles,
+// Settings additions: hotkey editors (<gh-hotkey-input>), sources & data toggles,
 // default automation profile, disk usage ("Discos").
 import '../../quick/hotkey-input.js';
 import { store } from '../store.js';

@@ -144,7 +144,14 @@ namespace GamesHub
             {
                 AutomationSnapshot snap = state.Find(gameId);
                 bool isNew = snap == null;
-                if (isNew) snap = new AutomationSnapshot { GameId = gameId, Order = DateTime.UtcNow.Ticks };
+                if (isNew)
+                {
+                    // Strictly increasing: the clock has 1–15 ms resolution, so two launches can share a tick and
+                    // the "who changed it first" decision (which original value survives) must never tie.
+                    long order = DateTime.UtcNow.Ticks;
+                    if (state.All.Count > 0) order = Math.Max(order, state.All.Max(s => s.Order) + 1);
+                    snap = new AutomationSnapshot { GameId = gameId, Order = order };
+                }
                 bool changed = false;
                 foreach (string t in types)
                 {

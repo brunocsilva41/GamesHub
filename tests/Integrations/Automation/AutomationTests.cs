@@ -286,6 +286,12 @@ namespace GamesHub.Tests
             Assert.Equal("2560x1440@144", fs.Values[AutomationTypes.Resolution]);
         }
 
+        /// <summary>Regression: both launches inside one clock tick must still restore the true original.</summary>
+        public static void TestOverlappingGamesSameTickRepeated()
+        {
+            for (int i = 0; i < 50; i++) TestOverlappingGamesRestoreOriginalOnce();
+        }
+
         public static void TestRelaunchKeepsFirstSnapshot()
         {
             string dir = TempDir();

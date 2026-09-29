@@ -145,6 +145,18 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
+      - name: Ensure the WebView2 Runtime (preinstalled on Windows 11; installed here if the image lacks it)
+        run: |
+          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          $pv = (Get-ItemProperty $key -ErrorAction SilentlyContinue).pv
+          if ($pv -and $pv -ne '0.0.0.0') { "WebView2 Runtime $pv present"; exit 0 }
+          Write-Host 'WebView2 Runtime missing: installing the Evergreen bootstrapper'
+          Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile "$env:RUNNER_TEMP\wv2setup.exe"
+          $sig = Get-AuthenticodeSignature "$env:RUNNER_TEMP\wv2setup.exe"
+          if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch 'Microsoft') { throw "Unexpected signature: $($sig.Status) $($sig.SignerCertificate.Subject)" }
+          Start-Process "$env:RUNNER_TEMP\wv2setup.exe" -ArgumentList '/silent', '/install' -Wait
+          "WebView2 Runtime $((Get-ItemProperty $key).pv) installed"
+
       - name: Download installer (the exact artifact that will be published)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

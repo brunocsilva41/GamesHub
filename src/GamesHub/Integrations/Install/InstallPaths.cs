@@ -82,6 +82,9 @@ namespace GamesHub
 
         public static bool IsForbiddenRoot(string dir, IEnumerable<string> sensitive)
         {
+            // "D:" alone is drive-relative (the current folder on D:), so GetFullPath would turn it into some
+            // arbitrary folder: treat bare drive letters as the drive root they name.
+            if (System.Text.RegularExpressions.Regex.IsMatch((dir ?? "").Trim(), @"^[A-Za-z]:$")) return true;
             string k = Key(dir);
             if (k.Length == 0) return true;
             if (k.Length <= 3 || k.StartsWith("\\\\") && k.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).Length <= 2)

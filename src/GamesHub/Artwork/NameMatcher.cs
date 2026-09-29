@@ -46,7 +46,7 @@ namespace GamesHub
 
         private static readonly HashSet<string> NonGameNames = new HashSet<string>
         {
-            "steam", "epic games", "epic games launcher", "roblox", "roblox player", "roblox studio",
+            "steam", "epic games", "epic games launcher", "roblox studio",
             "battle net", "battlenet", "ea", "ea app", "origin", "ubisoft connect", "uplay", "gog galaxy",
             "riot client", "discord", "xbox", "xbox app", "hydra", "plutonium", "tlauncher", "lunar client",
             "playnite", "overwolf", "geforce experience", "nvidia app", "msi afterburner", "obs studio",
@@ -249,6 +249,9 @@ namespace GamesHub
         // ------------------------------------------------------------ non-games
 
         /// <summary>Launchers, stores, installers and tools that should never be searched on Steam.</summary>
+        /// <summary>Platforms whose games are never on Steam (skip Steam matching; SteamGridDB still applies).</summary>
+        public static bool IsNonSteamPlatform(string platform) => platform != null && NonSteamPlatforms.Contains(platform);
+
         public static bool IsLikelyNonGame(string name, string platform = null)
         {
             if (platform != null && NonSteamPlatforms.Contains(platform)) return true;

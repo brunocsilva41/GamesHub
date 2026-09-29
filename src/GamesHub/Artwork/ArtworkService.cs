@@ -83,10 +83,10 @@ namespace GamesHub
             string gk = ArtCache.GameKey(g.Id);
             if (art.Icon == null && g.HasIconSource && !_index.IsNegative(NegIcon(gk))) return true;
             if (!_settings.AutoArtwork) return false;
-            bool nonGame = g.SteamAppId == ArtKind.NotOnSteam
-                           || (!ArtKind.IsAppId(g.SteamAppId) && NameMatcher.IsLikelyNonGame(g.Name, g.Platform));
-            if (nonGame) return false;
-            if (appId.Length == 0 && !_index.TryGetMatch(MatchKey(g.Name), out _)) return true;
+            bool knownApp = ArtKind.IsAppId(g.SteamAppId) && g.SteamAppId != ArtKind.NotOnSteam;
+            if (!knownApp && NameMatcher.IsLikelyNonGame(g.Name)) return false; // launchers, tools…
+            bool steamSearchable = !knownApp && g.SteamAppId != ArtKind.NotOnSteam && !NameMatcher.IsNonSteamPlatform(g.Platform);
+            if (steamSearchable && appId.Length == 0 && !_index.TryGetMatch(MatchKey(g.Name), out _)) return true;
             foreach (string kind in ArtKind.Remote)
             {
                 if (ArtKind.Get(art, kind) != null) continue;

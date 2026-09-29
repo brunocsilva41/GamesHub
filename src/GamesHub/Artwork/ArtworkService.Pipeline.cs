@@ -135,12 +135,13 @@ namespace GamesHub
                 result += await _tasks.Run("icon:" + gk, () => ExtractIconAsync(g, gk)).ConfigureAwait(false);
 
             if (!_settings.AutoArtwork) return result;
-            if (g.SteamAppId == ArtKind.NotOnSteam) return result; // user said: not a Steam game
-            bool knownApp = ArtKind.IsAppId(g.SteamAppId);
-            if (!knownApp && NameMatcher.IsLikelyNonGame(g.Name, g.Platform)) return result;
+            bool notOnSteam = g.SteamAppId == ArtKind.NotOnSteam;   // user said: not a Steam game
+            bool knownApp = !notOnSteam && ArtKind.IsAppId(g.SteamAppId);
+            if (!knownApp && NameMatcher.IsLikelyNonGame(g.Name)) return result; // launchers, tools…
 
-            string appId = g.SteamAppId;
-            if (!knownApp)
+            string appId = knownApp ? g.SteamAppId : "";
+            // Riot/Roblox/… games and user-marked ones skip Steam matching but still get SteamGridDB art.
+            if (!knownApp && !notOnSteam && !NameMatcher.IsNonSteamPlatform(g.Platform))
             {
                 MatchOutcome m = await MatchAsync(g).ConfigureAwait(false);
                 if (m.Retry) { result.Retry = true; return result; }

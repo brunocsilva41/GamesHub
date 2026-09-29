@@ -51,17 +51,32 @@ namespace GamesHub
                 }
                 if (byId.Items.Count > 0 || byId.Retryable) return byId;
             }
-            string term = NameMatcher.SearchQuery(name);
-            if (term.Length == 0) return new SearchOutcome();
-            FetchResult s = await GetAsync(SteamEndpoints.SgdbAutocomplete(term)).ConfigureAwait(false);
-            var outcome = new SearchOutcome { Status = s.Status };
-            if (!s.Ok) return outcome;
-            var candidates = new List<MatchCandidate>();
-            foreach (IDictionary<string, object> e in DataArray(s.Text))
-                candidates.Add(new MatchCandidate(Json.Str(e, "id"), Json.Str(e, "name")));
-            MatchCandidate best = NameMatcher.PickBest(name, candidates);
-            if (best != null) outcome.Items.Add(best);
+            var outcome = new SearchOutcome();
+            foreach (string variant in SearchNames(name))
+            {
+                string term = NameMatcher.SearchQuery(variant);
+                if (term.Length == 0) continue;
+                FetchResult s = await GetAsync(SteamEndpoints.SgdbAutocomplete(term)).ConfigureAwait(false);
+                outcome = new SearchOutcome { Status = s.Status };
+                if (!s.Ok) return outcome;
+                var candidates = new List<MatchCandidate>();
+                foreach (IDictionary<string, object> e in DataArray(s.Text))
+                    candidates.Add(new MatchCandidate(Json.Str(e, "id"), Json.Str(e, "name")));
+                MatchCandidate best = NameMatcher.PickBest(variant, candidates);
+                if (best == null) continue;
+                outcome.Items.Add(best);
+                return outcome;
+            }
             return outcome;
+        }
+
+        /// <summary>The name, then without a trailing client word ("Roblox Player" → "Roblox").</summary>
+        public static IEnumerable<string> SearchNames(string name)
+        {
+            yield return name ?? "";
+            string trimmed = System.Text.RegularExpressions.Regex.Replace(name ?? "", @"\s+(Player|Client)$", "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+            if (trimmed.Length > 0 && !trimmed.Equals(name, StringComparison.OrdinalIgnoreCase)) yield return trimmed;
         }
 
         /// <summary>URL of the top-rated asset of a kind for a SteamGridDB game ("" = none).</summary>

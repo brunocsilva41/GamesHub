@@ -119,11 +119,13 @@ namespace GamesHub.Tests
 
         public static void TestNonGames()
         {
-            foreach (string n in new[] { "Steam", "Epic Games Launcher", "Roblox Studio", "Roblox Player", "CB Servers Launcher",
+            foreach (string n in new[] { "Steam", "Epic Games Launcher", "Roblox Studio", "CB Servers Launcher",
                                          "SKlauncher", "Hydra", "plutonium", "Setup", "Uninstall Foo", "unins000" })
                 Assert.True(NameMatcher.IsLikelyNonGame(n), n);
-            Assert.True(NameMatcher.IsLikelyNonGame("VALORANT", "Riot"), "Riot platform");
-            foreach (string n in new[] { "Lethal Company", "TEKKEN 7", "League of Legends", "DIRT 5 (Install Crack)", "LEGO Marvel Super Heroes 2 DirectX 11" })
+            Assert.True(NameMatcher.IsNonSteamPlatform("Riot"), "Riot platform skips Steam matching");
+            // Games on non-Steam platforms are still games: they get SteamGridDB art.
+            Assert.False(NameMatcher.IsLikelyNonGame("VALORANT"), "VALORANT");
+            foreach (string n in new[] { "Lethal Company", "TEKKEN 7", "League of Legends", "Roblox Player", "DIRT 5 (Install Crack)", "LEGO Marvel Super Heroes 2 DirectX 11" })
                 Assert.False(NameMatcher.IsLikelyNonGame(n), n);
         }
     }

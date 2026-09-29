@@ -1,0 +1,17 @@
+# Runtime data (legacy v1 stored it inside the games folder)
+/.wvdata/
+/covers/
+/icons/
+/_removidos/
+/debug.log
+/playlog.json
+/searchcache.json
+/config.json
+
+# SDK package / archived v1 binaries / build output
+/_sdk/
+/_archive/
+/dist/
+/obj/
+*.pdb
+*.tmp

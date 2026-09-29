@@ -292,7 +292,11 @@ function Invoke-AppSuite([string]$Exe, [string]$GamesDir, [string]$Label) {
                 try { @(Invoke-RestMethod "http://127.0.0.1:$port/json/list" -TimeoutSec 2 | Where-Object { $_.type -eq 'page' -and $_.url -eq $MainUrl }).Count -eq 1 }
                 catch { $false }
             } ($TimeoutSec * 1000) 300
-            if (-not $found) { throw "no page $MainUrl on port $port" }
+            if (-not $found) {
+                $pages = try { (Invoke-RestMethod "http://127.0.0.1:$port/json/list" -TimeoutSec 2 | ForEach-Object { "$($_.type) $($_.url)" }) -join '; ' } catch { "endpoint down: $($_.Exception.Message)" }
+                $tail = ((Read-AppLog $data) -split "`n" | Select-Object -Last 6) -join ' | '
+                throw "no page $MainUrl on port $port. DevTools: [$pages]. App log: $tail"
+            }
             "port $port"
         }
         if (-not $ok) { return }
@@ -389,6 +393,15 @@ function Invoke-AppSuite([string]$Exe, [string]$GamesDir, [string]$Label) {
             if (-not $app.HasExited) { Stop-Owned @($app.Id) }
         }
         Stop-Owned @($st.children | ForEach-Object { [int]$_.ProcessId })
+        # Evidence for failures on remote runners: the app log and what DevTools exposed.
+        try {
+            Copy-Item -LiteralPath (Join-Path $data 'logs\gameshub.log') (Join-Path $OutDir "${tag}gameshub-final.log") -ErrorAction Stop
+        } catch { Write-Host "  (no app log at $data\logs)" -ForegroundColor Yellow }
+        try {
+            Get-ChildItem -LiteralPath $data -Recurse -File -ErrorAction SilentlyContinue |
+                Select-Object -First 200 FullName, Length | Format-Table -AutoSize | Out-String -Width 300 |
+                Set-Content (Join-Path $OutDir "${tag}data-dir.txt")
+        } catch { }
     }
 }
 

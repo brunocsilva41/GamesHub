@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GamesHub
@@ -60,14 +61,28 @@ namespace GamesHub
                 outcome = new SearchOutcome { Status = s.Status };
                 if (!s.Ok) return outcome;
                 var candidates = new List<MatchCandidate>();
+                var released = new Dictionary<string, long>();
                 foreach (IDictionary<string, object> e in DataArray(s.Text))
+                {
                     candidates.Add(new MatchCandidate(Json.Str(e, "id"), Json.Str(e, "name")));
-                MatchCandidate best = NameMatcher.PickBest(variant, candidates);
+                    released[Json.Str(e, "id")] = Json.Long(e, "release_date");
+                }
+                MatchCandidate best = PreferNewestExact(variant, candidates, released) ?? NameMatcher.PickBest(variant, candidates);
                 if (best == null) continue;
                 outcome.Items.Add(best);
                 return outcome;
             }
             return outcome;
+        }
+
+        /// <summary>Several entries with exactly the query's name (e.g. "Point Blank" 1993 arcade vs 2008 PC FPS):
+        /// the newest release is almost always the PC game a launcher has. Null when fewer than two exact names.</summary>
+        public static MatchCandidate PreferNewestExact(string name, List<MatchCandidate> candidates, IDictionary<string, long> released)
+        {
+            string q = NameMatcher.Normalize(name).Replace(" ", "");
+            var exact = candidates.Where(c => NameMatcher.Normalize(c.Name).Replace(" ", "") == q).ToList();
+            if (exact.Count < 2) return null;
+            return exact.OrderByDescending(c => released.TryGetValue(c.AppId, out long r) ? r : 0).First();
         }
 
         /// <summary>The name, then without a trailing client word ("Roblox Player" → "Roblox").</summary>

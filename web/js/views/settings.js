@@ -42,7 +42,7 @@ export function initSettings(root) {
       ${drivesGroupHtml()}
       ${group('updates', 'Atualizações',
         sw('checkUpdates', 'Verificar atualizações ao iniciar') +
-        row('Repositório', 'Formato <code>dono/repositório</code> no GitHub. Vazio desativa o atualizador.',
+        row('Repositório', 'Formato <code>dono/repositório</code> no GitHub. Vazio usa o repositório oficial; para desligar, desmarque a verificação acima.',
           '<input class="input input-sm" type="text" data-nav data-text="updateRepo" placeholder="dono/repositório" spellcheck="false">') +
         row('Verificar agora', '<span data-update-status></span>',
           '<button type="button" class="btn btn-ghost btn-sm" data-nav data-cmd="checkUpdate">' + icon('refresh') + 'Verificar agora</button>' +

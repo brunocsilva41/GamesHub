@@ -1,0 +1,48 @@
+name: Sugerir um recurso
+description: Uma ideia para melhorar o GamesHub.
+title: "[Sugestão] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado pela sugestão! O GamesHub quer continuar leve, offline e sem dependências novas; ideias que respeitam isso têm mais chance de entrar.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema isso resolve?
+      description: Conte a situação em que você sente falta do recurso.
+      placeholder: "Eu sempre preciso ... e hoje tenho que ..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Como você imagina a solução?
+      description: Como seria usar o recurso (tela, atalho, configuração...).
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: Outras formas de resolver, ou como outros launchers fazem.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Biblioteca e importação de jogos
+        - Artes
+        - Página de detalhes
+        - Teclado, controle ou Big Picture
+        - Busca rápida e atalhos
+        - Automação antes/depois de jogar
+        - Instalação e atualização
+        - Outra
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribuição
+      options:
+        - label: Gostaria de implementar isso (veja o CONTRIBUTING.md).

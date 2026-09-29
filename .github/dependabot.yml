@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Keeps the SHA-pinned GitHub Actions current (the app itself has no package dependencies).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci

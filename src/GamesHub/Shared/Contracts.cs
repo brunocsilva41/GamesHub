@@ -136,8 +136,9 @@ namespace GamesHub
         public string SteamGridDbKey = "";
         public bool TrackPlaytime = true;
         public bool CheckUpdates = true;
-        /// <summary>GitHub "owner/repo" used by the updater. "" = updater disabled.</summary>
-        public string UpdateRepo = "";
+        /// <summary>GitHub "owner/repo" whose Releases feed the updater (an empty value means the official
+        /// repository; turn updates off with CheckUpdates).</summary>
+        public string UpdateRepo = AppInfo.DefaultUpdateRepo;
         public string Language = "pt-BR";
 
         // ---- Integrations ----

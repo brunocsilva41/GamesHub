@@ -344,6 +344,7 @@ namespace GamesHub
 
         private void RefreshJumpList()
         {
+            if (AppPaths.IsIsolated) return; // never overwrite the installed app's Jump List from a test run
             List<Game> recent = BridgeDto.RecentGames(Catalog.GetGames(), RecentCount);
             string signature = string.Join("\n", recent.Select(g => g.Id + "\t" + g.Name + "\t" + g.Exe));
             RunOnUi(() =>

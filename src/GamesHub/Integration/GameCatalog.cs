@@ -167,6 +167,8 @@ namespace GamesHub
 
         private void ApplySteam(Game g, Dictionary<string, SteamLocalStats> steam)
         {
+            // Local Steam data is only consulted when the user lets GamesHub use Steam.
+            if (!Settings.ImportSteam && !Settings.ImportSteamPlaytime) return;
             if (string.IsNullOrEmpty(g.SteamAppId) || !steam.TryGetValue(g.SteamAppId, out SteamLocalStats s)) return;
             g.UpdatePending = s.UpdatePending;
             if (s.SizeOnDisk > 0) g.SizeBytes = s.SizeOnDisk;

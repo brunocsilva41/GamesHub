@@ -11,6 +11,9 @@ namespace GamesHub
     {
         public const string Name = "GamesHub";
         public const string AppUserModelId = "GamesHub.App";
+        /// <summary>Official repository: source of Releases for the updater and of the "about" links.</summary>
+        public const string DefaultUpdateRepo = "brunocsilva41/GamesHub";
+        public const string RepoUrl = "https://github.com/" + DefaultUpdateRepo;
         public static string Version
         {
             get
@@ -30,6 +33,10 @@ namespace GamesHub
         public static readonly string DataDir =
             Environment.GetEnvironmentVariable("GAMESHUB_DATA_DIR") is string d && d.Length > 0 ? d
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppInfo.Name);
+
+        /// <summary>True when GAMESHUB_DATA_DIR isolates this process (tests, screenshots, portable runs):
+        /// it must not touch per-user shell state shared with the real install (Jump List, AppUserModelID).</summary>
+        public static bool IsIsolated => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GAMESHUB_DATA_DIR"));
 
         public static string WebDir => Path.Combine(AppDir, "web");
         public static string SettingsFile => Path.Combine(DataDir, "settings.json");

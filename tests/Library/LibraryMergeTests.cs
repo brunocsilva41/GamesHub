@@ -200,7 +200,7 @@ namespace GamesHub.Tests
             Assert.Equal("DX11", g.Variants[0].Label, "variants are copied");
             Assert.Equal("h", g.Art.Hero, "art is copied");
             Assert.Equal(1, g.Collections.Count);
-            Assert.Equal(1, LibraryMerge.ApplyMeta(g, null, DateTime.Now).Variants.Count, "ApplyMeta keeps wave-2 fields");
+            Assert.Equal(1, LibraryMerge.ApplyMeta(g, null, DateTime.Now).Variants.Count, "ApplyMeta keeps integration fields");
         }
 
         public static void TestLaunchImportedExeWithSourceArgs()

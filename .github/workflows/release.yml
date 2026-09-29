@@ -1,0 +1,105 @@
+name: Release
+
+# Triggered by pushing an annotated tag vX.Y.Z (created by tools/release.ps1). The tag is validated, the full CI
+# pipeline runs again from scratch (including the end-to-end test of the exact installer), and only then the same
+# artifact is attested and published as a GitHub Release.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  gate:
+    name: Release gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate tag, version, CHANGELOG, branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./ci/release/Test-ReleaseTag.ps1 -Tag '${{ github.ref_name }}'
+      - id: v
+        name: Version
+        run: '"version=$("${{ github.ref_name }}".TrimStart("v"))" >> $env:GITHUB_OUTPUT'
+
+  pipeline:
+    name: Full pipeline
+    needs: gate
+    uses: ./.github/workflows/ci.yml
+    with:
+      release: true
+    secrets:
+      GAMESHUB_SIGN_PFX_BASE64: ${{ secrets.GAMESHUB_SIGN_PFX_BASE64 }}
+      GAMESHUB_SIGN_PFX_PASSWORD: ${{ secrets.GAMESHUB_SIGN_PFX_PASSWORD }}
+
+  publish:
+    name: Attest & publish
+    needs: [gate, pipeline]
+    runs-on: windows-latest
+    timeout-minutes: 10
+    environment:
+      name: release
+      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+    permissions:
+      contents: write      # create the release
+      id-token: write      # sign the provenance attestation
+      attestations: write  # store it
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download the tested installer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: installer
+          path: dist/package
+
+      - name: Verify artifact integrity
+        id: files
+        run: |
+          $version = '${{ needs.gate.outputs.version }}'
+          $exe = "dist/package/GamesHub-Setup-$version.exe"
+          if (-not (Test-Path $exe)) { throw "Installer not found: $exe" }
+          $expected = ((Get-Content "$exe.sha256" -Raw).Trim() -split '\s+')[0]
+          $actual = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expected -ne $actual) { throw "Checksum mismatch: $expected vs $actual" }
+          $fv = (Get-Item $exe).VersionInfo.ProductVersion
+          if ($fv -ne $version) { throw "Installer ProductVersion $fv does not match $version" }
+          "exe=$exe" >> $env:GITHUB_OUTPUT
+          "Installer verified: $exe ($actual)"
+
+      - name: Build provenance attestation
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.files.outputs.exe }}
+
+      - name: Release notes
+        run: ./ci/release/Get-ReleaseNotes.ps1 -Version '${{ needs.gate.outputs.version }}' -Installer '${{ steps.files.outputs.exe }}' -OutFile dist/release-notes.md
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ needs.gate.outputs.version }}'
+          $exe = '${{ steps.files.outputs.exe }}'
+          $pre = if ($version -match '-') { '--prerelease' } else { '--latest' }
+          gh release create '${{ github.ref_name }}' $exe "$exe.sha256" `
+            --title "GamesHub $version" --notes-file dist/release-notes.md --verify-tag $pre
+          if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
+          "### 🚀 Published [GamesHub $version](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }})" >> $env:GITHUB_STEP_SUMMARY

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Relatar uma vulnerabilidade de segurança
+    url: https://github.com/brunocsilva41/GamesHub/security/advisories/new
+    about: Relate problemas de segurança de forma privada, nunca em issues públicas.
+  - name: Guia do usuário e perguntas frequentes
+    url: https://github.com/brunocsilva41/GamesHub/blob/main/docs/USER_GUIDE.md
+    about: Como usar cada recurso e soluções para os problemas mais comuns.

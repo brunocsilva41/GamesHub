@@ -1,94 +1,114 @@
 # GamesHub
 
-**Uma biblioteca de jogos leve e bonita para Windows.** O GamesHub reúne num só lugar os jogos da Steam, da
-Epic Games, da Riot, do Hydra e os atalhos da sua pasta de jogos — com capas em alta resolução, tempo de jogo,
-coleções e navegação por teclado ou controle. Sem conta, sem anúncios, sem serviço rodando em segundo plano.
+[![CI](https://github.com/brunocsilva41/GamesHub/actions/workflows/ci.yml/badge.svg)](https://github.com/brunocsilva41/GamesHub/actions/workflows/ci.yml)
+[![Última versão](https://img.shields.io/github/v/release/brunocsilva41/GamesHub?label=vers%C3%A3o)](https://github.com/brunocsilva41/GamesHub/releases/latest)
+[![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue.svg)](LICENSE)
+[![Plataforma: Windows 10/11](https://img.shields.io/badge/plataforma-Windows%2010%20%7C%2011-0078D6.svg)](#requisitos)
 
-![Biblioteca](docs/screenshots/library.png)
+**Uma biblioteca de jogos leve e bonita para Windows.** O GamesHub reúne num só lugar os jogos da Steam, da Epic
+Games, da Riot, do Hydra e os atalhos da sua pasta de jogos, com artes em alta resolução, tempo de jogo, coleções,
+informações de cada jogo e navegação por teclado ou controle. O executável tem menos de 1 MB, não exige conta, não
+tem anúncios nem telemetria e não deixa nenhum serviço rodando em segundo plano.
 
-| Detalhes do jogo | Big Picture | Configurações |
+![Biblioteca](docs/screenshots/biblioteca.png)
+
+| Detalhes do jogo | Busca rápida | Big Picture |
 |---|---|---|
-| ![Detalhes](docs/screenshots/details.png) | ![Big Picture](docs/screenshots/bigpicture.png) | ![Configurações](docs/screenshots/settings.png) |
+| ![Detalhes do jogo](docs/screenshots/detalhes.png) | ![Busca rápida](docs/screenshots/busca-rapida.png) | ![Big Picture](docs/screenshots/big-picture.png) |
 
-## Recursos
+## Download
 
-- **Importação automática** da Steam (todas as bibliotecas), Epic Games, Riot e Hydra, além dos atalhos
-  (`.lnk`, `.url`, `.exe`) da sua pasta de jogos — com detecção de atalhos quebrados e limpeza da biblioteca.
-- **Artes em HD**: capa, banner, hero e logo baixados automaticamente (Steam CDN; SteamGridDB opcional com sua chave),
-  ou escolhidos por você arrastando uma imagem.
-- **Página de detalhes** com gêneros, descrição, desenvolvedora, data de lançamento e nota do Metacritic, filtro por
-  gênero, link do PCGamingWiki, atalhos para as pastas de saves/configurações, tamanho em disco e espaço livre.
-- **Favoritos, coleções** e jogos ocultos; ordenação por nome, recentes, tempo de jogo ou data de adição.
-- **Tempo de jogo** medido pelo próprio GamesHub e importado da Steam (incluindo "jogado por último").
-- **Variações de execução** agrupadas num único card ("Jogar ▾") e **ações antes/depois de jogar** por jogo
-  (abrir programa, fechar processo, plano de energia, dispositivo de áudio, resolução, esperar) — desfeitas
-  automaticamente quando o jogo fecha.
-- Aviso de **atualização pendente** (Steam), **Verificar arquivos** e **desinstalar pela plataforma**.
-- **Teclado, controle e modo Big Picture**, **paleta de início rápido** (Ctrl+Shift+Espaço, personalizável) e
-  **atalho global** (Ctrl+Alt+G) para abrir o GamesHub de qualquer lugar.
-- **Bandeja do sistema** com jogos recentes, **Jump List** na barra de tarefas e início com o Windows.
-- **Instalador de arquivo único** (sem administrador) e **atualização automática** opcional pelo GitHub Releases.
+**[Baixe a versão mais recente](https://github.com/brunocsilva41/GamesHub/releases/latest)**: arquivo
+`GamesHub-Setup-<versão>.exe`.
 
-## Instalação
+1. Execute o instalador e siga o assistente. A instalação é só para o seu usuário e não pede administrador.
+2. Se o Windows SmartScreen avisar que o app não é reconhecido, é porque o instalador não tem assinatura de código
+   paga. Confira o download (abaixo) e clique em **Mais informações → Executar assim mesmo**.
+3. Quem já usava a versão 1.x ("GamesLounge") é atualizado no mesmo lugar, mantendo pasta de jogos, capas e
+   histórico.
 
-1. Baixe `GamesHub-Setup-<versão>.exe` na página de versões (Releases).
-2. Execute-o e siga o assistente — a instalação é só para o seu usuário, não pede permissão de administrador.
-3. Se você já usava a versão 1.x, o instalador atualiza no mesmo lugar e mantém sua pasta de jogos, capas e histórico.
+Para conferir o arquivo baixado:
 
-Instalação silenciosa (por exemplo, em scripts):
+```powershell
+Get-FileHash .\GamesHub-Setup-2.0.0.exe -Algorithm SHA256          # compare com o .sha256 da Release
+gh attestation verify .\GamesHub-Setup-2.0.0.exe --repo brunocsilva41/GamesHub
+```
+
+Detalhes em [docs/PIPELINE.md](docs/PIPELINE.md#como-verificar-um-download).
+
+<details>
+<summary>Instalação e remoção silenciosas (scripts)</summary>
 
 ```powershell
 .\GamesHub-Setup-2.0.0.exe /silent [/dir "C:\Apps\GamesHub"] [/games "D:\Jogos"] [/nodesktop] [/nostartmenu] [/autostart]
 ```
 
 O resultado fica em `%TEMP%\GamesHub\setup-result.txt` (`OK:<pasta>` ou `ERRO:<mensagem>`) e o log em
-`%TEMP%\GamesHub\setup.log`. Para remover: **Configurações do Windows → Aplicativos**, ou `Uninstall.exe /silent`
-(adicione `/purge` para apagar também seus dados).
+`%TEMP%\GamesHub\setup.log`. Para remover: **Configurações do Windows → Aplicativos → GamesHub**, ou
+`Uninstall.exe /silent` na pasta do programa (adicione `/purge` para apagar também seus dados).
+
+</details>
+
+## Recursos
+
+- **Importação automática** dos jogos instalados na **Steam** (todas as bibliotecas), **Epic Games**, **Riot
+  Games** e **Hydra Launcher**, além dos atalhos (`.lnk`, `.url`, `.exe`) da sua pasta de jogos. Jogos novos
+  aparecem sozinhos; **F5** reescaneia na hora.
+- **Adicionar jogos** arrastando um atalho ou executável para a janela, pelo seletor de arquivos (**Ctrl+N**) ou
+  buscando na loja da Steam.
+- **Artes em HD** (capa, cabeçalho, fundo, logotipo e ícone) baixadas automaticamente da Steam. Com uma chave
+  **gratuita** do [SteamGridDB](https://www.steamgriddb.com/profile/preferences/api) (opcional), também para jogos
+  fora da Steam, como os da Riot e o Roblox. Qualquer arte pode ser trocada arrastando uma imagem.
+- **Página de detalhes** com gêneros, descrição, desenvolvedora, data de lançamento e nota do Metacritic (da loja
+  da Steam), tempo de jogo, tamanho em disco, aviso de atualização pendente, **Verificar arquivos** (Steam) e
+  **Desinstalar** pela plataforma ou pelo desinstalador do Windows.
+- **Saves e configurações** localizados pelo **PCGamingWiki**, com botão para abrir cada pasta, e link para as
+  correções e dicas do jogo.
+- **Variações de execução** (por exemplo, DirectX 11/12 ou com e sem mods) agrupadas num único card com
+  **Jogar ▾**, com sugestões automáticas de agrupamento.
+- **Ações antes e depois de jogar**, por jogo ou para todos: abrir ou fechar programas, trocar plano de energia,
+  saída de áudio ou resolução da tela e aguardar. Tudo volta ao normal quando o jogo fecha.
+- **Tempo de jogo** medido pelo GamesHub e **importado da Steam** (incluindo "jogado por último"), sem somar
+  sessões em dobro.
+- **Favoritos, coleções e jogos ocultos**; filtros por gênero, "Nunca jogados", "Sem jogar há 3+ meses" e
+  "Instalados"; ordenação por nome, recentes, mais jogados, adicionados recentemente ou tamanho.
+- **Atalhos quebrados** detectados e **limpeza da biblioteca** em um clique (os atalhos vão para uma lixeira
+  interna, com desfazer).
+- **Teclado e controle** (Xbox e compatíveis) em toda a interface e modo **Big Picture** para TV. O controle só
+  age quando a janela do GamesHub está em foco, então não interfere no jogo.
+- **Busca rápida**: uma paleta flutuante aberta de qualquer lugar do Windows com **Ctrl+Shift+Espaço**
+  (personalizável) para abrir um jogo digitando parte do nome.
+- **Atalho global** (**Ctrl+Alt+G**, personalizável) para mostrar o GamesHub, **bandeja do sistema** com jogos
+  recentes, **Jump List** na barra de tarefas e início com o Windows.
+- **Atualização automática**: o GamesHub avisa quando há versão nova nas Releases deste repositório e se atualiza
+  com um clique, conferindo o SHA-256 do instalador.
+
+O [Guia do usuário](docs/USER_GUIDE.md) explica cada recurso e todos os atalhos.
 
 ## Requisitos
 
-- Windows 10 ou 11 (64 bits recomendado)
+- Windows 10 ou 11
 - [Microsoft Edge WebView2 Runtime](https://go.microsoft.com/fwlink/p/?LinkId=2124703)
 - .NET Framework 4.8
 
-O WebView2 e o .NET Framework 4.8 já vêm instalados no Windows 11 (e na maioria dos Windows 10 atualizados).
+O WebView2 e o .NET Framework 4.8 já vêm no Windows 11 e nos Windows 10 atualizados. Se o WebView2 faltar, o
+GamesHub avisa e oferece a página de download da Microsoft.
 
-## Compilar a partir do código
+## Privacidade
 
-Pré-requisito: [.NET SDK](https://dotnet.microsoft.com/download) (apenas pelo compilador Roslyn — o app roda no
-.NET Framework 4.8 que já vem com o Windows; não há pacotes NuGet).
+O GamesHub não tem conta, telemetria, análise de uso nem anúncios, e todos os seus dados ficam no seu computador
+(`%LOCALAPPDATA%\GamesHub`). Estas são as únicas conexões de rede que ele faz:
 
-```powershell
-./build.ps1                    # app em dist/app
-./build.ps1 -Test              # + testes
-./build.ps1 -Test -Package     # + Uninstall.exe e instalador em dist/package
-./build.ps1 -Clean -Package    # apaga dist/ antes
-```
+| Destino | Quando | Como desligar |
+|---|---|---|
+| CDN e loja da Steam (`steamstatic.com`, `store.steampowered.com`, `steamcommunity.com`) | Para baixar artes, identificar jogos fora da Steam pelo nome, buscar na tela "Adicionar" e obter gêneros e descrições (com cache de 30 dias) | Configurações → **Artes** → "Buscar artes automaticamente" e Configurações → **Fontes e dados** → "Buscar informações dos jogos" |
+| SteamGridDB (`steamgriddb.com`) | Só se você informar sua própria chave de API | Apague a chave |
+| PCGamingWiki (`pcgamingwiki.com`) e manifesto Ludusavi (`raw.githubusercontent.com`) | Quando você pede para localizar saves e configurações de um jogo | Configurações → **Fontes e dados** → "Consultar o PCGamingWiki" |
+| GitHub (`api.github.com`, `github.com`) | Ao iniciar, para ver se há versão nova, e ao baixar uma atualização que você aceitou | Configurações → **Atualizações** → "Verificar atualizações ao iniciar" |
 
-`-Package` gera `dist/package/GamesHub-Setup-<versão>.exe` (com o app embutido) e o `.sha256` correspondente.
-A versão vem de `src/GamesHub/Properties/AssemblyInfo.cs`.
-
-Para publicar uma versão: crie uma Release no GitHub com a tag `v<versão>` e anexe o `.exe` e o `.sha256`.
-Quem tiver o repositório configurado em **Configurações → Atualizações** recebe o aviso e atualiza com um clique.
-
-## Estrutura do projeto
-
-```
-src/GamesHub/        app (C# WinForms + WebView2)
-  Core/              janela, ponte JS↔C#, configurações, bandeja, integração com o Windows
-  Library/           fontes de jogos (pasta, Steam, Epic…), metadados, execução, tempo de jogo
-  Artwork/           download e cache de artes
-  Update/            verificador de atualizações (GitHub Releases)
-  Shared/            contratos e infraestrutura comuns
-src/Installer/       Setup.exe e Uninstall.exe (Common/, Setup/, Uninstall/)
-web/                 interface (HTML/CSS/JS puro, sem frameworks, funciona offline)
-assets/              ícones, manifestos e configuração do executável
-tests/               testes (executados por ./build.ps1 -Test)
-docs/                ARCHITECTURE.md, USER_GUIDE.md
-```
-
-Detalhes técnicos e contratos entre módulos: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-Guia de uso: [docs/USER_GUIDE.md](docs/USER_GUIDE.md). Histórico: [CHANGELOG.md](CHANGELOG.md).
+As requisições enviam apenas App IDs, nomes de jogos (nas buscas) e, no SteamGridDB, a chave que você forneceu.
+Links que você abre (loja, PCGamingWiki, notas da versão) vão para o seu navegador. Detalhes técnicos em
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#rede-e-privacidade).
 
 ## Onde ficam os dados
 
@@ -96,28 +116,63 @@ Guia de uso: [docs/USER_GUIDE.md](docs/USER_GUIDE.md). Histórico: [CHANGELOG.md
 |---|---|
 | Programa | `%LOCALAPPDATA%\Programs\GamesHub` |
 | Configurações | `%LOCALAPPDATA%\GamesHub\settings.json` |
-| Biblioteca (tempo de jogo, favoritos, coleções, ajustes) | `%LOCALAPPDATA%\GamesHub\library.json` |
-| Cache de artes | `%LOCALAPPDATA%\GamesHub\cache\art\` |
+| Biblioteca (tempo de jogo, favoritos, coleções, edições) | `%LOCALAPPDATA%\GamesHub\library.json` |
+| Cache de artes e informações | `%LOCALAPPDATA%\GamesHub\cache\` |
 | Atalhos removidos (lixeira) | `%LOCALAPPDATA%\GamesHub\trash\` |
 | Logs | `%LOCALAPPDATA%\GamesHub\logs\gameshub.log` |
-| Logs do instalador | `%TEMP%\GamesHub\setup.log`, `uninstall.log` |
 
-O GamesHub nunca apaga nada da sua pasta de jogos: remover um jogo move o atalho para a lixeira do próprio
-GamesHub (com opção de desfazer).
+O GamesHub nunca apaga arquivos de jogos: remover um jogo da pasta de jogos move o atalho para a lixeira do
+próprio GamesHub, com opção de desfazer.
 
-## Privacidade
+## Compilar a partir do código
 
-O GamesHub não tem conta, telemetria nem anúncios. As únicas conexões de rede são:
+Pré-requisitos: Windows 10/11, [.NET SDK 8](https://dotnet.microsoft.com/download) (usado apenas pelo compilador
+Roslyn; o app roda no .NET Framework 4.8 do Windows e não usa pacotes NuGet) e, para as verificações da interface,
+[Node.js](https://nodejs.org/) 20+.
 
-- **Steam (CDN e API da loja)** — para baixar artes e buscar nomes/informações de jogos. Pode ser desligado em
-  Configurações (artes automáticas).
-- **SteamGridDB** — somente se você informar sua própria chave de API.
-- **GitHub** — somente se você configurar um repositório de atualizações; consulta a última versão publicada e,
-  se você aceitar, baixa o instalador.
-- Links que você abre (PCGamingWiki, páginas da loja) vão para o seu navegador.
+```powershell
+git clone https://github.com/brunocsilva41/GamesHub.git
+cd GamesHub
+./build.ps1                    # app em dist/app
+./build.ps1 -Test              # + testes
+./build.ps1 -Test -Package     # + instalador em dist/package (com .sha256)
+./ci/Invoke-Pipeline.ps1       # a mesma pipeline da CI
+```
 
-Nada mais é enviado a lugar nenhum; todos os seus dados ficam no seu computador.
+Para desenvolver só a interface, abra `web/index.html` com qualquer servidor estático: sem o WebView2, ela usa uma
+ponte simulada com dados de exemplo ("modo demonstração"). Para usar o app com uma biblioteca descartável, defina
+a variável de ambiente `GAMESHUB_DATA_DIR` para outra pasta.
+
+```
+src/GamesHub/     app (C# WinForms + WebView2): Core, Library, Artwork, Integration, Integrations,
+                  QuickLaunch, Update, Shared
+src/Installer/    Setup.exe e Uninstall.exe
+web/              interface (HTML/CSS/JS puro, sem frameworks, funciona offline)
+tests/            testes
+ci/               pipeline (local e CI)
+docs/             documentação
+```
+
+Arquitetura, protocolo da ponte e modelo de segurança: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Pipeline de CI/CD
+
+Cada push e pull request passa por higiene do repositório (segredos, codificação, binários fixados por SHA-256),
+verificações da interface, build com avisos como erros, testes unitários, empacotamento, teste ponta a ponta num
+Windows limpo (instalar, abrir, atualizar e desinstalar) e análise de segurança (CodeQL, gitleaks). As versões são
+publicadas a partir de tags `vX.Y.Z`, com SHA-256 e atestação de proveniência. Veja
+[docs/PIPELINE.md](docs/PIPELINE.md) e [docs/RELEASING.md](docs/RELEASING.md).
+
+## Contribuindo
+
+Contribuições são bem-vindas! Leia o [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir um pull request. Para
+relatar um problema, use as [issues](https://github.com/brunocsilva41/GamesHub/issues); para vulnerabilidades,
+siga o [SECURITY.md](SECURITY.md). O histórico de versões está no [CHANGELOG.md](CHANGELOG.md).
 
 ## Licença
 
-© 2026 Bruno Silva. O WebView2 é distribuído sob a licença da Microsoft (`lib/WebView2-LICENSE.txt`).
+[MIT](LICENSE) © 2026 Bruno Silva.
+
+O Microsoft Edge WebView2 é distribuído sob a licença da Microsoft (`lib/WebView2-LICENSE.txt`). GamesHub não é
+afiliado à Valve, Epic Games, Riot Games, Hydra, SteamGridDB nem PCGamingWiki; os nomes e artes pertencem aos
+seus respectivos donos.

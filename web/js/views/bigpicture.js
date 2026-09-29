@@ -115,6 +115,9 @@ export function initBigPicture(root) {
           const first = shelves.querySelector('[data-nav]');
           if (first) first.focus({ preventScroll: true });
           else root.querySelector('[data-bp="exit"]').focus();
+          // focus() doesn't fire focusin while the window is inactive: show the first game explicitly.
+          const firstGame = shelves.querySelector('[data-game]');
+          if (firstGame) showGame(firstGame.dataset.game);
         });
       }
       return;

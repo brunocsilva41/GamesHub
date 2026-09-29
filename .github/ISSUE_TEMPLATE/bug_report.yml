@@ -1,0 +1,79 @@
+name: Relatar um problema
+description: Algo não funciona como deveria no GamesHub.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar! Antes de enviar, procure nas [issues existentes](https://github.com/brunocsilva41/GamesHub/issues?q=is%3Aissue) e confira as [perguntas frequentes](https://github.com/brunocsilva41/GamesHub/blob/main/docs/USER_GUIDE.md#perguntas-frequentes-e-solução-de-problemas).
+        **Vulnerabilidades de segurança não devem ser relatadas aqui:** veja o [SECURITY.md](https://github.com/brunocsilva41/GamesHub/blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Versão do GamesHub
+      description: Em Configurações → Sobre.
+      placeholder: "2.0.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Versão do Windows
+      description: "Pressione Win+R, digite `winver` e copie a versão e o build."
+      placeholder: "Windows 11 23H2 (build 22631)"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: O que aconteceu?
+      description: Descreva o problema. Capturas de tela ajudam muito.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que você esperava?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Abra ...
+        2. Clique em ...
+        3. Veja o erro ...
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Origem do jogo envolvido (se houver)
+      multiple: true
+      options:
+        - Pasta de jogos (atalho ou executável)
+        - Steam
+        - Epic Games
+        - Riot Games
+        - Hydra Launcher
+        - Não se aplica
+  - type: textarea
+    id: log
+    attributes:
+      label: Trecho do log
+      description: |
+        Abra a pasta em Configurações → Sobre → **Abrir logs** (ou `%LOCALAPPDATA%\GamesHub\logs\gameshub.log`) e cole as linhas próximas ao horário do problema, principalmente as com `WARN` ou `ERROR`.
+        Problemas de instalação: `%TEMP%\GamesHub\setup.log` ou `uninstall.log`.
+        Revise antes de colar para remover dados pessoais.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verificações
+      options:
+        - label: Estou usando a versão mais recente do GamesHub.
+          required: true
+        - label: Procurei e não encontrei uma issue igual.
+          required: true

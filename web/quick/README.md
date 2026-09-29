@@ -1,6 +1,6 @@
 # Quick-launch palette (`web/quick`)
 
-Owner: QUICK agent. Hosted by `src/GamesHub/QuickLaunch/QuickLaunchForm.cs` at
+Hosted by `src/GamesHub/QuickLaunch/QuickLaunchForm.cs` at
 `https://app.gameshub.example/quick/index.html` in its own WebView2 (shared environment via `WebViewEnv`).
 
 | File | Purpose |

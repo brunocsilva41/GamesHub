@@ -70,7 +70,9 @@ namespace GamesHub
                 CoreNative.SetProcessDPIAware(); // Windows older than 10 1703
             }
 
-            int hr = CoreNative.SetCurrentProcessExplicitAppUserModelID(AppInfo.AppUserModelId);
+            // An isolated instance gets its own taskbar identity so it never shares the real app's Jump List.
+            string appId = AppPaths.IsIsolated ? AppInfo.AppUserModelId + ".Isolated" : AppInfo.AppUserModelId;
+            int hr = CoreNative.SetCurrentProcessExplicitAppUserModelID(appId);
             if (hr != 0) Log.Warn("SetCurrentProcessExplicitAppUserModelID failed: 0x" + hr.ToString("X8"));
 
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;

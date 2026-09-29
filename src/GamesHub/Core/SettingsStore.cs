@@ -83,6 +83,11 @@ namespace GamesHub
                     }
                 }
                 bool migrated = false;
+                if (string.IsNullOrWhiteSpace(s.UpdateRepo))
+                {
+                    s.UpdateRepo = AppInfo.DefaultUpdateRepo; // installs from before the public repo existed
+                    migrated = true;
+                }
                 if (string.IsNullOrWhiteSpace(s.GamesDir))
                 {
                     s.GamesDir = MigrateGamesDir();

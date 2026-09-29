@@ -7,57 +7,88 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [2.0.0] - 2026-09-29
 
-Reescrita completa do GamesHub (antigo "GamesLounge"): novo app, nova interface e novo instalador.
+Primeira versão pública. Reescrita completa do GamesHub (antigo "GamesLounge"): novo app, nova interface e novo
+instalador.
 
 ### Adicionado
-- Importação automática de jogos da **Steam** (todas as bibliotecas), **Epic Games**, **Riot** e **Hydra**, junto
-  com os atalhos da pasta de jogos.
-- **Artes em HD** (capa, banner, hero e logo) baixadas automaticamente da Steam, com SteamGridDB opcional, busca
-  aproximada para jogos fora da Steam e artes personalizadas por arrastar e soltar.
-- **Página de detalhes** do jogo com informações (gêneros, descrição, desenvolvedora, lançamento, Metacritic),
-  filtro por gênero, link do PCGamingWiki, abrir pastas de saves/configurações, tamanho em disco e espaço livre.
-- **Favoritos, coleções** e jogos ocultos; ordenação por nome, recentes, tempo de jogo e data de adição.
-- **Tempo de jogo** e "jogado por último", medidos pelo app e importados da Steam.
-- **Variações de execução** agrupadas num único card ("Jogar ▾").
-- **Ações antes/depois de jogar** por jogo (abrir programa, fechar processo, plano de energia, dispositivo de
-  áudio, resolução, esperar), restauradas automaticamente quando o jogo fecha.
-- Aviso de **atualização pendente**, **Verificar arquivos** (Steam) e **desinstalar pela plataforma**.
-- Detecção de **atalhos quebrados** e limpeza da biblioteca.
-- Navegação completa por **teclado e controle**, modo **Big Picture** e **paleta de início rápido**
-  (Ctrl+Shift+Espaço, personalizável).
-- Tela de **Configurações** (pasta de jogos, fontes, comportamento ao jogar, bandeja, atalhos, aparência, artes,
-  tempo de jogo, atualizações).
-- **Bandeja** com jogos recentes, **Jump List** da barra de tarefas e **atalho global** (Ctrl+Alt+G).
+
+- Importação automática dos jogos instalados na **Steam** (todas as bibliotecas), **Epic Games**, **Riot Games**
+  e **Hydra Launcher**, junto com os atalhos (`.lnk`, `.url`, `.exe`) da pasta de jogos; novos jogos aparecem
+  sozinhos e **F5** reescaneia na hora.
+- Adicionar jogos arrastando arquivos para a janela, pelo seletor de arquivos (**Ctrl+N**) ou buscando na loja da
+  Steam.
+- **Artes em HD** (capa, cabeçalho, fundo, logotipo e ícone) baixadas automaticamente da Steam, com busca
+  aproximada para jogos fora da Steam, **SteamGridDB** opcional (com a chave gratuita do usuário) e artes
+  personalizadas por arrastar e soltar. Jogos que só têm ícone ganham um fundo desfocado a partir dele.
+- **Steam App ID `0`** marca um jogo como "não está na Steam": ele deixa de ser associado a jogos da Steam por
+  engano e passa a buscar artes só no SteamGridDB.
+- **Página de detalhes** com gêneros, descrição, desenvolvedora, data de lançamento e nota do Metacritic (loja da
+  Steam), tempo de jogo, tamanho em disco, aviso de **atualização pendente** (Steam), **Verificar arquivos**
+  (Steam) e **Desinstalar** pela Steam, pela Epic ou pelo desinstalador do Windows.
+- **Saves e configurações** localizados pelo **PCGamingWiki** (com o manifesto do Ludusavi como alternativa), com
+  botões para abrir as pastas, e link "Correções e dicas" para a página do jogo.
+- **Variações de execução** agrupadas num único card (**Jogar ▾**), com sugestões automáticas de agrupamento.
+- **Ações antes e depois de jogar**, por jogo e num perfil padrão: abrir ou fechar programa, plano de energia,
+  saída de áudio, resolução e aguardar; tudo é restaurado quando o jogo fecha, inclusive depois de um
+  encerramento inesperado do app.
+- **Tempo de jogo** e "jogado por último" medidos pelo app e **importados da Steam** (usa o maior valor, sem
+  contar sessões em dobro).
+- **Favoritos, coleções** e jogos ocultos; filtro por gênero e filtros rápidos ("Nunca jogados", "Sem jogar há
+  3+ meses", "Instalados"); ordenação por nome, jogados recentemente, mais jogados, adicionados recentemente e
+  maior tamanho; prateleira "Continuar jogando".
+- Detecção de **atalhos quebrados** (inclusive jogos do Hydra desinstalados) e **limpeza da biblioteca** em um
+  clique, com desfazer.
+- Navegação completa por **teclado e controle**, modo **Big Picture** e **busca rápida**: paleta flutuante aberta
+  de qualquer lugar com **Ctrl+Shift+Espaço** (personalizável).
+- **Bandeja** com jogos recentes, **Jump List** da barra de tarefas, **atalho global** (Ctrl+Alt+G,
+  personalizável) e início com o Windows.
+- Tela de **Configurações** (Biblioteca, Comportamento, Atalhos de teclado, Fontes e dados, Aparência, Artes,
+  Tempo de jogo, Automação padrão, Discos, Atualizações e Sobre) com espaço livre de cada unidade.
 - **Instalador de arquivo único** (`GamesHub-Setup-<versão>.exe`), por usuário e sem administrador, com modo
   silencioso (`/silent`), atualização da 1.x no mesmo lugar e desinstalador que pergunta se deve apagar seus dados.
-- **Atualização automática** opcional via GitHub Releases, com verificação SHA-256 do instalador.
+- **Atualização automática** pelas GitHub Releases deste repositório, com verificação SHA-256 do instalador.
 - Suporte a telas de alta densidade (DPI por monitor) e visual escuro consistente em todo o app.
 
 ### Alterado
-- Executável renomeado de `GamesLounge.exe` para `GamesHub.exe` (atalhos existentes são atualizados pelo instalador).
-- Dados movidos da pasta `_hub` dentro da pasta de jogos para `%LOCALAPPDATA%\GamesHub`; histórico e capas da
-  1.x são importados automaticamente na primeira execução (a pasta antiga não é alterada).
-- Interface refeita do zero em HTML/CSS/JS puro, sem servidor local nem portas abertas.
+
+- Executável renomeado de `GamesLounge.exe` para `GamesHub.exe` (atalhos existentes são atualizados pelo
+  instalador).
+- Dados movidos da pasta `_hub` dentro da pasta de jogos para `%LOCALAPPDATA%\GamesHub`; histórico e capas da 1.x
+  são importados automaticamente na primeira execução (a pasta antiga não é alterada).
+- Interface refeita do zero em HTML/CSS/JS puro sobre o WebView2, sem servidor local nem portas abertas.
 - Remover um jogo move o atalho para uma lixeira interna, com opção de desfazer.
 
 ### Corrigido
-- Várias instâncias do app podiam ficar abertas ao mesmo tempo; agora há uma única instância, que é trazida para a frente.
-- A interface dependia de um servidor HTTP local (`HttpListener`); agora a comunicação é direta com o WebView2,
-  sem portas abertas.
-- Pasta de jogos padrão fixa no código para um usuário específico; agora o padrão é `Área de Trabalho\jogos`
-  do usuário atual (ou a pasta escolhida no instalador).
+
+- Jogos fora da Steam (Riot, Roblox e outros) recebiam artes de jogos da Steam com nome parecido; agora usam o
+  SteamGridDB, que também tenta o nome sem sufixos como "Player" ou "Client".
+- Quando o SteamGridDB tem vários jogos com exatamente o mesmo nome, é escolhido o lançamento mais recente (em
+  geral, a versão de PC que o launcher instalou).
+- O controle agia na biblioteca mesmo com outro programa (o jogo) em foco; agora só responde com a janela do
+  GamesHub em foco.
+- Várias instâncias do app podiam ficar abertas ao mesmo tempo; agora há uma única instância, trazida para a
+  frente.
+- A pasta de jogos padrão era fixa no código; agora o padrão é `Área de Trabalho\jogos` do usuário atual (ou a
+  pasta escolhida no instalador).
 - A janela não lembrava tamanho, posição e estado maximizado.
-- Erros ignorados silenciosamente; agora são registrados em `%LOCALAPPDATA%\GamesHub\logs\gameshub.log`.
-- O instalador gravava o resultado em `%TEMP%\opencode`; agora usa `%TEMP%\GamesHub\setup-result.txt`.
-- O desinstalador só removia atalhos da Área de Trabalho/Menu Iniciar; agora remove também os fixados na barra de
-  tarefas, os da pasta Inicializar e a entrada de início com o Windows.
+- Erros eram ignorados silenciosamente; agora são registrados em `%LOCALAPPDATA%\GamesHub\logs\gameshub.log`.
+- O resultado do instalador agora fica em `%TEMP%\GamesHub\setup-result.txt`, junto com o log.
+- O desinstalador só removia atalhos da Área de Trabalho e do Menu Iniciar; agora remove também os fixados na
+  barra de tarefas, os da pasta Inicializar e a entrada de início com o Windows.
+
+### Segurança
+
+- A interface não depende mais de um servidor HTTP local (`HttpListener`): a comunicação é direta com o WebView2,
+  sem portas abertas, com navegação restrita ao app e abertura de links externos apenas via `https:`.
 
 ## [1.0.0]
 
-### Adicionado
-- Versão original ("GamesLounge"): grade de jogos a partir dos atalhos da pasta de jogos, capas da Steam,
-  registro simples de jogadas e ícone na bandeja.
+Versão original ("GamesLounge"), anterior a este repositório.
 
-[Não lançado]: https://github.com/OWNER/GamesHub/compare/v2.0.0...HEAD
-[2.0.0]: https://github.com/OWNER/GamesHub/compare/v1.0.0...v2.0.0
-[1.0.0]: https://github.com/OWNER/GamesHub/releases/tag/v1.0.0
+### Adicionado
+
+- Grade de jogos a partir dos atalhos da pasta de jogos, capas da Steam, registro simples de jogadas e ícone na
+  bandeja.
+
+[Não lançado]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/brunocsilva41/GamesHub/releases/tag/v2.0.0

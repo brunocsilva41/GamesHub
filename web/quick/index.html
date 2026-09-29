@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://art.gameshub.example data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'">
+  <title>Início rápido — GamesHub</title>
+  <!-- Shared design tokens (optional: quick.css has fallbacks for every variable). -->
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="quick.css">
+  <script type="module" src="quick.js"></script>
+</head>
+<body>
+  <main class="palette" aria-label="Início rápido do GamesHub">
+    <div class="search">
+      <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg>
+      <input id="q" type="text" role="combobox" aria-expanded="true" aria-controls="results" aria-autocomplete="list"
+             aria-activedescendant="" aria-describedby="hints" placeholder="Buscar jogo…" autocomplete="off" spellcheck="false">
+      <kbd class="esc" aria-hidden="true">Esc</kbd>
+    </div>
+    <div class="section" id="section" aria-hidden="true">Recentes</div>
+    <ul id="results" role="listbox" aria-label="Jogos" aria-labelledby="section"></ul>
+    <div id="empty" class="empty" hidden>
+      <strong>Nenhum jogo encontrado</strong>
+      <span>Tente outro nome, as iniciais (ex.: “lmsh”) ou a plataforma.</span>
+    </div>
+    <footer class="hints" id="hints">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+      <span><kbd>Enter</kbd> jogar</span>
+      <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> abrir pasta</span>
+      <span><kbd>Esc</kbd> fechar</span>
+      <span id="status" class="status" role="status" aria-live="polite"></span>
+    </footer>
+  </main>
+</body>
+</html>

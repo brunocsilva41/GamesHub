@@ -32,6 +32,7 @@ namespace GamesHub
         private readonly Bridge _bridge;
         private readonly TrayController _tray;
         private readonly GlobalHotkey _hotkey;
+        private readonly QuickLaunchController _quick;
         private readonly EventCoalescer _jumpListRefresh;
         private readonly HashSet<string> _running = new HashSet<string>();
         private string _jumpListSignature;
@@ -73,6 +74,9 @@ namespace GamesHub
             _hotkey = new GlobalHotkey();
             _hotkey.Pressed += OnHotkey;
             RegisterHotkey(notify: false);
+
+            _quick = new QuickLaunchController(library, settings);
+            _quick.Launched += (id, r) => RunOnUi(() => OnQuickLaunched(r));
 
             _jumpListRefresh = new EventCoalescer(RefreshJumpList, 2000);
             Catalog.Changed += _jumpListRefresh.Signal;
@@ -158,6 +162,7 @@ namespace GamesHub
             _bridge.Attach(core);
             if (_webReady) return;
             _webReady = true;
+            StartQuickLaunch();
             if (Settings.CheckUpdates && !string.IsNullOrWhiteSpace(Settings.UpdateRepo))
                 Task.Run(StartupUpdateCheck);
         }
@@ -357,6 +362,29 @@ namespace GamesHub
             });
         }
 
+        // ------------------------------------------------------------------ quick launch
+
+        private void StartQuickLaunch()
+        {
+            try
+            {
+                OpResult r = _quick.Start();
+                if (r != null && !r.Ok && Settings.QuickLaunchEnabled) _bridge.Toast(r.Message, "err");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Quick launch failed to start", ex);
+            }
+        }
+
+        private void OnQuickLaunched(OpResult r)
+        {
+            if (r == null) return;
+            if (r.Ok) ApplyOnLaunch();
+            else if (Form.Visible) _bridge.Toast(r.Message, "err");
+            else _tray.ShowBalloon(AppInfo.Name, r.Message, ToolTipIcon.Error);
+        }
+
         // ------------------------------------------------------------------ hotkey / settings
 
         private void OnHotkey()
@@ -411,6 +439,11 @@ namespace GamesHub
                 }
             }
             if (r.Has("hotkey") || r.Has("hotkeyEnabled")) RegisterHotkey(notify: true);
+            if (r.Has("quickLaunchHotkey") || r.Has("quickLaunchEnabled") || r.Has("hotkey"))
+            {
+                OpResult q = _quick.ApplyHotkey(Settings.QuickLaunchHotkey);
+                if (q != null && !q.Ok && Settings.QuickLaunchEnabled) _bridge.Toast(q.Message, "err");
+            }
 
             bool sourcesChanged = r.Has("gamesDir") || r.Has("importSteam") || r.Has("importEpic")
                                   || r.Has("importRiot") || r.Has("importHydra");
@@ -456,6 +489,7 @@ namespace GamesHub
             _jumpListRefresh.Dispose();
             Catalog.Changed -= _jumpListRefresh.Signal;
             _hotkey.Dispose();
+            _quick.Dispose();
             _tray.Dispose();
             _bridge.Dispose();
             try

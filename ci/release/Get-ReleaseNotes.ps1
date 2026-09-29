@@ -11,7 +11,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $changelog = Get-Content (Join-Path $root 'CHANGELOG.md') -Raw
 $esc = [regex]::Escape($Version)
-$m = [regex]::Match($changelog, "(?ms)^## \[$esc\] - \d{4}-\d{2}-\d{2}\s*$(.*?)(?=^## \[|\z)")
+$m = [regex]::Match($changelog, "(?ms)^## \[$esc\] - \d{4}-\d{2}-\d{2}\s*`$(.*?)(?=^## \[|\z)")
 if (-not $m.Success) { throw "CHANGELOG has no section for $Version" }
 $body = ($m.Groups[1].Value -replace '(?m)^\[[^\]]+\]:.*$', '').Trim()
 

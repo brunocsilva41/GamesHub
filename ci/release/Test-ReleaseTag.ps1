@@ -15,7 +15,7 @@ try {
 
     $changelog = Get-Content 'CHANGELOG.md' -Raw
     $esc = [regex]::Escape($version)
-    $m = [regex]::Match($changelog, "(?ms)^## \[$esc\] - (\d{4}-\d{2}-\d{2})\s*$(.*?)(?=^## \[|\z)")
+    $m = [regex]::Match($changelog, "(?ms)^## \[$esc\] - (\d{4}-\d{2}-\d{2})\s*`$(.*?)(?=^## \[|\z)")
     Add-Check "CHANGELOG section for $version" $m.Success
     if ($m.Success) {
         $body = ($m.Groups[2].Value -replace '(?m)^\[[^\]]+\]:.*$', '').Trim()

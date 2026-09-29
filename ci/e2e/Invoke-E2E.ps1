@@ -254,6 +254,18 @@ function Stop-Owned([int[]]$Pids) {
     }
 }
 
+# DevTools target list over loopback. No proxy (runner/corporate proxy settings must never apply to 127.0.0.1)
+# and a generous timeout: a cold WebView2 on a CI VM can take seconds to answer the first request.
+function Get-DevToolsList([int]$Port) {
+    $req = [Net.HttpWebRequest]::Create("http://127.0.0.1:$Port/json/list")
+    $req.Proxy = $null
+    $req.Timeout = 8000
+    $req.ReadWriteTimeout = 8000
+    $resp = $req.GetResponse()
+    try { $text = (New-Object IO.StreamReader($resp.GetResponseStream())).ReadToEnd() } finally { $resp.Dispose() }
+    return @($text | ConvertFrom-Json)
+}
+
 function Read-AppLog([string]$DataDir) {
     $f = Join-Path $DataDir 'logs\gameshub.log'
     if (Test-Path -LiteralPath $f) { return [IO.File]::ReadAllText($f) }
@@ -289,13 +301,14 @@ function Invoke-AppSuite([string]$Exe, [string]$GamesDir, [string]$Label) {
 
         $ok = Test-Step "${pre}cdp: DevTools endpoint up" {
             $found = Wait-Until {
-                try { @(Invoke-RestMethod "http://127.0.0.1:$port/json/list" -TimeoutSec 2 | Where-Object { $_.type -eq 'page' -and $_.url -eq $MainUrl }).Count -eq 1 }
+                try { @(Get-DevToolsList $port | Where-Object { $_.type -eq 'page' -and $_.url -eq $MainUrl }).Count -eq 1 }
                 catch { $false }
             } ($TimeoutSec * 1000) 300
             if (-not $found) {
-                $pages = try { (Invoke-RestMethod "http://127.0.0.1:$port/json/list" -TimeoutSec 2 | ForEach-Object { "$($_.type) $($_.url)" }) -join '; ' } catch { "endpoint down: $($_.Exception.Message)" }
+                $pages = try { (Get-DevToolsList $port | ForEach-Object { "$($_.type) $($_.url)" }) -join '; ' } catch { "endpoint down: $($_.Exception.Message)" }
                 $tail = ((Read-AppLog $data) -split "`n" | Select-Object -Last 6) -join ' | '
-                throw "no page $MainUrl on port $port. DevTools: [$pages]. App log: $tail"
+                $listen = (netstat -ano | Select-String ":$port\s" | ForEach-Object { ($_.Line -replace '\s+', ' ').Trim() } | Select-Object -First 4) -join ' / '
+                throw "no page $MainUrl on port $port. DevTools: [$pages]. netstat: [$listen]. App log: $tail"
             }
             "port $port"
         }
@@ -311,7 +324,7 @@ function Invoke-AppSuite([string]$Exe, [string]$GamesDir, [string]$Label) {
             if (-not (Wait-Until { (Read-AppLog $data) -match 'Activation from another instance' } 5000)) { throw "no 'Activation from another instance' in the log" }
             $procs = @(Get-ExeProcesses $Exe)
             if ($procs.Count -ne 1) { throw "$($procs.Count) GamesHub processes for this exe" }
-            $pages = @(Invoke-RestMethod "http://127.0.0.1:$port/json/list" | Where-Object { $_.type -eq 'page' -and $_.url -eq $MainUrl })
+            $pages = @(Get-DevToolsList $port | Where-Object { $_.type -eq 'page' -and $_.url -eq $MainUrl })
             if ($pages.Count -ne 1) { throw "$($pages.Count) main windows" }
             "exit 0 in $([int]($second.ExitTime - $second.StartTime).TotalMilliseconds) ms, activation logged, 1 process, 1 window"
         } | Out-Null

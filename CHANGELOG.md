@@ -75,11 +75,18 @@ instalador.
 - O resultado do instalador agora fica em `%TEMP%\GamesHub\setup-result.txt`, junto com o log.
 - O desinstalador só removia atalhos da Área de Trabalho e do Menu Iniciar; agora remove também os fixados na
   barra de tarefas, os da pasta Inicializar e a entrada de início com o Windows.
+- Com dois jogos abertos quase ao mesmo tempo usando "antes e depois de jogar", a resolução, o áudio ou o plano
+  de energia podiam voltar para o valor do outro jogo, e não para o original.
+- Uma letra de unidade sozinha (por exemplo `D:`) era tratada como pasta comum ao calcular o tamanho em disco,
+  o que podia medir a unidade inteira.
+- Atalhos do Hydra de jogos que não estão mais instalados aparecem como "Atalho quebrado".
 
 ### Segurança
 
 - A interface não depende mais de um servidor HTTP local (`HttpListener`): a comunicação é direta com o WebView2,
   sem portas abertas, com navegação restrita ao app e abertura de links externos apenas via `https:`.
+- Política de segurança de conteúdo (CSP) estrita na janela principal e na busca rápida: só scripts do próprio app.
+- Cada versão é publicada pela pipeline pública, com SHA-256 e atestação de procedência verificáveis.
 
 ## [1.0.0]
 

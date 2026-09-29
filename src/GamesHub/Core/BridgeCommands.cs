@@ -36,7 +36,7 @@ namespace GamesHub
                 case "window": return Done(WindowCommand(args));
                 case "openExternal": return Done(OpenExternal(args));
                 case "openDataFolder":
-                    ShellActions.OpenFolder(AppPaths.DataDir);
+                    ShellActions.OpenFolder(Json.Str(args, "sub") == "logs" ? AppPaths.LogDir : AppPaths.DataDir);
                     return Done(BridgeResult.Success(Empty()));
                 case "checkUpdate": return CheckUpdate();
                 case "installUpdate": return InstallUpdate();
@@ -244,7 +244,7 @@ namespace GamesHub
                 _app.LastUpdate = info;
             }
             if (info == null || !info.Available)
-                return BridgeResult.Fail("Nenhuma atualização disponível.");
+                return BridgeResult.Fail((_app.Updater as UpdateChecker)?.LastError ?? "Nenhuma atualização disponível.");
 
             _lastProgress = -1;
             bool started = await Task.Run(() => _app.Updater.DownloadAndInstallAsync(info, ReportProgress));
@@ -253,6 +253,7 @@ namespace GamesHub
                 Log.Info("Update " + info.Version + " installer started; exiting");
                 _app.ExitSoon(1500); // let the installer replace our files
             }
+            if (!started) return BridgeResult.Fail((_app.Updater as UpdateChecker)?.LastError ?? "Não foi possível baixar a atualização.");
             return BridgeResult.Success(new Dictionary<string, object> { ["started"] = started });
         }
 

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace GamesHub
 {
-    /// <summary>Parsed command line: --minimized, --show, --debug, --launch &lt;gameId&gt;.</summary>
+    /// <summary>Parsed command line: --minimized, --show, --debug, --quit, --launch &lt;gameId&gt;.</summary>
     public sealed class StartupArgs
     {
         /// <summary>Start hidden in the tray (autostart).</summary>
@@ -15,9 +15,11 @@ namespace GamesHub
         public bool Debug;
         /// <summary>Game id to launch through the library (Jump List), or null.</summary>
         public string LaunchId;
+        /// <summary>Ask the running instance to exit for real (used by Setup/Uninstall before replacing files).</summary>
+        public bool Quit;
 
         /// <summary>True when the command line asks for nothing specific (plain start → show the window).</summary>
-        public bool IsPlain => !Minimized && !Show && LaunchId == null;
+        public bool IsPlain => !Minimized && !Show && !Quit && LaunchId == null;
 
         public static StartupArgs Parse(IList<string> args)
         {
@@ -36,6 +38,9 @@ namespace GamesHub
                         break;
                     case "show":
                         r.Show = true;
+                        break;
+                    case "quit":
+                        r.Quit = true;
                         break;
                     case "debug":
                         r.Debug = true;

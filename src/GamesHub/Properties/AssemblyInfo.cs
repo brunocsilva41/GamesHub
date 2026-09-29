@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("GamesHub")]
 [assembly: AssemblyProduct("GamesHub")]
 [assembly: AssemblyDescription("Biblioteca leve de jogos para Windows")]
+[assembly: AssemblyCompany("Bruno Silva")]
 [assembly: AssemblyCopyright("© 2026 Bruno Silva")]
 [assembly: ComVisible(false)]
 [assembly: AssemblyVersion("2.0.0.0")]

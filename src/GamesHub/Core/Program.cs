@@ -29,6 +29,7 @@ namespace GamesHub
                     return sent ? 0 : 1;
                 }
 
+                if (args.Quit) return 0; // nothing running to close
                 AppPaths.EnsureDirs();
                 InstallExceptionHandlers();
                 Log.Info(AppInfo.Name + " " + AppInfo.Version + " starting (" + string.Join(" ", argv) + ")");

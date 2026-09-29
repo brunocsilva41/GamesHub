@@ -12,7 +12,7 @@ namespace GamesHub
 {
     public sealed class GameCatalog : IDisposable
     {
-        private static readonly TimeSpan HealthTtl = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan HealthTtl = TimeSpan.FromSeconds(60);
 
         public readonly AppSettings Settings;
         public readonly ILibraryService Library;
@@ -32,6 +32,9 @@ namespace GamesHub
         private readonly ConcurrentDictionary<string, byte> _sizing = new ConcurrentDictionary<string, byte>();
         private readonly ConcurrentDictionary<string, byte> _prefetched = new ConcurrentDictionary<string, byte>();
         private readonly ConcurrentDictionary<string, byte> _automationActive = new ConcurrentDictionary<string, byte>();
+        private readonly HydraSource _hydra = new HydraSource();
+        private HashSet<string> _hydraInstalled;
+        private DateTime _hydraAt;
         private volatile bool _disposed;
 
         public GameCatalog(AppSettings settings, ILibraryService library, IArtworkService art)
@@ -187,6 +190,35 @@ namespace GamesHub
             }
             g.Broken = h.Broken;
             g.BrokenReason = h.Reason ?? "";
+            if (!g.Broken && IsUninstalledHydraShortcut(g))
+            {
+                g.Broken = true;
+                g.BrokenReason = "Este jogo não está mais instalado no Hydra.";
+            }
+        }
+
+        /// <summary>Hydra shortcuts launch Hydra.exe (which exists) even when the game itself is gone, so the
+        /// file check can't see it: compare the objectId with the games Hydra reports as installed.</summary>
+        private bool IsUninstalledHydraShortcut(Game g)
+        {
+            if (g.Source != "folder" || string.IsNullOrEmpty(g.SteamAppId) || !Settings.ImportHydra) return false;
+            if ((g.LaunchTarget + " " + g.LaunchArgs).IndexOf("hydralauncher://", StringComparison.OrdinalIgnoreCase) < 0) return false;
+            HashSet<string> installed = HydraInstalled();
+            return installed.Count > 0 && !installed.Contains(g.SteamAppId);
+        }
+
+        private HashSet<string> HydraInstalled()
+        {
+            lock (_hydra)
+            {
+                if (_hydraInstalled == null || DateTime.UtcNow - _hydraAt > HealthTtl)
+                {
+                    try { _hydraInstalled = new HashSet<string>(_hydra.Scan().Select(x => x.SteamAppId).Where(x => !string.IsNullOrEmpty(x))); }
+                    catch (Exception ex) { Log.Warn("Hydra scan for health failed", ex); _hydraInstalled = new HashSet<string>(); }
+                    _hydraAt = DateTime.UtcNow;
+                }
+                return _hydraInstalled;
+            }
         }
 
         private void ApplySize(Game g)

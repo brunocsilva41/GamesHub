@@ -284,6 +284,11 @@ namespace GamesHub
         private void HandleActivation(StartupArgs a)
         {
             Log.Info("Activation from another instance");
+            if (a.Quit)
+            {
+                Exit();
+                return;
+            }
             if (a.LaunchId != null)
             {
                 if (_libraryReady) LaunchFromShell(a.LaunchId);

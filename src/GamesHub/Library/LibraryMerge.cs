@@ -72,8 +72,15 @@ namespace GamesHub
             if (f.Exe.Length > 0 && i.Exe.Length > 0 && PathEq(f.Exe, i.Exe)) return true;
             if (f.InstallDir.Length > 0 && i.InstallDir.Length > 0 && PathEq(f.InstallDir, i.InstallDir)) return true;
             if (f.Exe.Length > 0 && i.InstallDir.Length > 0 && IsUnder(f.Exe, i.InstallDir)) return true;
+            // Launcher shortcuts (e.g. Riot Client --launch-product=lion) carry no game path; within the same
+            // launcher platform an identical name is a safe match.
+            if (i.Source != GameRules.SourceSteam && i.Source != GameRules.SourceEpic && f.Platform == i.Platform
+                && f.Platform != "PC" && NameKey(f.Name) == NameKey(i.Name)) return true;
             return false;
         }
+
+        private static string NameKey(string name) =>
+            new string((name ?? "").ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
 
         public static bool PathEq(string a, string b) =>
             string.Equals(a.TrimEnd('\\', '/'), b.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);

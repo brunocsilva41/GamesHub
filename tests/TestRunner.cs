@@ -23,6 +23,8 @@ namespace GamesHub.Tests
     {
         public static int Main()
         {
+            // Keep logs/caches written by code under test away from the user's real %LOCALAPPDATA%GamesHub.
+            Environment.SetEnvironmentVariable("GAMESHUB_DATA_DIR", System.IO.Path.Combine(System.IO.Path.GetTempPath(), "gameshub-tests-data"));
             int pass = 0, fail = 0;
             var classes = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(t => t.IsClass && t.IsAbstract && t.IsSealed && t.Name.EndsWith("Tests")).OrderBy(t => t.Name);

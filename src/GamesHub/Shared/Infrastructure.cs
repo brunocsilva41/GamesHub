@@ -27,8 +27,10 @@ namespace GamesHub
     public static class AppPaths
     {
         public static readonly string AppDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
-        public static readonly string DataDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppInfo.Name);
+        /// <summary>GAMESHUB_DATA_DIR overrides the location (the test runner uses it to stay off real data).</summary>
+        public static readonly string DataDir =
+            Environment.GetEnvironmentVariable("GAMESHUB_DATA_DIR") is string d && d.Length > 0 ? d
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppInfo.Name);
 
         public static string WebDir => Path.Combine(AppDir, "web");
         public static string SettingsFile => Path.Combine(DataDir, "settings.json");

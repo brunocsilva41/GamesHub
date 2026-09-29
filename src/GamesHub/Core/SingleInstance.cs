@@ -126,7 +126,8 @@ namespace GamesHub
         {
             try
             {
-                if (Json.DeserializeObject(payload) is ArrayList list)
+                // JavaScriptSerializer yields object[] for JSON arrays (ArrayList only when the target type asks for it).
+                if (Json.DeserializeObject(payload) is IEnumerable list && !(list is string))
                     return list.Cast<object>().Select(o => Convert.ToString(o) ?? "").ToArray();
             }
             catch (Exception ex)

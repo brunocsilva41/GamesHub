@@ -71,6 +71,7 @@ namespace GamesHub
         /// <summary>The user/source app id, else the cached fuzzy-match result, else "".</summary>
         private string EffectiveAppId(GameRef g)
         {
+            if (g.SteamAppId == ArtKind.NotOnSteam) return "";
             if (ArtKind.IsAppId(g.SteamAppId)) return g.SteamAppId;
             return _index.TryGetMatch(MatchKey(g.Name), out string id) ? id : "";
         }
@@ -82,7 +83,8 @@ namespace GamesHub
             string gk = ArtCache.GameKey(g.Id);
             if (art.Icon == null && g.HasIconSource && !_index.IsNegative(NegIcon(gk))) return true;
             if (!_settings.AutoArtwork) return false;
-            bool nonGame = !ArtKind.IsAppId(g.SteamAppId) && NameMatcher.IsLikelyNonGame(g.Name, g.Platform);
+            bool nonGame = g.SteamAppId == ArtKind.NotOnSteam
+                           || (!ArtKind.IsAppId(g.SteamAppId) && NameMatcher.IsLikelyNonGame(g.Name, g.Platform));
             if (nonGame) return false;
             if (appId.Length == 0 && !_index.TryGetMatch(MatchKey(g.Name), out _)) return true;
             foreach (string kind in ArtKind.Remote)

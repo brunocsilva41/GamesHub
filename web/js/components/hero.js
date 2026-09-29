@@ -36,28 +36,31 @@ export function updateHero(el, g, opts = {}) {
   el.dataset.game = g.id;
   el.style.setProperty('--hero-fallback', gradientFor(g.id));
 
-  const bgKey = JSON.stringify([g.id, a.hero, a.header, a.capsule]);
+  const bgKey = JSON.stringify([g.id, a.hero, a.header, a.capsule, a.icon]);
   if (el._bgKey !== bgKey) {
     el._bgKey = bgKey;
     const img = el.querySelector('.hero-img');
     img.classList.remove('loaded');
-    el.classList.remove('has-bg', 'bg-soft');
-    const urls = [a.hero, a.header, a.capsule].filter(Boolean);
+    el.classList.remove('has-bg', 'bg-soft', 'bg-icon');
+    // Last resort: the game's own icon, hugely blurred, gives a backdrop in the game's colors.
+    const urls = [a.hero, a.header, a.capsule, a.icon].filter(Boolean);
     loadChain(img, urls, (url) => {
       if (!url) { img.removeAttribute('src'); return; }
       el.classList.add('has-bg');
       el.classList.toggle('bg-soft', url !== a.hero); // non-hero art is blurred to hide low resolution
+      el.classList.toggle('bg-icon', url === a.icon && ![a.hero, a.header, a.capsule].includes(url));
       requestAnimationFrame(() => img.classList.add('loaded'));
     });
   }
 
   const title = el.querySelector('.hero-title');
   title.textContent = g.name;
-  const logoKey = JSON.stringify([g.id, a.logo]);
+  const logoKey = JSON.stringify([g.id, a.logo, a.icon]);
   if (el._logoKey !== logoKey) {
     el._logoKey = logoKey;
     const logo = el.querySelector('.hero-logo');
     logo.hidden = true;
+    logo.classList.remove('is-icon');
     title.classList.remove('sr-only');
     logo.alt = g.name;
     if (a.logo) {
@@ -65,6 +68,13 @@ export function updateHero(el, g, opts = {}) {
         if (!url) return;
         logo.hidden = false;
         title.classList.add('sr-only');
+      });
+    } else if (a.icon && !a.hero && !a.header) {
+      // No logo and no real art: show the crisp icon above the title (title stays visible).
+      loadChain(logo, [a.icon], (url) => {
+        if (!url) return;
+        logo.classList.add('is-icon');
+        logo.hidden = false;
       });
     } else logo.removeAttribute('src');
   }

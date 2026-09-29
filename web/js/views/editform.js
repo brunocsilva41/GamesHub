@@ -14,7 +14,7 @@ export function initEditForm(panel, getId) {
         <input class="input" name="name" type="text" maxlength="120" spellcheck="false"></label>
       <label class="field"><span class="field-label">Argumentos de inicialização</span>
         <input class="input mono" name="launchArgs" type="text" placeholder="Ex.: -novid -fullscreen" spellcheck="false"></label>
-      <label class="field"><span class="field-label">Steam App ID <small>usado para buscar as artes</small></span>
+      <label class="field"><span class="field-label">Steam App ID <small>usado para buscar as artes · use 0 se não for um jogo da Steam</small></span>
         <input class="input mono" name="steamAppId" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ex.: 730" spellcheck="false"></label>
       <div class="field steam-find">
         <span class="field-label">Encontrar na Steam</span>

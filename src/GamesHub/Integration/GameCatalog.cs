@@ -134,6 +134,7 @@ namespace GamesHub
         /// <summary>Steam app id for store/wiki lookups: explicit, else the artwork matcher's result.</summary>
         public string MatchedAppId(Game g)
         {
+            if (g.SteamAppId == ArtKind.NotOnSteam) return "";
             if (!string.IsNullOrEmpty(g.SteamAppId)) return g.SteamAppId;
             try
             {

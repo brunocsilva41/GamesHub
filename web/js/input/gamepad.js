@@ -55,8 +55,12 @@ export function initGamepad() {
       pad.buttons.forEach((btn, i) => { if (isDown(btn)) pressed.add(i); });
       dir = dir || direction(pad);
     }
-    if (!primed) {
+    // Pads are global: WebView2 keeps delivering input while another app (e.g. the game) has focus.
+    // Only act while our window is focused; otherwise just track state so held buttons don't fire on refocus.
+    if (!primed || !document.hasFocus()) {
       primed = true;
+      prev.clear();
+      held.clear();
       for (const i of pressed) prev.set(i, true);
       if (dir) held.set(dir, { since: now, last: now + 1e9 });
       schedule();

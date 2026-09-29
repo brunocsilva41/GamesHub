@@ -402,3 +402,19 @@ body.pad-active .kb { display: none; }
 .pad-hints span { display: inline-flex; align-items: center; gap: 6px; }
 body.pad-active:not(.bp-on):not(.has-modal) .pad-hints { display: flex; animation: fade-in var(--dur) both; }
 body.pad-active .toasts { bottom: 64px; }
+
+/* Icon-only art: the icon itself, enlarged and heavily blurred, becomes a backdrop in the game's colors. */
+.art.has-icon::before {
+  content: ''; position: absolute; inset: -30%; z-index: 0;
+  background: var(--art-icon) center / 60% no-repeat, var(--art-bg);
+  filter: blur(26px) saturate(1.7) brightness(0.7); transform: scale(1.15);
+}
+.art.has-icon::after {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: radial-gradient(120% 90% at 50% 40%, transparent 30%, rgba(8, 10, 18, 0.55));
+}
+.art.has-icon .art-icon { width: 38%; max-width: 96px; filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55)); }
+
+/* Hero with only an icon: color wash from the blurred icon + the crisp icon above the title. */
+.hero.bg-icon .hero-img { object-fit: contain; object-position: 75% 50%; filter: blur(70px) saturate(1.9) brightness(0.75); transform: scale(1.6); }
+.hero-logo.is-icon { max-height: 88px; max-width: 88px; margin-bottom: var(--sp-3); border-radius: var(--r-md); }

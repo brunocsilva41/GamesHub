@@ -48,6 +48,9 @@ namespace GamesHub
         }
 
         /// <summary>True when the id is a plausible Steam app id (digits only, non-zero).</summary>
+        /// <summary>Steam App ID override meaning "this game is not on Steam": no matching, no Steam art.</summary>
+        public const string NotOnSteam = "0";
+
         public static bool IsAppId(string s)
         {
             if (string.IsNullOrEmpty(s) || s.Length > 10) return false;

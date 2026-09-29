@@ -135,6 +135,7 @@ namespace GamesHub
                 result += await _tasks.Run("icon:" + gk, () => ExtractIconAsync(g, gk)).ConfigureAwait(false);
 
             if (!_settings.AutoArtwork) return result;
+            if (g.SteamAppId == ArtKind.NotOnSteam) return result; // user said: not a Steam game
             bool knownApp = ArtKind.IsAppId(g.SteamAppId);
             if (!knownApp && NameMatcher.IsLikelyNonGame(g.Name, g.Platform)) return result;
 

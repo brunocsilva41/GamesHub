@@ -36,8 +36,13 @@ export function setArt(box, { sources = [], icon = null, name = '', seed = '' })
   mono.textContent = monogram(name);
 
   const showIcon = () => {
-    if (!icon) { ico.hidden = true; ico.removeAttribute('src'); box.classList.remove('has-icon'); return; }
-    ico.onload = () => { if (box._artToken === token) { ico.hidden = false; box.classList.add('has-icon'); } };
+    if (!icon) { ico.hidden = true; ico.removeAttribute('src'); box.classList.remove('has-icon'); box.style.removeProperty('--art-icon'); return; }
+    ico.onload = () => {
+      if (box._artToken !== token) return;
+      ico.hidden = false;
+      box.classList.add('has-icon');
+      box.style.setProperty('--art-icon', `url("${icon}")`); // blurred backdrop in the icon's colors
+    };
     ico.onerror = () => { if (box._artToken === token) { ico.hidden = true; box.classList.remove('has-icon'); } };
     ico.src = icon;
   };

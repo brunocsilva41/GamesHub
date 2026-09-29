@@ -43,7 +43,7 @@ namespace GamesHub
             Action<int, int> union = (a, b) => { int ra = find(a), rb = find(b); if (ra != rb) parent[Math.Max(ra, rb)] = Math.Min(ra, rb); };
 
             LinkBy(cands, g => Platform(g) + "|" + VariantNames.BaseKey(g.Name), g => VariantNames.BaseKey(g.Name).Length >= 2, union);
-            LinkBy(cands, g => (g.SteamAppId ?? "").Trim(), g => IsAppId(g.SteamAppId), union);
+            LinkBy(cands, g => (g.SteamAppId ?? "").Trim(), g => IsAppId(g.SteamAppId) && g.SteamAppId.Trim() != "0", union); // "0" = marked not-on-Steam
             LinkBy(cands, g => Platform(g) + "|" + PathKey(g.Exe), g => UsableExe(g.Exe), union);
             LinkBy(cands, g => Platform(g) + "|" + PathKey(g.InstallDir), g => UsableDir(g.InstallDir), union);
 

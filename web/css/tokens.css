@@ -1,0 +1,102 @@
+/* Design tokens — GamesHub v2. Other UI surfaces (e.g. web/quick) import this file: keep names stable. */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/outfit-var.woff2') format('woff2');
+}
+
+:root {
+  /* Surfaces (dark, layered) */
+  --bg: #0b0d14;
+  --bg-elev: #10131c;
+  --surface: #141824;
+  --surface-2: #1a1f2d;
+  --surface-3: #222838;
+  --overlay: rgba(6, 8, 12, 0.66);
+
+  /* Lines */
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.12);
+  --line-3: rgba(255, 255, 255, 0.2);
+
+  /* Text (AA on --bg / --surface) */
+  --text: #eceef5;
+  --text-2: #b3b9cc;
+  --text-3: #8a91a8;
+  --text-on-accent: #ffffff;
+
+  /* Accent: violet -> cyan */
+  --violet: #7c5cff;
+  --cyan: #22d3ee;
+  --accent: #8b72ff;
+  --accent-soft: rgba(124, 92, 255, 0.16);
+  --accent-line: rgba(139, 114, 255, 0.45);
+  --grad: linear-gradient(135deg, #7c5cff 0%, #22d3ee 100%);
+  --grad-strong: linear-gradient(135deg, #6d4ef5 0%, #17b8d4 100%);
+
+  /* Status */
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --danger-strong: #dc3545;
+  --live: #34d399;
+
+  /* Spacing scale (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 48px;
+  --sp-10: 64px;
+
+  /* Radius */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-pill: 999px;
+
+  /* Type */
+  --font: 'Outfit', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-base: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+  --fs-3xl: 36px;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.5);
+
+  /* Focus */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-slow: 280ms;
+
+  /* Layout */
+  --titlebar-h: 40px;
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 64px;
+  --card-min: 208px;
+  --card-min-portrait: 150px;
+}

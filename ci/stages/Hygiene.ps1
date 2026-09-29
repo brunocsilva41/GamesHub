@@ -24,7 +24,7 @@ foreach ($f in $files) {
     $full = Join-Path $root $f
     if (-not (Test-Path $full)) { continue }   # deleted in the working tree
     $ext = [IO.Path]::GetExtension($f).ToLowerInvariant()
-    $size = (Get-Item $full).Length
+    $size = (Get-Item -LiteralPath $full -Force).Length
     if ($size -gt $maxBytes) { Add-Check 'file size ≤ 3 MB' $false "$([math]::Round($size / 1MB, 1)) MB" -File $f }
     if ($binaryExt -contains $ext) {
         if ($ext -in '.exe', '.pdb', '.zip') { Add-Check 'no build output committed' $false 'executables/archives never belong in git' -File $f }

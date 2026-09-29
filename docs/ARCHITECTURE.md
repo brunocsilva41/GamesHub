@@ -162,3 +162,47 @@ SettingsDto = AppSettings fields in camelCase (gamesDir, importSteam, importEpic
 When `window.chrome?.webview` is absent (page opened directly in a browser), the UI uses an in-page
 mock bridge (`web/js/mock.js`) with realistic sample data so it can be developed/screenshotted
 standalone, and shows a small "Modo demonstração" badge. The mock is never used inside the app.
+
+---
+
+# Wave 2 (runs in parallel with wave 1)
+
+Contracts: `src/GamesHub/Shared/Contracts.Wave2.cs` (+ new fields on `Game` and `AppSettings` marked "Wave 2").
+Shared WebView2 environment: **every WebView must use `WebViewEnv.GetAsync()` / `WebViewEnv.MapHosts()`**
+(`Shared/WebViewEnv.cs`) — two environments on the same user-data folder with different options fail.
+
+**Compile/test with `powershell -NoProfile -File tools/check.ps1 -Name <yourAgent> -Test [-Filter <yourFolder>]`**
+— it builds into a private `%TEMP%\gameshub-check\<name>` folder so parallel agents don't clobber `dist/`.
+
+| Agent | Owns (exclusive) | Implements |
+|---|---|---|
+| **STEAMDATA** | `src/GamesHub/Integrations/Steam/**`, `tests/Integrations/Steam/**` | `ISteamLocalData` — Steam play time/last played import, update-pending flag, size on disk |
+| **INSTALL** | `src/GamesHub/Integrations/Install/**`, `tests/Integrations/Install/**` | `IInstallInspector` — broken shortcuts, folder sizes, drives, uninstallers |
+| **PCGW** | `src/GamesHub/Integrations/Pcgw/**`, `tests/Integrations/Pcgw/**` | `IPcgwService` — wiki link, save/config locations |
+| **META** | `src/GamesHub/Integrations/Metadata/**`, `tests/Integrations/Metadata/**` | `IMetadataService` — genres, description, dates, devs |
+| **AUTO** | `src/GamesHub/Integrations/Automation/**`, `tests/Integrations/Automation/**` | `IAutomationService` — before/after actions |
+| **VARIANTS** | `src/GamesHub/Integrations/Variants/**`, `tests/Integrations/Variants/**` | `IVariantService` — launch variants grouped in one card |
+| **SOURCES** | `src/GamesHub/Integrations/Sources/**`, `tests/Integrations/Sources/**` | `IExtraSource` — Riot and Hydra importers |
+| **QUICK** | `src/GamesHub/QuickLaunch/**`, `web/quick/**`, `tests/QuickLaunch/**` | `IQuickLaunch` — floating quick-launch palette with a customizable hotkey |
+
+Wave-2 services are **standalone**: they depend only on Shared contracts (+ `ILibraryService` for QUICK),
+never on each other or on wave-1 internals. The lead wires them into LibraryService/Bridge/UI afterwards.
+Persisted data goes in its own file under `AppPaths.DataDir` (e.g. `automation.json`, `variants.json`) or
+`AppPaths.CacheDir\<module>\`.
+
+## Planned bridge additions (wired by the lead at integration — informative for wave-2 agents)
+
+GameDto gains: `sizeBytes, updatePending, broken, brokenReason, genres[], variants[{id,label}]`.
+
+| name | args | reply |
+|---|---|---|
+| `getGameInfo` | `{ id }` | `{ info: GameInfo\|null, steam: SteamLocalStats\|null, health, uninstall, pcgwUrl }` |
+| `getPcgw` | `{ id }` | `PcgwInfo` |
+| `openPath` | `{ path }` (only paths previously returned by getPcgw) | OpResult |
+| `validateGame` / `uninstallGame` | `{ id }` | OpResult |
+| `getDrives` | — | `{ drives: DriveSpace[] }` |
+| `cleanupBroken` | — | `{ results: OpResult[] }` |
+| `getAutomation` / `saveAutomation` | `{ id\|null }` / `{ id\|null, profile }` | `AutomationProfile` / OpResult |
+| `automationOptions` | — | `{ powerPlans, audioDevices, resolutions }` |
+| `variantSuggestions` / `groupVariants` / `ungroupVariants` / `setVariantLabel` / `setVariantPrimary` / `dismissVariants` | … | … |
+| `launch` | `{ id, variantId? }` | OpResult |

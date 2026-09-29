@@ -40,6 +40,23 @@ namespace GamesHub
         public DateTime AddedAt = DateTime.Now;
         public bool Running;
         public Artwork Art = new Artwork();
+
+        // ---- Wave 2 (filled by the integration layer, not by LIB) ----
+        /// <summary>Size on disk in bytes; -1 = unknown / not computed yet.</summary>
+        public long SizeBytes = -1;
+        public bool UpdatePending;
+        /// <summary>Shortcut target / install folder no longer exists.</summary>
+        public bool Broken;
+        public string BrokenReason = "";
+        public List<string> Genres = new List<string>();
+        /// <summary>Other launch variants grouped under this game (e.g. "DirectX 11"). Empty = none.</summary>
+        public List<GameVariant> Variants = new List<GameVariant>();
+    }
+
+    public sealed class GameVariant
+    {
+        public string Id = "";     // id of the member Game
+        public string Label = "";  // e.g. "DirectX 11", "Plutonium", "Padrão"
     }
 
     /// <summary>
@@ -123,6 +140,19 @@ namespace GamesHub
         /// <summary>GitHub "owner/repo" used by the updater. "" = updater disabled.</summary>
         public string UpdateRepo = "";
         public string Language = "pt-BR";
+
+        // ---- Wave 2 ----
+        public bool ImportRiot = true;
+        public bool ImportHydra = true;
+        /// <summary>Import play time / last played from Steam's local files.</summary>
+        public bool ImportSteamPlaytime = true;
+        /// <summary>Fetch game info (genres, description...) from the Steam store.</summary>
+        public bool FetchMetadata = true;
+        /// <summary>Fetch save/config locations from PCGamingWiki.</summary>
+        public bool PcgwEnabled = true;
+        public bool QuickLaunchEnabled = true;
+        public string QuickLaunchHotkey = "Ctrl+Shift+Space";
+        public bool AutomationEnabled = true;
     }
 
     // ------------------------------------------------------------------ services

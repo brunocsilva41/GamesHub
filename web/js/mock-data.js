@@ -42,13 +42,26 @@ const SAMPLES = [
   ['folder:valorant.lnk', 'VALORANT', 'Riot', 'folder', '.lnk', ['#e0435a', '#1a1f2e'], ['icon'], { genres: ['Tiro', 'Competitivo'], favorite: true, collections: ['Competitivo'], lastPlayed: ago(26 * 3600e3), playSeconds: 80 * HOUR }],
   ['folder:league of legends.lnk', 'League of Legends', 'Riot', 'folder', '.lnk', ['#c89b3c', '#0a1428'], ['header'], { collections: ['Competitivo'], lastPlayed: ago(45 * DAY), playSeconds: 300 * HOUR }],
   ['folder:roblox.url', 'Roblox', 'Roblox', 'folder', '.url', ['#2b8a4e', '#1b2230'], ['icon'], { lastPlayed: ago(5 * DAY), playSeconds: 5 * HOUR }],
-  ['folder:minecraft.lnk', 'Minecraft', 'Minecraft', 'folder', '.lnk', ['#4f8a2b', '#6b4a2b'], FULL, { genres: ['Sandbox'], variants: [{ id: 'java', label: 'Java Edition' }, { id: 'bedrock', label: 'Bedrock Edition' }], favorite: true, collections: ['Com amigos'], lastPlayed: ago(12 * DAY), playSeconds: 45 * HOUR }],
+  ['folder:minecraft.lnk', 'Minecraft', 'Minecraft', 'folder', '.lnk', ['#4f8a2b', '#6b4a2b'], FULL, { genres: ['Sandbox'], sizeBytes: 1.4 * GB, favorite: true, collections: ['Com amigos'], lastPlayed: ago(12 * DAY), playSeconds: 45 * HOUR }],
   ['folder:overwatch.lnk', 'Overwatch 2', 'Battle.net', 'folder', '.lnk', ['#f29b2c', '#2a3550'], ['header'], { collections: ['Com amigos', 'Competitivo'], playSeconds: 12 * HOUR, lastPlayed: ago(60 * DAY) }],
-  ['folder:ea sports fc 25.lnk', 'EA SPORTS FC 25', 'EA', 'folder', '.lnk', ['#1fae6b', '#0e2a3b'], [], { genres: ['Esportes'], broken: true, brokenReason: 'O destino do atalho não existe mais (C:\Program Files\EA Games\FC 25\FC25.exe).', playSeconds: 3 * HOUR, lastPlayed: ago(90 * DAY) }],
+  ['folder:ea sports fc 25.lnk', 'EA SPORTS FC 25', 'EA', 'folder', '.lnk', ['#1fae6b', '#0e2a3b'], [], { genres: ['Esportes'], broken: true, brokenReason: 'O destino do atalho não existe mais (C:\\Program Files\\EA Games\\FC 25\\FC25.exe).', playSeconds: 3 * HOUR, lastPlayed: ago(90 * DAY) }],
   ['folder:assassins creed mirage.lnk', "Assassin's Creed Mirage", 'Ubisoft', 'folder', '.lnk', ['#b98a3b', '#2a1d14'], ['capsule'], { hidden: true }],
   ['folder:the witcher 3.lnk', 'The Witcher 3: Wild Hunt', 'GOG', 'folder', '.lnk', ['#8c2f2f', '#1c1c24'], FULL, { genres: ['RPG', 'Mundo aberto'], sizeBytes: 50 * GB, steamAppId: '292030', collections: ['Single-player'], lastPlayed: ago(120 * DAY), playSeconds: 90 * HOUR }],
   ['folder:retroarch.exe', 'RetroArch', 'PC', 'folder', '.exe', ['#4a4f6b', '#1c1f2e'], ['icon'], {}],
+  // wave 2: a variant member (grouped under Minecraft by mock-wave2), a suggestion pair and a second broken shortcut
+  ['folder:minecraft bedrock.lnk', 'Minecraft Bedrock', 'Minecraft', 'folder', '.lnk', ['#4f8a2b', '#2b4a6b'], ['icon'], { genres: ['Sandbox'], playSeconds: 4 * HOUR, lastPlayed: ago(30 * DAY) }],
+  ['folder:the witcher 3 dx11.lnk', 'The Witcher 3: Wild Hunt DirectX 11', 'GOG', 'folder', '.lnk', ['#8c2f2f', '#1c1c24'], ['icon'], { genres: ['RPG', 'Mundo aberto'] }],
+  ['folder:need for speed heat.lnk', 'Need for Speed Heat', 'EA', 'folder', '.lnk', ['#d9480f', '#1b1b2f'], [], { genres: ['Corrida'], broken: true, brokenReason: 'A pasta de instalação não existe mais (D:\\Jogos\\NFS Heat).', lastPlayed: ago(200 * DAY), playSeconds: 11 * HOUR }],
 ];
+
+/** Store metadata for the mock getGameInfo (keyed by Steam App ID). */
+export const GAME_INFO = {
+  730: { genres: ['Ação', 'Gratuito para jogar'], categories: ['Multijogador', 'Competitivo online', 'Suporte a controle'], shortDescription: 'Por mais de duas décadas, o Counter-Strike oferece uma experiência competitiva de elite. Counter-Strike 2 é o próximo capítulo.', releaseDate: '21 ago. 2012', developers: ['Valve'], publishers: ['Valve'], metacritic: 83, website: 'https://www.counter-strike.net/', controllerSupport: false },
+  1091500: { genres: ['RPG', 'Mundo aberto'], categories: ['Um jogador', 'Conquistas Steam', 'Suporte total a controle'], shortDescription: 'Cyberpunk 2077 é um RPG de ação e aventura em mundo aberto ambientado em Night City, uma megalópole obcecada por poder, glamour e modificações corporais.', releaseDate: '9 dez. 2020', developers: ['CD PROJEKT RED'], publishers: ['CD PROJEKT RED'], metacritic: 86, website: 'https://www.cyberpunk.net', controllerSupport: true },
+  1245620: { genres: ['Ação', 'RPG'], categories: ['Um jogador', 'Multijogador online', 'Suporte total a controle'], shortDescription: 'O NOVO RPG DE AÇÃO E FANTASIA. Levante-se, Maculado, e seja guiado pela graça para portar o poder do Anel Prístino.', releaseDate: '24 fev. 2022', developers: ['FromSoftware, Inc.'], publishers: ['FromSoftware, Inc.', 'Bandai Namco Entertainment'], metacritic: 94, website: 'https://www.eldenring.com', controllerSupport: true },
+  1145350: { genres: ['Ação', 'Indie', 'RPG'], categories: ['Um jogador', 'Suporte total a controle'], shortDescription: 'Lute além do Submundo usando feitiçaria sombria para enfrentar o Titã do Tempo nesta sequência do aclamado roguelike.', releaseDate: '6 mai. 2024', developers: ['Supergiant Games'], publishers: ['Supergiant Games'], metacritic: 0, website: '', controllerSupport: true },
+  292030: { genres: ['RPG'], categories: ['Um jogador', 'Suporte total a controle'], shortDescription: 'Você é Geralt de Rívia, caçador de monstros. O continente está em guerra e você precisa encontrar a criança da profecia.', releaseDate: '18 mai. 2015', developers: ['CD PROJEKT RED'], publishers: ['CD PROJEKT RED'], metacritic: 93, website: 'https://www.thewitcher.com', controllerSupport: true },
+};
 
 export function sampleGames(extra = 0) {
   const games = SAMPLES.map(([id, name, platform, source, ext, [c1, c2], kinds, x], i) => ({

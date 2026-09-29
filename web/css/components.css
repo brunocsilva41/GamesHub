@@ -4,7 +4,7 @@
 .app { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
 .shell { flex: 1; display: flex; min-height: 0; }
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; background: var(--bg); }
-.view { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scroll-padding: 72px 0 24px; }
+.view { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scroll-padding: 72px 0 24px; overflow-anchor: none; }
 .ico { width: 16px; height: 16px; flex: none; }
 
 /* ---------------------------------------------------------------- title bar */

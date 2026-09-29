@@ -10,11 +10,11 @@ export function initToasts(el, onUndo) {
   undoHandler = onUndo;
 }
 
-/** toast(text, { kind: 'ok'|'err'|'info', undoToken, duration }) */
+/** toast(text, { kind: 'ok'|'err'|'info', undoToken, action: { label, run }, duration }) */
 export function toast(text, opts = {}) {
   if (!root || !text) return;
   const kind = opts.kind || 'ok';
-  const duration = opts.duration ?? (opts.undoToken ? 7000 : kind === 'err' ? 6000 : 3800);
+  const duration = opts.duration ?? (opts.undoToken || opts.action ? 9000 : kind === 'err' ? 6000 : 3800);
   const el = document.createElement('div');
   el.className = `toast toast-${kind}`;
   el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
@@ -27,6 +27,14 @@ export function toast(text, opts = {}) {
     b.className = 'toast-undo';
     b.textContent = 'Desfazer';
     b.addEventListener('click', () => { undoHandler(opts.undoToken); dismiss(); });
+    el.append(b);
+  }
+  if (opts.action && typeof opts.action.run === 'function') {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'toast-undo';
+    b.textContent = opts.action.label || 'Desfazer';
+    b.addEventListener('click', () => { opts.action.run(); dismiss(); });
     el.append(b);
   }
   const x = document.createElement('button');

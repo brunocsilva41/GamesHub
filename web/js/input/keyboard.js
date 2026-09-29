@@ -36,7 +36,8 @@ export function initKeyboard(onUserInput) {
     }
     if (typing) return;
     if (modalOpen()) {
-      if (ARROWS[k] && e.target.closest?.('.steam-results, .modal-actions')) { e.preventDefault(); C.navigate(ARROWS[k]); }
+      const selectKey = e.target.tagName === 'SELECT' && (k === 'ArrowUp' || k === 'ArrowDown');
+      if (ARROWS[k] && !selectKey && e.target.closest?.('.steam-results, .modal-actions, [data-arrow-nav]')) { e.preventDefault(); C.navigate(ARROWS[k]); }
       return;
     }
 

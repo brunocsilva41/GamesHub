@@ -7,6 +7,9 @@ export const DEFAULT_SETTINGS = {
   startMinimized: false, closeToTray: true, hotkeyEnabled: true, hotkey: 'Ctrl+Alt+G', sortBy: 'name',
   view: 'grid', cardStyle: 'landscape', reduceMotion: false, autoArtwork: true, steamGridDbKey: '',
   trackPlaytime: true, checkUpdates: true, updateRepo: '', language: 'pt-BR',
+  // wave 2
+  importRiot: true, importHydra: true, importSteamPlaytime: true, fetchMetadata: true, pcgwEnabled: true,
+  quickLaunchEnabled: true, quickLaunchHotkey: 'Ctrl+Shift+Space', automationEnabled: true,
 };
 
 export const LIBRARY_SECTIONS = [
@@ -21,7 +24,18 @@ export const SORTS = [
   { key: 'recent', label: 'Jogados recentemente' },
   { key: 'playtime', label: 'Mais jogados' },
   { key: 'added', label: 'Adicionados recentemente' },
+  { key: 'size', label: 'Maior tamanho' },
 ];
+
+/** Sorts the backend persists (settings.sortBy enum); others are client-side only (localStorage). */
+export const SERVER_SORTS = ['name', 'recent', 'playtime', 'added'];
+
+export const QUICK_FILTERS = [
+  { key: 'never', label: 'Nunca jogados' },
+  { key: 'stale', label: 'Sem jogar há 3+ meses' },
+  { key: 'installed', label: 'Instalados' },
+];
+const STALE_MS = 90 * 86400000;
 
 // Section keys: 'all' | 'favorites' | 'recent' | 'hidden' | 'platform:<name>' | 'collection:<name>'
 export function sectionLabel(key) {
@@ -31,6 +45,7 @@ export function sectionLabel(key) {
   return i > 0 ? key.slice(i + 1) : key;
 }
 
+const size = (g) => (Number(g.sizeBytes) > 0 ? Number(g.sizeBytes) : -1);
 const time = (iso) => { const t = iso ? Date.parse(iso) : NaN; return Number.isNaN(t) ? 0 : t; };
 
 export function filterSection(games, key) {
@@ -72,6 +87,7 @@ export function sortGames(games, sortBy) {
     case 'recent': return list.sort((a, b) => time(b.lastPlayed) - time(a.lastPlayed) || byName(a, b));
     case 'playtime': return list.sort((a, b) => (b.playSeconds || 0) - (a.playSeconds || 0) || byName(a, b));
     case 'added': return list.sort((a, b) => time(b.addedAt) - time(a.addedAt) || byName(a, b));
+    case 'size': return list.sort((a, b) => size(b) - size(a) || byName(a, b)); // unknown (-1/0) last
     default: return list.sort(byName);
   }
 }
@@ -88,9 +104,19 @@ export function genreList(games) {
   return [...set].sort((a, b) => (collator ? collator.compare(a, b) : a.localeCompare(b)));
 }
 
-/** Games shown in the library grid for the current section/genre/query/sort. */
-export function selectVisible(games, { section = 'all', query = '', sortBy = 'name', genre = '' } = {}) {
-  const inSection = filterGenre(filterSection(games, section), genre);
+/** Quick filter ('' = none): never played, not played for 3+ months, installed (not broken). */
+export function filterQuick(games, key, now = Date.now()) {
+  switch (key) {
+    case 'never': return games.filter((g) => !g.lastPlayed && !(g.playSeconds > 0));
+    case 'stale': return games.filter((g) => g.lastPlayed && !g.running && now - time(g.lastPlayed) >= STALE_MS);
+    case 'installed': return games.filter((g) => !g.broken);
+    default: return games;
+  }
+}
+
+/** Games shown in the library grid for the current section/genre/quick filter/query/sort. */
+export function selectVisible(games, { section = 'all', query = '', sortBy = 'name', genre = '', quick = '', now } = {}) {
+  const inSection = filterQuick(filterGenre(filterSection(games, section), genre), quick, now);
   const found = searchGames(inSection, query);
   return sortGames(found, section === 'recent' ? 'recent' : sortBy);
 }
@@ -136,6 +162,9 @@ export function pickFeatured(games) {
   return visible.find((g) => g.favorite && hasArt(g)) || visible.find(hasArt) || sortGames(visible, 'name')[0];
 }
 
+/** clientSort ('size') overrides the persisted settings.sortBy. */
+export const effectiveSort = (s) => s.clientSort || s.settings.sortBy;
+
 export function createStore(initial = {}) {
   const em = new Emitter();
   const state = {
@@ -144,7 +173,8 @@ export function createStore(initial = {}) {
     settings: { ...DEFAULT_SETTINGS },
     windowState: { maximized: false, fullscreen: false, pinned: false },
     route: { view: 'library', id: null },
-    section: 'all', query: '', genre: '',
+    section: 'all', query: '', genre: '', quick: '', clientSort: '',
+    suggestions: [], // wave 2: variantSuggestions groups
     bigPicture: false, sidebarCollapsed: false,
     update: null, updatePercent: null, padActive: false,
     ...initial,
@@ -176,7 +206,7 @@ export function createStore(initial = {}) {
     on: (n, f) => em.on(n, f),
     get: (id) => state.byId.get(id),
     visible: () => selectVisible(state.games, {
-      section: state.section, query: state.query, sortBy: state.settings.sortBy, genre: state.genre,
+      section: state.section, query: state.query, sortBy: effectiveSort(state), genre: state.genre, quick: state.quick,
     }),
   };
 }

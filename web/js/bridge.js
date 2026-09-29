@@ -7,6 +7,9 @@ const DEFAULT_TIMEOUT = 15000;
 const TIMEOUTS = {
   pickFile: 0, pickGamesDir: 0, setArt: 0, installUpdate: 0,
   addFiles: 60000, addSteam: 30000, searchSteam: 20000, refreshArt: 30000, rescan: 60000, checkUpdate: 30000,
+  // wave 2 (network / disk bound)
+  getGameInfo: 45000, getPcgw: 45000, getDrives: 20000, cleanupBroken: 60000, automationOptions: 20000,
+  uninstallGame: 30000, validateGame: 20000, variantSuggestions: 20000,
 };
 
 export class BridgeError extends Error {

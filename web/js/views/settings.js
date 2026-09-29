@@ -1,21 +1,12 @@
 // Settings view: every SettingsDto field, applied immediately via setSettings with a "Salvo" indicator.
 import { store } from '../store.js';
 import { icon } from '../components/icons.js';
-import { esc, debounce } from '../util.js';
+import { debounce } from '../util.js';
 import { toast } from '../components/toast.js';
 import { installUpdate } from '../components/banner.js';
 import * as A from '../actions.js';
-
-const sw = (key, title, desc = '') =>
-  `<label class="set-row"><span class="set-text"><b>${title}</b>${desc ? `<small>${desc}</small>` : ''}</span>` +
-  `<input type="checkbox" class="switch" role="switch" data-nav data-set="${key}"></label>`;
-const sel = (key, title, desc, options) =>
-  `<label class="set-row"><span class="set-text"><b>${title}</b>${desc ? `<small>${desc}</small>` : ''}</span>` +
-  `<span class="select-wrap"><select class="select" data-nav data-set="${key}">${options.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select>${icon('chevronDown')}</span></label>`;
-const row = (title, desc, control) =>
-  `<div class="set-row"><span class="set-text"><b>${title}</b>${desc ? `<small>${desc}</small>` : ''}</span><span class="set-control">${control}</span></div>`;
-const group = (id, title, content) =>
-  `<section class="set-group" aria-labelledby="sg-${id}"><h2 class="set-title" id="sg-${id}">${title}</h2><div class="set-card">${content}</div></section>`;
+import { sw, sel, row, group } from './setui.js';
+import { initSettingsExtra, hotkeysGroupHtml, sourcesGroupHtml, automationGroupHtml, drivesGroupHtml } from './settingsextra.js';
 
 export function initSettings(root) {
   root.innerHTML = `
@@ -32,10 +23,9 @@ export function initSettings(root) {
         sel('onLaunch', 'Ao iniciar um jogo', '', [['tray', 'Esconder na bandeja'], ['minimize', 'Minimizar a janela'], ['none', 'Não fazer nada']]) +
         sw('closeToTray', 'Fechar para a bandeja', 'O botão fechar mantém o GamesHub rodando na área de notificação.') +
         sw('startWithWindows', 'Iniciar com o Windows') +
-        sw('startMinimized', 'Iniciar minimizado', 'Abre direto na bandeja, sem mostrar a janela.') +
-        sw('hotkeyEnabled', 'Atalho global', 'Mostra o GamesHub de qualquer lugar.') +
-        row('Combinação do atalho', 'Clique e pressione as teclas desejadas.',
-          '<input class="input input-sm hotkey" data-nav data-hotkey readonly aria-label="Combinação do atalho global">'))}
+        sw('startMinimized', 'Iniciar minimizado', 'Abre direto na bandeja, sem mostrar a janela.'))}
+      ${hotkeysGroupHtml()}
+      ${sourcesGroupHtml()}
       ${group('look', 'Aparência',
         sel('cardStyle', 'Estilo dos cards', 'Paisagem usa o cabeçalho; retrato usa a capa.', [['landscape', 'Paisagem'], ['portrait', 'Retrato']]) +
         sel('view', 'Exibição da biblioteca', '', [['grid', 'Grade'], ['list', 'Lista']]) +
@@ -48,6 +38,8 @@ export function initSettings(root) {
           `<button type="button" class="icon-btn" data-toggle-secret aria-label="Mostrar chave" title="Mostrar chave">${icon('eye')}</button></span>`))}
       ${group('time', 'Tempo de jogo',
         sw('trackPlaytime', 'Rastrear tempo de jogo', 'Conta o tempo enquanto o processo do jogo está aberto.'))}
+      ${automationGroupHtml()}
+      ${drivesGroupHtml()}
       ${group('updates', 'Atualizações',
         sw('checkUpdates', 'Verificar atualizações ao iniciar') +
         row('Repositório', 'Formato <code>dono/repositório</code> no GitHub. Vazio desativa o atualizador.',
@@ -87,17 +79,7 @@ export function initSettings(root) {
   });
   root.addEventListener('focusout', (e) => { if (e.target.dataset.text) saveText.flush(e.target.dataset.text, e.target.value.trim()); });
 
-  const hk = q('[data-hotkey]');
-  hk.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.key === 'Escape') { hk.value = store.state.settings.hotkey; hk.blur(); return; }
-    const combo = comboFromEvent(e);
-    if (combo) { hk.value = combo; save({ hotkey: combo }); }
-    else hk.value = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Win'].filter(Boolean).join('+') + '+…';
-  });
-  hk.addEventListener('blur', () => { hk.value = store.state.settings.hotkey; });
+  const renderExtra = initSettingsExtra(root, flashSaved);
 
   root.addEventListener('click', async (e) => {
     const link = e.target.closest('[data-link]');
@@ -144,6 +126,7 @@ export function initSettings(root) {
 
   return function render(changed) {
     const s = store.state;
+    renderExtra(changed);
     if (changed.has('settings') || changed.has('init') || (changed.has('route') && s.route.view === 'settings')) {
       const st = s.settings;
       for (const el of root.querySelectorAll('[data-set]')) {
@@ -152,8 +135,6 @@ export function initSettings(root) {
         if (el.type === 'checkbox') el.checked = !!v; else if (v !== undefined) el.value = v;
       }
       for (const el of root.querySelectorAll('[data-text]')) if (el !== document.activeElement) el.value = st[el.dataset.text] ?? '';
-      if (hk !== document.activeElement) hk.value = st.hotkey || '';
-      hk.disabled = !st.hotkeyEnabled;
       q('[data-show="gamesDir"]').textContent = st.gamesDir || '(não definida)';
       q('[data-show="gamesDir"]').title = st.gamesDir || '';
     }
@@ -171,19 +152,4 @@ export function initSettings(root) {
       }
     }
   };
-}
-
-const KEY_NAMES = { ' ': 'Space', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right' };
-
-/** "Ctrl+Alt+G" style combo, or null when only modifiers are held / no modifier with a plain key. */
-export function comboFromEvent(e) {
-  if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return null;
-  let key = KEY_NAMES[e.key] || e.key;
-  if (/^Key[A-Z]$/.test(e.code)) key = e.code.slice(3);
-  else if (/^Digit\d$/.test(e.code)) key = e.code.slice(5);
-  else if (key.length === 1) key = key.toUpperCase();
-  const mods = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Win'].filter(Boolean);
-  const isF = /^F\d{1,2}$/.test(key);
-  if (!mods.length && !isF) return null;
-  return [...mods, key].join('+');
 }

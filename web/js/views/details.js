@@ -1,16 +1,22 @@
-// Game details: hero + logo, play, stats, collections, edit form (with Steam search), images, actions.
+// Game details: hero + logo, play, stats + store info, collections, variants, saves, automation, edit form,
+// images, actions (wave-2 panels live in gameinfo/saves/variants/automation.js).
 import { store } from '../store.js';
 import { createHero, updateHero, playButtonHtml } from '../components/hero.js';
 import { icon } from '../components/icons.js';
-import { esc, fmtDuration, fmtDate, fmtRelative, fmtBytes, SOURCE_LABELS } from '../util.js';
+import { esc, fmtDuration, fmtDate, fmtRelative, SOURCE_LABELS } from '../util.js';
 import { renderArtSlots, updateArtSlots, bindArtSlots } from './artslots.js';
 import { initEditForm } from './editform.js';
 import { toast } from '../components/toast.js';
 import * as A from '../actions.js';
+import { initGameInfo, SIDE_ACTIONS_HTML } from './gameinfo.js';
+import { initSaves } from './saves.js';
+import { initVariants } from './variants.js';
+import { createAutomationEditor } from './automation.js';
 
 export function initDetails(root) {
   let currentId = null;
   let edit = null;
+  let info = null, saves = null, variants = null, auto = null;
 
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-hero], [data-d]');
@@ -56,7 +62,7 @@ export function initDetails(root) {
     body.innerHTML = `
       <div class="details-main">
         <section class="panel panel-warn" data-broken hidden>${icon('alert')}<div><b>Atalho quebrado.</b> <span data-broken-reason></span></div></section>
-        <section class="panel" aria-labelledby="d-stats"><h2 class="panel-title" id="d-stats">Informações</h2><dl class="stats"></dl></section>
+        <section class="panel" aria-labelledby="d-stats"><h2 class="panel-title" id="d-stats">Informações</h2><dl class="stats"></dl><div class="store-info" aria-live="polite"></div></section>
         <section class="panel" aria-labelledby="d-cols">
           <h2 class="panel-title" id="d-cols">Coleções</h2>
           <div class="chips" role="group" aria-label="Coleções do jogo"></div>
@@ -65,6 +71,10 @@ export function initDetails(root) {
             <button type="submit" class="btn btn-ghost btn-sm">${icon('plus')}Criar</button>
           </form>
         </section>
+        <section class="panel" data-variants aria-labelledby="d-variants"></section>
+        <section class="panel" data-saves aria-labelledby="d-saves"></section>
+        <section class="panel" aria-labelledby="d-auto"><h2 class="panel-title" id="d-auto">${icon('bolt')}Antes e depois de jogar</h2>
+          <p class="panel-hint">Abra ou feche programas e ajuste energia, áudio e resolução automaticamente ao jogar.</p><div data-auto></div></section>
         <section class="panel edit-panel" aria-labelledby="d-edit"><h2 class="panel-title" id="d-edit">Editar</h2></section>
         <section class="panel" aria-labelledby="d-art">
           <div class="panel-head"><h2 class="panel-title" id="d-art">Imagens</h2>
@@ -79,6 +89,7 @@ export function initDetails(root) {
           <div class="side-actions">
             <button type="button" class="btn btn-ghost btn-block" data-nav data-d="reveal">${icon('folder')}Abrir local</button>
             <button type="button" class="btn btn-ghost btn-block" data-nav data-d="hide"></button>
+            ${SIDE_ACTIONS_HTML}
             <button type="button" class="btn btn-danger-ghost btn-block" data-nav data-d="remove">${icon('trash')}Remover…</button>
           </div>
         </section>
@@ -88,6 +99,14 @@ export function initDetails(root) {
     body.querySelector('.art-slots').innerHTML = renderArtSlots();
     bindArtSlots(body.querySelector('.art-slots'), () => currentId);
     edit = initEditForm(body.querySelector('.edit-panel'), () => currentId);
+    const getId = () => currentId;
+    info = initGameInfo(body, getId);
+    saves = initSaves(body.querySelector('[data-saves]'), getId);
+    variants = initVariants(body.querySelector('[data-variants]'), getId);
+    auto = createAutomationEditor(body.querySelector('[data-auto]'), { perGame: true });
+    info.load(g.id);
+    saves.reset();
+    auto.load(g.id);
     root.scrollTop = 0;
   }
 
@@ -108,8 +127,6 @@ export function initDetails(root) {
       ['Plataforma', g.platform],
       ['Origem', SOURCE_LABELS[g.source] || g.source],
     ];
-    if (g.sizeBytes) stats.push(['Tamanho', fmtBytes(g.sizeBytes)]);
-    if (g.genres?.length) stats.push(['Gêneros', g.genres.join(', ')]);
     if (g.steamAppId) stats.push(['Steam App ID', g.steamAppId]);
     const statsHtml = stats.map(([k, v]) => `<div class="stat"><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('');
     const statsEl = root.querySelector('.stats');
@@ -140,12 +157,15 @@ export function initDetails(root) {
 
     updateArtSlots(root.querySelector('.art-slots'), g);
     edit.update(g);
+    info.update(g);
+    variants.update(g);
+    auto.refresh();
   }
 
   return function render(changed) {
     const s = store.state;
     if (s.route.view !== 'game') { currentId = null; return; }
-    if (!changed.has('route') && !changed.has('games') && !changed.has('collections') && !changed.has('init')) return;
+    if (!['route', 'games', 'collections', 'settings', 'init'].some((k) => changed.has(k))) return;
     const g = store.get(s.route.id);
     if (!g) {
       if (s.status === 'ready') queueMicrotask(() => A.goLibrary());

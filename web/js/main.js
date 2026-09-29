@@ -101,6 +101,7 @@ async function loadState() {
 }
 
 async function boot() {
+  try { history.scrollRestoration = 'manual'; } catch { /* not supported */ }
   initToasts($('#toasts'), (token) => A.undo(token));
   initModals($('#modal-root'));
   initMenus($('#menu-root'));

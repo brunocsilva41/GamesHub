@@ -14,11 +14,11 @@
 .shelf-row .card { content-visibility: visible; }
 
 .toolbar {
-  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: var(--sp-3);
+  position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3);
   padding: var(--sp-4) 0 var(--sp-3); margin-top: var(--sp-4); background: var(--bg);
   border-bottom: 1px solid transparent;
 }
-.toolbar-title { display: flex; align-items: baseline; gap: var(--sp-3); min-width: 0; margin-right: auto; }
+.toolbar-title { display: flex; align-items: baseline; gap: var(--sp-3); flex: 0 0 auto; max-width: 100%; margin-right: auto; }
 .lib-title { font-size: var(--fs-xl); font-weight: var(--fw-bold); letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lib-count { font-size: var(--fs-sm); color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .search {
@@ -193,6 +193,11 @@ label.set-row { cursor: pointer; }
   .art-slots { grid-template-columns: 1fr 1fr; }
   .slot-header, .slot-capsule, .slot-hero, .slot-logo, .slot-icon { grid-column: auto; grid-row: auto; }
   .row-hit { grid-template-columns: 36px minmax(0, 1fr) 120px 110px 70px; }
+}
+@media (max-width: 1300px) {
+  /* Title on its own row; the controls get the full width of the second row. */
+  .toolbar-title { flex-basis: 100%; }
+  .toolbar .search { flex: 1 1 220px; width: auto; }
 }
 @media (max-width: 980px) {
   .search { width: 220px; }

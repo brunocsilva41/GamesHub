@@ -1,7 +1,7 @@
 // Empty / no-results / error state markup.
 import { icon } from '../components/icons.js';
 import { esc, platformColor } from '../util.js';
-import { sectionLabel } from '../store.js';
+import { sectionLabel, QUICK_FILTERS } from '../store.js';
 
 const block = (ic, title, text, actions = '') =>
   `<div class="state"><div class="state-ic">${ic}</div><h2 class="state-title">${title}</h2>` +
@@ -22,6 +22,11 @@ export function renderLibraryState(s, visibleCount) {
   if (s.genre && !s.query.trim()) {
     return block(icon('tag'), 'Nenhum jogo deste gênero aqui',
       `Nenhum jogo de “${esc(s.genre)}” em ${esc(sectionLabel(s.section))}.`, btn('genre-clear', 'Todos os gêneros', true));
+  }
+  if (s.quick && !s.query.trim()) {
+    const f = QUICK_FILTERS.find((x) => x.key === s.quick);
+    return block(icon('clock'), 'Nenhum jogo com este filtro',
+      `Nenhum jogo em “${esc(f?.label || s.quick)}” em ${esc(sectionLabel(s.section))}.`, btn('quick-clear', 'Limpar filtro', true));
   }
   if (s.query.trim()) {
     return block(icon('search'), 'Nenhum resultado',

@@ -1,5 +1,7 @@
-// Library view: hero, "Continuar jogando" shelf, toolbar (search/sort/view/card style), keyed grid/list.
-import { store, SORTS, sectionLabel, pickFeatured, recentGames, genreList } from '../store.js';
+// Library view: hero, "Continuar jogando" shelf, notices, toolbar (search/genre/sort/view/card style),
+// quick filters, keyed grid/list. The "size" sort is client-side only (settings.sortBy enum), kept in localStorage.
+import { store, SORTS, SERVER_SORTS, QUICK_FILTERS, effectiveSort, sectionLabel, pickFeatured, recentGames, genreList } from '../store.js';
+import { initLibraryNotices } from './libnotices.js';
 import { createCard, updateCard, createRow, updateRow } from '../components/card.js';
 import { reconcile } from '../components/reconcile.js';
 import { createHero, updateHero, playButtonHtml } from '../components/hero.js';
@@ -18,6 +20,7 @@ export function initLibrary(root) {
         <div class="shelf-row" role="list"></div>
       </section>
     </div>
+    <div class="lib-notices" hidden></div>
     <div class="toolbar" role="toolbar" aria-label="Opções da biblioteca">
       <div class="toolbar-title"><h1 class="lib-title">Todos</h1><span class="lib-count"></span></div>
       <label class="search">
@@ -44,6 +47,8 @@ export function initLibrary(root) {
         <button type="button" data-tool="style" data-value="portrait" aria-label="Retrato" title="Cards em retrato">${icon('portrait')}</button>
       </div>
     </div>
+    <div class="quick-filters" role="group" aria-label="Filtros rápidos">${QUICK_FILTERS.map((f) =>
+      `<button type="button" class="chip-toggle" data-nav data-quick="${f.key}" aria-pressed="false">${esc(f.label)}</button>`).join('')}</div>
     <div class="games grid" role="list" aria-label="Jogos"></div>
     <div class="lib-state" hidden></div>`;
 
@@ -57,6 +62,9 @@ export function initLibrary(root) {
   const stateEl = q('.lib-state');
   const search = q('#search');
   let layoutKey = '';
+  let scrolledReady = false;
+  const renderNotices = initLibraryNotices(q('.lib-notices'));
+  try { if (localStorage.getItem('gh.clientSort') === 'size') store.set({ clientSort: 'size' }); } catch { /* storage unavailable */ }
 
   bindGameEvents(gamesEl);
   bindGameEvents(shelfRow);
@@ -80,10 +88,18 @@ export function initLibrary(root) {
     }
   });
   root.addEventListener('change', (e) => {
-    if (e.target.matches('[data-tool="sort"]')) A.saveSettings({ sortBy: e.target.value });
+    if (e.target.matches('[data-tool="sort"]')) {
+      const v = e.target.value;
+      const client = SERVER_SORTS.includes(v) ? '' : v;
+      store.set({ clientSort: client });
+      try { if (client) localStorage.setItem('gh.clientSort', client); else localStorage.removeItem('gh.clientSort'); } catch { /* storage unavailable */ }
+      if (!client) A.saveSettings({ sortBy: v });
+    }
     else if (e.target.matches('[data-tool="genre"]')) store.set({ genre: e.target.value });
   });
   root.addEventListener('click', (e) => {
+    const qf = e.target.closest('[data-quick]');
+    if (qf) { store.set({ quick: store.state.quick === qf.dataset.quick ? '' : qf.dataset.quick }); return; }
     const b = e.target.closest('[data-tool]');
     if (!b || b.tagName === 'SELECT') return;
     if (b.dataset.tool === 'view') A.saveSettings({ view: b.dataset.value });
@@ -99,6 +115,7 @@ export function initLibrary(root) {
     else if (act === 'settings') A.openSettings();
     else if (act === 'rescan') A.rescan();
     else if (act === 'genre-clear') store.set({ genre: '' });
+    else if (act === 'quick-clear') store.set({ quick: '' });
   });
 
   let genreKey = '';
@@ -152,13 +169,19 @@ export function initLibrary(root) {
 
   return function render(changed) {
     const s = store.state;
-    const relevant = ['games', 'section', 'query', 'genre', 'settings', 'status', 'init'].some((k) => changed.has(k));
+    renderNotices(changed);
+    const relevant = ['games', 'section', 'query', 'genre', 'quick', 'clientSort', 'settings', 'status', 'init'].some((k) => changed.has(k));
     if (!relevant) return;
 
     // Toolbar
     q('.lib-title').textContent = sectionLabel(s.section);
     const sortSel = q('[data-tool="sort"]');
-    if (sortSel.value !== s.settings.sortBy) sortSel.value = s.settings.sortBy;
+    if (sortSel.value !== effectiveSort(s)) sortSel.value = effectiveSort(s);
+    for (const b of root.querySelectorAll('[data-quick]')) {
+      const on = s.quick === b.dataset.quick;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    }
     sortSel.disabled = s.section === 'recent';
     for (const b of root.querySelectorAll('[data-tool="view"]')) b.setAttribute('aria-pressed', String(b.dataset.value === s.settings.view));
     for (const b of root.querySelectorAll('[data-tool="style"]')) b.setAttribute('aria-pressed', String(b.dataset.value === s.settings.cardStyle));
@@ -179,7 +202,7 @@ export function initLibrary(root) {
 
     const list = store.visible();
     q('.lib-count').textContent = plural(list.length, 'jogo', 'jogos');
-    renderTop(s.section === 'all' && !s.query.trim() && !s.genre && s.games.length > 0);
+    renderTop(s.section === 'all' && !s.query.trim() && !s.genre && !s.quick && s.games.length > 0);
     renderGrid(list);
 
     const st = renderLibraryState(s, list.length);
@@ -187,6 +210,13 @@ export function initLibrary(root) {
     if (st && stateEl._html !== st) { stateEl._html = st; stateEl.innerHTML = st; }
     if (!st) stateEl._html = '';
     q('.toolbar').hidden = s.games.length === 0;
+    q('.quick-filters').hidden = s.games.length === 0;
+    // First real render: start at the top (no stale offset from the skeleton or restored scroll).
+    if (!scrolledReady && s.status === 'ready') {
+      scrolledReady = true;
+      root.scrollTop = 0;
+      requestAnimationFrame(() => { root.scrollTop = 0; });
+    }
 
     if (changed.has('section')) root.scrollTop = 0;
   };

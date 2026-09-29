@@ -177,11 +177,20 @@ export async function addSteam(appId, name) {
 }
 
 // ---------------------------------------------------------------- settings
-export async function saveSettings(patch) {
+/** Optimistic; reverts the patched keys when the backend rejects them. opts.onError(message) replaces the toast. */
+export async function saveSettings(patch, { onError = null } = {}) {
+  const before = {};
+  for (const k of Object.keys(patch)) before[k] = store.state.settings[k];
   store.set({ settings: { ...store.state.settings, ...patch } });
-  const s = await run('setSettings', { patch });
-  if (s) store.set({ settings: { ...store.state.settings, ...s } });
-  return !!s;
+  try {
+    const s = await bridge.call('setSettings', { patch });
+    store.set({ settings: { ...store.state.settings, ...s } });
+    return true;
+  } catch (err) {
+    store.set({ settings: { ...store.state.settings, ...before } });
+    if (onError) onError(err?.message || 'Algo deu errado.'); else fail(err);
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------- context menu

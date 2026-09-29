@@ -6,13 +6,16 @@ import { store } from '../store.js';
 import * as C from './commands.js';
 
 const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, VIEW: 8, START: 9, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 };
-const REPEAT_DELAY = 380, REPEAT_RATE = 110, STICK = 0.55;
+const REPEAT_DELAY = 380, REPEAT_RATE = 110, STICK = 0.55, TRIGGER = 0.5;
+// Analog buttons (triggers) report `pressed` at very low values on some pads: require a real press.
+const isDown = (btn) => !!btn && (typeof btn.value === 'number' && btn.value > 0 && btn.value < 1 ? btn.value > TRIGGER : !!btn.pressed);
 
 export function initGamepad() {
   if (!('getGamepads' in navigator)) return;
   let raf = 0;
   const prev = new Map();      // button index -> pressed
   const held = new Map();      // direction -> { since, last }
+  let primed = false;          // first poll only records state: buttons held at connect are not presses
 
   const connected = () => Array.from(navigator.getGamepads()).some(Boolean);
   const setActive = (on) => { if (store.state.padActive !== on) store.set({ padActive: on }); };
@@ -32,7 +35,7 @@ export function initGamepad() {
   }
 
   function direction(pad) {
-    const b = (i) => !!pad.buttons[i]?.pressed;
+    const b = (i) => isDown(pad.buttons[i]);
     const x = pad.axes[0] || 0, y = pad.axes[1] || 0;
     if (b(BTN.UP) || y < -STICK) return 'up';
     if (b(BTN.DOWN) || y > STICK) return 'down';
@@ -45,12 +48,19 @@ export function initGamepad() {
     raf = 0;
     if (document.hidden) return;
     const pads = Array.from(navigator.getGamepads()).filter(Boolean);
-    if (!pads.length) { setActive(false); return; }
+    if (!pads.length) { primed = false; setActive(false); return; }
     let dir = null;
     const pressed = new Set();
     for (const pad of pads) {
-      pad.buttons.forEach((btn, i) => { if (btn.pressed) pressed.add(i); });
+      pad.buttons.forEach((btn, i) => { if (isDown(btn)) pressed.add(i); });
       dir = dir || direction(pad);
+    }
+    if (!primed) {
+      primed = true;
+      for (const i of pressed) prev.set(i, true);
+      if (dir) held.set(dir, { since: now, last: now + 1e9 });
+      schedule();
+      return;
     }
     for (const i of pressed) if (!prev.get(i) && ![BTN.UP, BTN.DOWN, BTN.LEFT, BTN.RIGHT].includes(i)) press(i);
     prev.clear();
@@ -69,10 +79,11 @@ export function initGamepad() {
     if (!raf && !document.hidden && connected()) raf = requestAnimationFrame(frame);
   }
 
-  window.addEventListener('gamepadconnected', () => { setActive(true); schedule(); });
+  // A connected pad alone does not show the controller hints: only real input does (press()/navigate).
+  window.addEventListener('gamepadconnected', () => schedule());
   window.addEventListener('gamepaddisconnected', () => { if (!connected()) setActive(false); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) schedule(); });
   // Mouse/keyboard use hides controller hints again.
-  window.addEventListener('mousemove', () => setActive(false), { passive: true });
+  for (const type of ['mousemove', 'mousedown', 'wheel']) window.addEventListener(type, () => setActive(false), { passive: true });
   schedule();
 }

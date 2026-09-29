@@ -75,7 +75,7 @@ namespace GamesHub
             _hotkey.Pressed += OnHotkey;
             RegisterHotkey(notify: false);
 
-            _quick = new QuickLaunchController(library, settings);
+            _quick = new QuickLaunchController(new CatalogLibraryView(catalog), settings);
             _quick.Launched += (id, r) => RunOnUi(() => OnQuickLaunched(r));
 
             _jumpListRefresh = new EventCoalescer(RefreshJumpList, 2000);

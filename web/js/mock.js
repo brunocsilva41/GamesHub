@@ -2,6 +2,7 @@
 // postMessage, postMessageWithAdditionalObjects, addEventListener('message').
 import { sampleGames, makeArt, STEAM_CATALOG } from './mock-data.js';
 import { DEFAULT_SETTINGS } from './store.js';
+import { wave2Commands } from './mock-wave2.js';
 
 const LATENCY = 60;
 const ok = (message, gameId = null, undoToken = null) => ({ ok: true, data: { message, gameId, undoToken } });
@@ -17,8 +18,7 @@ export function createMockHost() {
   let collections = ['Competitivo', 'Single-player', 'Com amigos'];
   const settings = { ...DEFAULT_SETTINGS, gamesDir: 'C:\\Users\\Demo\\Desktop\\jogos', updateRepo: 'demo/gameshub' };
   const windowState = { maximized: false, fullscreen: false, pinned: false };
-  const undoStack = new Map();
-  let undoSeq = 0, emitTimer = null;
+  const undoStack = new Map(); let undoSeq = 0, emitTimer = null;
 
   const send = (msg) => setTimeout(() => {
     const clone = JSON.parse(JSON.stringify(msg));
@@ -209,7 +209,6 @@ export function createMockHost() {
       console.info('[mock] openExternal', url);
       return { ok: true, data: {} };
     },
-    openDataFolder: () => ({ ok: true, data: {} }),
 
     checkUpdate: async () => {
       await wait(500);
@@ -223,8 +222,9 @@ export function createMockHost() {
     },
 
     log({ level = 'info', msg }) { (console[level] || console.log)('[ui]', msg); return { ok: true, data: {} }; },
-    quit: () => ({ ok: true, data: {} }),
+    quit: () => ({ ok: true, data: {} }), openDataFolder: () => ({ ok: true, data: {} }),
   };
+  Object.assign(commands, wave2Commands({ games, find, emitGames, event, addUndo, settings, ok, fail, wait }));
 
   async function handle(msg, files) {
     if (!msg || msg.type !== 'cmd') return;

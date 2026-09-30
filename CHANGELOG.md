@@ -5,6 +5,8 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.0.2] - 2026-09-30
+
 Suporte completo a controles genéricos, artes do SteamGridDB sem nenhuma configuração e uma rodada ampla de
 segurança e qualidade de código guiada pela análise estática (CodeQL).
 
@@ -142,6 +144,7 @@ Versão original ("GamesLounge"), anterior a este repositório.
 - Grade de jogos a partir dos atalhos da pasta de jogos, capas da Steam, registro simples de jogadas e ícone na
   bandeja.
 
-[Não lançado]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.1...HEAD
+[Não lançado]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/brunocsilva41/GamesHub/releases/tag/v2.0.0

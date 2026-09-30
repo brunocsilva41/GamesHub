@@ -2,7 +2,10 @@ name: Release
 
 # Triggered by pushing an annotated tag vX.Y.Z (created by tools/release.ps1). The tag is validated, the full CI
 # pipeline runs again from scratch (including the end-to-end test of the exact installer), and only then the same
-# artifact is attested and published as a GitHub Release.
+# artifact is signed for the in-app updater, attested and published as a GitHub Release.
+#
+# Injection hardening: no ${{ }} expression is ever expanded inside a run: script. Tag names, step outputs, secrets
+# and context values reach the scripts only through env: variables, and the tag format is validated first.
 on:
   push:
     tags: ['v*.*.*']
@@ -26,6 +29,13 @@ jobs:
     outputs:
       version: ${{ steps.v.outputs.version }}
     steps:
+      - name: Validate tag format
+        id: v
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ($env:TAG -cnotmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw 'Invalid release tag format (expected vMAJOR.MINOR.PATCH[-pre]).' }
+          "version=$($env:TAG.Substring(1))" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -33,10 +43,8 @@ jobs:
       - name: Validate tag, version, CHANGELOG, branch
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./ci/release/Test-ReleaseTag.ps1 -Tag '${{ github.ref_name }}'
-      - id: v
-        name: Version
-        run: '"version=$("${{ github.ref_name }}".TrimStart("v"))" >> $env:GITHUB_OUTPUT'
+          TAG: ${{ github.ref_name }}
+        run: ./ci/release/Test-ReleaseTag.ps1 -Tag $env:TAG
 
   pipeline:
     name: Full pipeline
@@ -50,7 +58,7 @@ jobs:
       GAMESHUB_SGDB_KEY: ${{ secrets.GAMESHUB_SGDB_KEY }}
 
   publish:
-    name: Attest & publish
+    name: Sign, attest & publish
     needs: [gate, pipeline]
     runs-on: windows-latest
     timeout-minutes: 10
@@ -61,7 +69,14 @@ jobs:
       contents: write      # create the release
       id-token: write      # sign the provenance attestation
       attestations: write  # store it
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+      TAG: ${{ github.ref_name }}
     steps:
+      - name: Re-validate version and tag
+        run: |
+          if ($env:VERSION -cnotmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw 'Invalid version output from the gate job.' }
+          if ($env:TAG -cne "v$($env:VERSION)") { throw 'Tag and version disagree.' }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -74,16 +89,24 @@ jobs:
       - name: Verify artifact integrity
         id: files
         run: |
-          $version = '${{ needs.gate.outputs.version }}'
-          $exe = "dist/package/GamesHub-Setup-$version.exe"
+          $exe = "dist/package/GamesHub-Setup-$($env:VERSION).exe"
           if (-not (Test-Path $exe)) { throw "Installer not found: $exe" }
           $expected = ((Get-Content "$exe.sha256" -Raw).Trim() -split '\s+')[0]
           $actual = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($expected -ne $actual) { throw "Checksum mismatch: $expected vs $actual" }
           $fv = (Get-Item $exe).VersionInfo.ProductVersion
-          if ($fv -ne $version) { throw "Installer ProductVersion $fv does not match $version" }
+          if ($fv -ne $env:VERSION) { throw "Installer ProductVersion $fv does not match $($env:VERSION)" }
           "exe=$exe" >> $env:GITHUB_OUTPUT
           "Installer verified: $exe ($actual)"
+
+      # The in-app updater only installs an update whose .sha256 manifest carries a valid signature from this key
+      # (public half embedded in src/GamesHub/Update/UpdateSigningKey.cs). Fails when the secret is missing or does
+      # not match the embedded public key.
+      - name: Sign the update manifest
+        env:
+          GAMESHUB_UPDATE_SIGNING_KEY: ${{ secrets.GAMESHUB_UPDATE_SIGNING_KEY }}
+          EXE: ${{ steps.files.outputs.exe }}
+        run: ./ci/release/Sign-UpdateManifest.ps1 -Manifest "$($env:EXE).sha256"
 
       - name: Build provenance attestation
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
@@ -91,16 +114,19 @@ jobs:
           subject-path: ${{ steps.files.outputs.exe }}
 
       - name: Release notes
-        run: ./ci/release/Get-ReleaseNotes.ps1 -Version '${{ needs.gate.outputs.version }}' -Installer '${{ steps.files.outputs.exe }}' -OutFile dist/release-notes.md
+        env:
+          EXE: ${{ steps.files.outputs.exe }}
+        run: ./ci/release/Get-ReleaseNotes.ps1 -Version $env:VERSION -Installer $env:EXE -OutFile dist/release-notes.md
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          EXE: ${{ steps.files.outputs.exe }}
+          RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}
         run: |
-          $version = '${{ needs.gate.outputs.version }}'
-          $exe = '${{ steps.files.outputs.exe }}'
-          $pre = if ($version -match '-') { '--prerelease' } else { '--latest' }
-          gh release create '${{ github.ref_name }}' $exe "$exe.sha256" `
-            --title "GamesHub $version" --notes-file dist/release-notes.md --verify-tag $pre
+          $exe = $env:EXE
+          $pre = if ($env:VERSION -match '-') { '--prerelease' } else { '--latest' }
+          gh release create $env:TAG $exe "$exe.sha256" "$exe.sha256.sig" `
+            --title "GamesHub $($env:VERSION)" --notes-file dist/release-notes.md --verify-tag $pre
           if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
-          "### 🚀 Published [GamesHub $version](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }})" >> $env:GITHUB_STEP_SUMMARY
+          "### 🚀 Published [GamesHub $($env:VERSION)]($($env:RELEASE_URL))" >> $env:GITHUB_STEP_SUMMARY

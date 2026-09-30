@@ -21,7 +21,9 @@ namespace GamesHub
         private static readonly Regex LineBreaks = new Regex(@"<br\s*/?>", RegexOptions.IgnoreCase);
         private static readonly Regex HtmlTags = new Regex(@"</?[a-zA-Z][^<>]*>");
         private static readonly Regex RowStart = new Regex(@"\{\{\s*Game[ _]data/(saves|config)\s*\|", RegexOptions.IgnoreCase);
-        private static readonly Regex DrivePath = new Regex(@"^[A-Za-z]:\\");
+        /// <summary>A location must start with a path template ({{p|...}} / {{path|...}}): literal absolute
+        /// paths from the (untrusted) wiki are never accepted.</summary>
+        private static readonly Regex TemplateStart = new Regex(@"^\{\{\s*p(?:ath)?\s*\|", RegexOptions.IgnoreCase);
 
         /// <summary>Removes comments, &lt;ref&gt;s and HTML tags (&lt;br&gt; becomes a path separator).</summary>
         public static string Clean(string wikitext)
@@ -73,8 +75,7 @@ namespace GamesHub
         public static bool LooksLikePath(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return false;
-            return raw.StartsWith("{{", StringComparison.Ordinal) && raw.IndexOf("{{p|", StringComparison.OrdinalIgnoreCase) >= 0
-                || DrivePath.IsMatch(raw);
+            return TemplateStart.IsMatch(raw.TrimStart());
         }
 
         /// <summary>Index of the "}}" that closes the template opened at <paramref name="open"/>, or -1.</summary>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace GamesHub
 {
@@ -28,7 +29,14 @@ namespace GamesHub
             ["bacon"] = new[] { "LoR.exe" },
         };
 
-        /// <summary>"league_of_legends.live" → ("league_of_legends", "live"). Null when malformed.</summary>
+        // Product and patchline come from folder names under ProgramData (writable by any local user) and end up
+        // on the Riot Client command line: only plain identifiers are accepted.
+        private static readonly Regex Ident = new Regex(@"\A[a-z0-9_-]+\z",RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        public static bool IsIdentifier(string s) => !string.IsNullOrEmpty(s) && s.Length <= 64 && Ident.IsMatch(s);
+
+        /// <summary>"league_of_legends.live" → ("league_of_legends", "live"). False when malformed or when either
+        /// part is not a plain identifier ([a-z0-9_-]).</summary>
         public static bool TrySplitProductDir(string dirName, out string product, out string patchline)
         {
             product = patchline = "";
@@ -37,7 +45,8 @@ namespace GamesHub
             if (dot <= 0 || dot == dirName.Length - 1) return false;
             product = dirName.Substring(0, dot);
             patchline = dirName.Substring(dot + 1);
-            return patchline.IndexOf('.') < 0;   // "league_of_legends.live.game_patch" is not a product
+            // "league_of_legends.live.game_patch" is not a product (the '.' fails the identifier check).
+            return IsIdentifier(product) && IsIdentifier(patchline);
         }
 
         public static string DisplayName(string product, string patchline, string shortcutName = "")
@@ -65,8 +74,10 @@ namespace GamesHub
         public static string GameId(string product, string patchline)
             => "riot:" + (product ?? "").ToLowerInvariant() + (IsLive(patchline) ? "" : "." + (patchline ?? "").ToLowerInvariant());
 
+        /// <summary>"" when product/patchline are not plain identifiers (never builds a command line from them).</summary>
         public static string LaunchArgs(string product, string patchline)
-            => "--launch-product=" + product + " --launch-patchline=" + patchline;
+            => IsIdentifier(product) && IsIdentifier(patchline)
+                ? "--launch-product=" + product + " --launch-patchline=" + patchline : "";
 
         /// <summary>Candidate game executables (absolute) for a product installed at installDir.</summary>
         public static List<string> ExeCandidates(string product, string installDir)

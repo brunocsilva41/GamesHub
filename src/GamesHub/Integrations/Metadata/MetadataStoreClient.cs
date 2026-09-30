@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -21,6 +22,9 @@ namespace GamesHub
         public const string Language = "brazilian";
         public const string FallbackLanguage = "portuguese";
 
+        /// <summary>appdetails JSON is tens of KB; anything past this is not a real answer.</summary>
+        public const int MaxBytes = 4 * 1024 * 1024;
+
         private static readonly Lazy<HttpClient> Client = new Lazy<HttpClient>(Create);
 
         public static string Url(string appId, string lang = Language)
@@ -28,7 +32,7 @@ namespace GamesHub
 
         private static HttpClient Create()
         {
-            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            TlsPolicy.Ensure();
             var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate };
             var c = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
             c.DefaultRequestHeaders.UserAgent.ParseAdd("GamesHub/" + AppInfo.Version);
@@ -48,9 +52,13 @@ namespace GamesHub
         {
             try
             {
-                using (HttpResponseMessage resp = await Client.Value.GetAsync(url).ConfigureAwait(false))
+                using (HttpResponseMessage resp = await Client.Value.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
                 {
-                    byte[] bytes = await resp.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                    byte[] bytes;
+                    using (Stream s = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                        bytes = await BoundedRead.ReadAllAsync(s, MaxBytes).ConfigureAwait(false);
+                    if (bytes == null)
+                        return new MetadataHttpResult { Status = 0, Error = new IOException("Steam store response larger than " + MaxBytes + " bytes") };
                     return new MetadataHttpResult { Status = (int)resp.StatusCode, Body = Encoding.UTF8.GetString(bytes) };
                 }
             }

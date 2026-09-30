@@ -72,7 +72,8 @@ namespace GamesHub
                 if (IsEpic(game))
                     return new UninstallInfo { Method = "epic", Command = EpicLibraryUri, DisplayName = game.Name };
 
-                UninstallEntry e = UninstallMatcher.Best(UninstallRegistry.ReadAll(), GameDirForMatching(game), game.Name);
+                // Only folder/icon matches: a registry entry that merely shares the name is never run.
+                UninstallEntry e = UninstallMatcher.BestToRun(UninstallRegistry.ReadAll(), GameDirForMatching(game), game.Name);
                 if (e != null)
                     return new UninstallInfo { Method = "registry", Command = e.UninstallString, DisplayName = e.DisplayName };
             }

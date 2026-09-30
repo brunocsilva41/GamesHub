@@ -85,10 +85,14 @@ namespace GamesHub
             // "D:" alone is drive-relative (the current folder on D:), so GetFullPath would turn it into some
             // arbitrary folder: treat bare drive letters as the drive root they name.
             if (System.Text.RegularExpressions.Regex.IsMatch((dir ?? "").Trim(), @"^[A-Za-z]:$")) return true;
+            // Network/device paths ("\\server\share\...", "\\?\...", "//server/...") are never sized or matched:
+            // walking them would contact an SMB server named by third-party data.
+            string raw = (dir ?? "").Trim().Trim('"').Replace('/', '\\');
+            if (raw.StartsWith("\\\\", StringComparison.Ordinal)) return true;
             string k = Key(dir);
             if (k.Length == 0) return true;
-            if (k.Length <= 3 || k.StartsWith("\\\\") && k.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).Length <= 2)
-                return true; // drive root or UNC share root
+            if (k.Length <= 3 || k.StartsWith("\\\\", StringComparison.Ordinal))
+                return true; // drive root, or a UNC path produced by expansion/normalization
             string win = Key(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
             if (win.Length > 0 && IsSameOrInside(k, win)) return true;
             // k is a sensitive dir or one of its parents

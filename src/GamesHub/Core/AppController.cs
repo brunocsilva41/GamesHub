@@ -424,11 +424,44 @@ namespace GamesHub
             if (!Settings.StartWithWindows) return; // never touch the registry unless the user opted in
             try
             {
+                // A copy run from elsewhere (portable zip, Downloads, a dev build) must not silently re-point the
+                // Run entry at itself: only the registered installation refreshes it. Changing the option in
+                // Settings (ApplySettingsSideEffects) still writes it for any copy.
+                if (!IsInstalledCopy(Application.ExecutablePath, RegisteredInstallDir()))
+                {
+                    Log.Info("Autostart entry left as is: this copy is not the registered installation");
+                    return;
+                }
                 Autostart.Apply(true, Settings.StartMinimized);
             }
             catch (Exception ex) when (IsRegistryError(ex))
             {
                 Log.Warn("Could not refresh the autostart entry", ex);
+            }
+        }
+
+        /// <summary>InstallLocation written by Setup under HKCU\...\Uninstall\GamesHub, or null.</summary>
+        private static string RegisteredInstallDir()
+        {
+            using (Microsoft.Win32.RegistryKey k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                       @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppInfo.Name, false))
+                return k?.GetValue("InstallLocation") as string;
+        }
+
+        /// <summary>True when <paramref name="exePath"/> sits directly in <paramref name="installDir"/>.</summary>
+        internal static bool IsInstalledCopy(string exePath, string installDir)
+        {
+            if (string.IsNullOrWhiteSpace(exePath) || string.IsNullOrWhiteSpace(installDir)) return false;
+            try
+            {
+                string dir = Path.GetFullPath(Path.GetDirectoryName(exePath.Trim().Trim('"'))).TrimEnd('\\', '/');
+                string inst = Path.GetFullPath(Environment.ExpandEnvironmentVariables(installDir.Trim().Trim('"'))).TrimEnd('\\', '/');
+                return string.Equals(dir, inst, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException
+                                       || ex is System.Security.SecurityException)
+            {
+                return false;
             }
         }
 

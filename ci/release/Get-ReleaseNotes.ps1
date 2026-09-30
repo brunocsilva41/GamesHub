@@ -111,6 +111,8 @@ Este instalador foi compilado e testado pelo [pipeline público](https://github.
 gh attestation verify .\$name --repo $Repo
 ``````
 
+A atualização automática do app é ainda mais rígida: o GamesHub só executa o instalador baixado se a lista de SHA-256 (``$name.sha256``) tiver uma **assinatura digital válida** (``$name.sha256.sig``) da chave de atualização do projeto, cuja parte pública vem embutida no próprio app. Se algo faltar ou não conferir, nada é instalado.
+
 </details>
 
 ---

@@ -395,9 +395,10 @@ SettingsDto = {
   quickLaunchEnabled, quickLaunchHotkey,       // ex.: "Ctrl+Shift+Space"
   sortBy: "name" | "recent" | "playtime" | "added",
   view: "grid" | "list", cardStyle: "landscape" | "portrait",
-  reduceMotion, autoArtwork, steamGridDbKey, trackPlaytime,
+  reduceMotion, autoArtwork, trackPlaytime,
+  steamGridDbKey, steamGridDbKeySet,           // chave só de escrita: sempre "" na leitura; "" no patch apaga
   importSteamPlaytime, fetchMetadata, pcgwEnabled, automationEnabled,
-  checkUpdates, updateRepo,                    // "dono/repositório"
+  checkUpdates,                                // repositório de atualizações fixo (oficial)
   language: "pt-BR"
 }
 

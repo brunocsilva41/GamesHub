@@ -4,6 +4,8 @@
   on main, have a dated CHANGELOG section with content, and not be published yet.
 #>
 param([Parameter(Mandatory)][string]$Tag)
+# Validate the format before the tag reaches git/gh (it comes from the pushed ref name).
+if ($Tag -cnotmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { Write-Error "Invalid release tag format (expected vMAJOR.MINOR.PATCH[-pre])"; exit 1 }
 . (Join-Path $PSScriptRoot '..' 'lib' 'Common.ps1')
 Start-Stage 'Release gate'
 $root = Get-RepoRoot

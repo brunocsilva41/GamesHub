@@ -96,13 +96,27 @@ namespace GamesHub
         /// <summary>URL of the top-rated asset of a kind for a SteamGridDB game ("" = none).</summary>
         public async Task<KeyValuePair<FetchStatus, string>> AssetUrlAsync(string sgdbGameId, string kind)
         {
-            FetchResult r = await GetAsync(SteamEndpoints.SgdbAssets(sgdbGameId, kind)).ConfigureAwait(false);
+            string endpoint = SteamEndpoints.SgdbAssets(sgdbGameId, kind);
+            if (endpoint == null) return new KeyValuePair<FetchStatus, string>(FetchStatus.NotFound, "");
+            FetchResult r = await GetAsync(endpoint).ConfigureAwait(false);
             if (!r.Ok) return new KeyValuePair<FetchStatus, string>(r.Status, "");
-            string found = DataArray(r.Text).Select(e => Json.Str(e, "url"))
-                .FirstOrDefault(url => url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+            string found = DataArray(r.Text).Select(e => Json.Str(e, "url")).FirstOrDefault(IsSgdbCdnUrl);
             return found != null
                 ? new KeyValuePair<FetchStatus, string>(FetchStatus.Ok, found)
                 : new KeyValuePair<FetchStatus, string>(FetchStatus.NotFound, "");
+        }
+
+        /// <summary>Pure: only images served by SteamGridDB itself (the API returns https://cdn2.steamgriddb.com/...):
+        /// https, a steamgriddb.com subdomain, default port, no credentials. Anything else in the JSON is ignored,
+        /// so a tampered or compromised response cannot make us fetch arbitrary hosts (intranet, file shares...).</summary>
+        public static bool IsSgdbCdnUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url) || !Uri.TryCreate(url, UriKind.Absolute, out Uri u)) return false;
+            if (u.Scheme != Uri.UriSchemeHttps || !u.IsDefaultPort || u.UserInfo.Length > 0) return false;
+            string host = u.IdnHost.TrimEnd('.');
+            return u.HostNameType == UriHostNameType.Dns
+                   && host.EndsWith(".steamgriddb.com", StringComparison.OrdinalIgnoreCase)
+                   && host.Length > ".steamgriddb.com".Length;
         }
 
         private static IDictionary<string, object> Parse(string json)

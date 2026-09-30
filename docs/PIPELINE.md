@@ -62,8 +62,13 @@ cada etapa aparece na página da execução.
   1. confere que a tag corresponde à versão em `AssemblyInfo.cs` e a uma seção `## [X.Y.Z] - AAAA-MM-DD` do
      `CHANGELOG.md`;
   2. executa novamente todas as etapas;
-  3. publica uma **GitHub Release** com o instalador, o `.sha256`, as notas extraídas do `CHANGELOG.md` e uma
-     **atestação de proveniência do build** (build provenance attestation).
+  3. **assina a lista de somas** para o atualizador do app (`GamesHub-Setup-X.Y.Z.exe.sha256.sig`, veja
+     [Assinatura das atualizações](#assinatura-das-atualizações));
+  4. publica uma **GitHub Release** com o instalador, o `.sha256`, o `.sha256.sig`, as notas extraídas do
+     `CHANGELOG.md` e uma **atestação de proveniência do build** (build provenance attestation).
+- Nenhuma expressão `${{ }}` é expandida dentro de scripts `run:`: nome da tag, saídas de etapas e segredos chegam
+  aos scripts só por variáveis de ambiente (`env:`), e o formato da tag (`vMAJOR.MINOR.PATCH[-pre]`) é validado
+  antes de qualquer uso.
 - O gate também exige que a tag seja **anotada**, que o commit esteja na `main`, que a seção do CHANGELOG tenha
   conteúdo e que a versão ainda não tenha sido publicada. O job de publicação usa o ambiente `release` do GitHub
   (onde é possível exigir aprovação manual) e só ele recebe permissão de escrita.
@@ -71,6 +76,34 @@ cada etapa aparece na página da execução.
   Base64) e `GAMESHUB_SIGN_PFX_PASSWORD`, `GamesHub.exe`, `Uninstall.exe` e o instalador são assinados (SHA-256 +
   carimbo de tempo) durante o empacotamento — antes da ponta a ponta — e a etapa Pacote passa a **exigir**
   assinaturas válidas.
+
+#### Assinatura das atualizações
+
+O atualizador embutido só instala uma versão cuja lista de somas tenha assinatura válida (detalhes em
+[SECURITY.md](../SECURITY.md#como-as-atualizações-são-verificadas)). Isso depende de um segredo **obrigatório**:
+
+| Segredo | Conteúdo | Usado por |
+|---|---|---|
+| `GAMESHUB_UPDATE_SIGNING_KEY` | chave privada **ECDSA P-256** em PKCS#8, Base64 numa linha | job `publish` do `release.yml` (ambiente `release`) |
+
+- A etapa **Sign the update manifest** (`ci/release/Sign-UpdateManifest.ps1`) recebe o segredo só por `env:`, assina
+  o `.sha256` e confere a assinatura com a chave pública embutida no app antes de publicar. Se o segredo não existir
+  ou não corresponder à chave embutida, **a publicação falha**.
+- O par de chaves é gerado uma única vez por `pwsh tools/New-UpdateSigningKey.ps1`: a chave privada vai para
+  `.local/update-signing.key` do checkout principal (ignorado pelo git; o script nunca a imprime) e a pública é
+  escrita em `src/GamesHub/Update/UpdateSigningKey.cs`. Para cadastrar o segredo (no ambiente `release`):
+
+  ```powershell
+  Get-Content .local/update-signing.key -Raw | gh secret set GAMESHUB_UPDATE_SIGNING_KEY --env release
+  ```
+
+  (em Bash: `gh secret set GAMESHUB_UPDATE_SIGNING_KEY --env release < .local/update-signing.key`). Guarde uma
+  cópia da chave privada fora do computador (gerenciador de senhas): sem ela, novas versões não chegam aos apps
+  instalados pelo atualizador automático.
+- **Troca de chave:** cada app instalado confia só na chave pública embutida nele. `-Rotate` gera um novo par
+  (atualize o segredo em seguida); a partir daí, as instalações antigas recusam a atualização automática — com falha
+  fechada, abrindo a página da versão — e precisam de **uma** atualização manual para passar a confiar na nova
+  chave. Faça isso só se a chave privada for perdida ou vazar (neste caso, o quanto antes).
 
 ### `codeql.yml` — análise estática
 
@@ -130,4 +163,5 @@ não foi alterado depois.
 é baixada. Depois de conferir a soma e a atestação, clique em **Mais informações → Executar assim mesmo**. A
 pipeline já suporta assinatura: basta configurar o certificado como segredo do repositório.
 
-O atualizador do próprio GamesHub faz a verificação SHA-256 automaticamente antes de instalar.
+O atualizador do próprio GamesHub faz tudo isso automaticamente antes de instalar — e vai além: exige a
+assinatura `GamesHub-Setup-X.Y.Z.exe.sha256.sig` da lista de somas, conferida com a chave pública embutida no app.

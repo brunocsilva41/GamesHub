@@ -133,12 +133,15 @@ namespace GamesHub
         public string CardStyle = "landscape";
         public bool ReduceMotion = false;
         public bool AutoArtwork = true;
+        /// <summary>User's own SteamGridDB API key. Plain only in memory: settings.json keeps it DPAPI-protected and the
+        /// UI never receives it back (SettingsStore.ToDto sends "" plus steamGridDbKeySet).</summary>
         public string SteamGridDbKey = "";
         public bool TrackPlaytime = true;
         public bool CheckUpdates = true;
-        /// <summary>GitHub "owner/repo" whose Releases feed the updater (an empty value means the official
-        /// repository; turn updates off with CheckUpdates).</summary>
-        public string UpdateRepo = AppInfo.DefaultUpdateRepo;
+        /// <summary>GitHub "owner/repo" whose Releases feed the updater: always the official repository (it decides
+        /// which installer runs, so it is not a setting; a legacy "updateRepo" in settings.json is ignored). Turn
+        /// updates off with CheckUpdates.</summary>
+        public string UpdateRepo { get { return AppInfo.DefaultUpdateRepo; } }
         public string Language = "pt-BR";
 
         // ---- Integrations ----

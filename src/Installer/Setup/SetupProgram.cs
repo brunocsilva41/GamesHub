@@ -1,7 +1,8 @@
 //   GamesHub-Setup-x.y.z.exe                     wizard
-//   /silent [/dir <path>] [/games <path>]         unattended install (+ /nodesktop /nostartmenu /autostart)
+//   /silent [/dir <path>] [/games <path>]         unattended install (+ /nodesktop /nostartmenu /autostart /allowdowngrade)
 //   /update [/dir <path>]                         used by the in-app updater: waits for the app, installs, relaunches
 // Result: %TEMP%\GamesHub\setup-result.txt ("OK:<dir>" | "ERRO:<msg>"), log: %TEMP%\GamesHub\setup.log
+// Exit codes: 0 ok, 1 error, 2 cancelled, 3 another Setup running, 4 newer version installed (downgrade refused)
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -13,6 +14,8 @@ namespace GamesHub.Installer
     internal static class SetupProgram
     {
         public const string ResultFile = "setup-result.txt";
+        /// <summary>Exit code of an unattended install refused because a newer version is installed.</summary>
+        public const int ExitDowngradeRefused = 4;
 
         [STAThread]
         private static int Main(string[] args)
@@ -32,7 +35,7 @@ namespace GamesHub.Installer
 
                 if (o.Help)
                 {
-                    MessageBox.Show("Uso: GamesHub-Setup.exe [/silent] [/dir <pasta>] [/games <pasta>] [/nodesktop] [/nostartmenu] [/autostart] [/update]",
+                    MessageBox.Show("Uso: GamesHub-Setup.exe [/silent] [/dir <pasta>] [/games <pasta>] [/nodesktop] [/nostartmenu] [/autostart] [/allowdowngrade] [/update]",
                         "GamesHub", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return 0;
                 }
@@ -60,6 +63,12 @@ namespace GamesHub.Installer
                 SetupResult r = new SetupEngine().Run(o);
                 InstallerLog.WriteResult(ResultFile, "OK:" + r.InstallDir);
                 return 0;
+            }
+            catch (DowngradeException ex)
+            {
+                InstallerLog.Error("Silent install refused (downgrade)", ex);
+                InstallerLog.WriteResult(ResultFile, "ERRO:" + ex.Message);
+                return ExitDowngradeRefused;
             }
             catch (Exception ex)
             {
@@ -89,6 +98,7 @@ namespace GamesHub.Installer
                     case "nodesktop": o.DesktopShortcut = false; break;
                     case "nostartmenu": o.StartMenuShortcut = false; break;
                     case "autostart": o.StartWithWindows = true; break;
+                    case "allowdowngrade": o.AllowDowngrade = true; break;
                     case "?": case "h": case "help": o.Help = true; break;
                     default: InstallerLog.Warn("Unknown argument: " + a); break;
                 }

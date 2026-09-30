@@ -55,6 +55,7 @@ namespace GamesHub.Tests
   ""body"": ""## Novidades\n- Coisas"",
   ""assets"": [
     { ""name"": ""GamesHub-Setup-2.1.0.exe.sha256"", ""size"": 90, ""browser_download_url"": ""https://github.com/owner/gameshub/releases/download/v2.1.0/GamesHub-Setup-2.1.0.exe.sha256"" },
+    { ""name"": ""GamesHub-Setup-2.1.0.exe.sha256.sig"", ""size"": 89, ""browser_download_url"": ""https://github.com/owner/gameshub/releases/download/v2.1.0/GamesHub-Setup-2.1.0.exe.sha256.sig"" },
     { ""name"": ""source.zip"", ""size"": 1000, ""browser_download_url"": ""https://github.com/owner/gameshub/releases/download/v2.1.0/source.zip"" },
     { ""name"": ""GamesHub-Setup-2.0.9.exe"", ""size"": 5, ""browser_download_url"": ""https://github.com/owner/gameshub/releases/download/v2.1.0/GamesHub-Setup-2.0.9.exe"" },
     { ""name"": ""GamesHub-Setup-2.1.0.exe"", ""size"": 3145728, ""browser_download_url"": ""https://github.com/owner/gameshub/releases/download/v2.1.0/GamesHub-Setup-2.1.0.exe"" }
@@ -65,8 +66,8 @@ namespace GamesHub.Tests
         {
             GitHubRelease r = GitHubRelease.Parse(Sample);
             Assert.Equal("v2.1.0", r.TagName);
-            Assert.Equal(4, r.Assets.Count);
-            Assert.Equal(3145728L, r.Assets[3].Size);
+            Assert.Equal(5, r.Assets.Count);
+            Assert.Equal(3145728L, r.Assets[4].Size);
             Assert.Equal("2.1.0", r.Version.ToString());
             Assert.True(r.Body.Contains("Novidades"));
         }
@@ -109,22 +110,57 @@ namespace GamesHub.Tests
             Assert.True(threw);
         }
 
-        public static void TestNormalizesRepo()
+        public static void TestRepoIsAlwaysTheOfficialOne()
         {
-            Assert.Equal("owner/repo", UpdateChecker.NormalizeRepo("owner/repo"));
-            Assert.Equal("owner/repo", UpdateChecker.NormalizeRepo(" https://github.com/owner/repo.git "));
-            Assert.Equal("owner/my.repo", UpdateChecker.NormalizeRepo("github.com/owner/my.repo/releases"));
-            Assert.Equal(null, UpdateChecker.NormalizeRepo(""));
-            Assert.Equal(null, UpdateChecker.NormalizeRepo("not a repo"));
-            Assert.Equal(null, UpdateChecker.NormalizeRepo("../../etc"));
+            Assert.Equal(AppInfo.DefaultUpdateRepo, new UpdateChecker(new AppSettings()).Repo);
+            Assert.Equal(AppInfo.DefaultUpdateRepo, new AppSettings().UpdateRepo);
+            Assert.False(new UpdateChecker(new AppSettings { CheckUpdates = false }).CheckOnStartupAsync().Result.Available,
+                "startup check honours CheckUpdates");
         }
 
-        public static void TestDisabledWithoutRepo()
+        public static void TestInstallerAndSignatureAssetsNeedExactNames()
         {
-            var u = new UpdateChecker(new AppSettings { UpdateRepo = "", CheckUpdates = true });
-            Assert.False(u.CheckAsync().Result.Available);
-            Assert.False(new UpdateChecker(new AppSettings { UpdateRepo = "owner/repo", CheckUpdates = false })
-                .CheckOnStartupAsync().Result.Available, "startup check honours CheckUpdates");
+            GitHubRelease r = GitHubRelease.Parse(Sample);
+            ReleaseAsset exe = r.FindInstaller();
+            Assert.Equal("GamesHub-Setup-2.1.0.exe.sha256.sig", r.FindSignature(exe).Name);
+            Assert.True(r.FindSignature(null) == null);
+
+            // Only "<installer>.sha256" / "<installer>.sha256.sig" count: no SHA256SUMS or other-version fallbacks.
+            GitHubRelease loose = GitHubRelease.Parse(@"{""tag_name"":""v2.2.0"",""assets"":[
+              {""name"":""GamesHub-Setup-2.1.0.exe"",""browser_download_url"":""https://github.com/o/r/releases/download/v2.2.0/GamesHub-Setup-2.1.0.exe""},
+              {""name"":""GamesHub-Setup-2.2.0.exe"",""browser_download_url"":""https://github.com/o/r/releases/download/v2.2.0/GamesHub-Setup-2.2.0.exe""},
+              {""name"":""SHA256SUMS"",""browser_download_url"":""https://github.com/o/r/releases/download/v2.2.0/SHA256SUMS""},
+              {""name"":""GamesHub-Setup-2.1.0.exe.sha256"",""browser_download_url"":""https://github.com/o/r/releases/download/v2.2.0/x.sha256""}]}");
+            ReleaseAsset inst = loose.FindInstaller();
+            Assert.Equal("GamesHub-Setup-2.2.0.exe", inst.Name);
+            Assert.True(loose.FindChecksum(inst) == null, "no exact .sha256");
+            Assert.True(loose.FindSignature(inst) == null, "no .sig");
+            Assert.True(GitHubRelease.Parse(@"{""tag_name"":""v2.2.0"",""assets"":[{""name"":""GamesHub-Setup-evil.exe"",""browser_download_url"":""https://github.com/x""}]}")
+                .FindInstaller() == null, "installer must carry the release version");
+        }
+
+        public static void TestDownloadHostAllowlist()
+        {
+            Assert.True(GitHubRelease.IsAllowedDownloadUrl("https://github.com/o/r/releases/download/v1.0.0/GamesHub-Setup-1.0.0.exe"));
+            Assert.True(GitHubRelease.IsAllowedDownloadUrl("https://objects.githubusercontent.com/github-production-release-asset/1"));
+            Assert.True(GitHubRelease.IsAllowedDownloadUrl("https://release-assets.githubusercontent.com/github-production-release-asset/1"));
+            foreach (string bad in new[] { "http://github.com/o/r/x.exe", "https://evil.com/x.exe", "https://github.com.evil.com/x.exe",
+                                           "https://user:pw@github.com/x.exe", "https://github.com:8443/x.exe", "https://raw.githubusercontent.com/x.exe",
+                                           "file:///C:/x.exe", "", null })
+                Assert.False(GitHubRelease.IsAllowedDownloadUrl(bad), "should reject " + bad);
+            Assert.True(GitHubRelease.IsGitHubPage("https://github.com/o/r/releases/tag/v1.0.0"));
+            Assert.False(GitHubRelease.IsGitHubPage("https://evil.com/o/r/releases"));
+        }
+
+        public static void TestBuildInfoDropsNonGitHubUrls()
+        {
+            GitHubRelease r = GitHubRelease.Parse(Sample.Replace("https://github.com/owner/gameshub/releases/download/v2.1.0/GamesHub-Setup-2.1.0.exe\"",
+                                                                 "https://evil.example/GamesHub-Setup-2.1.0.exe\"")
+                                                        .Replace("https://github.com/owner/gameshub/releases/tag", "https://evil.example/tag"));
+            UpdateInfo info = UpdateChecker.BuildInfo(r, "2.0.0");
+            Assert.True(info.Available);
+            Assert.Equal("", info.DownloadUrl);
+            Assert.Equal("", info.PageUrl);
         }
     }
 

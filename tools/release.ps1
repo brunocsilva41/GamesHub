@@ -49,6 +49,14 @@ if ($LASTEXITCODE -eq 0) {
 } else { Write-Host '  (no remote reachable — skipping up-to-date check)' -ForegroundColor Yellow }
 if (git tag --list $tag) { Fail "Tag $tag already exists." }
 
+# The publish job signs the update manifest; without the secret it would fail after the whole pipeline ran.
+if (Get-Command gh -ErrorAction SilentlyContinue) {
+    $secrets = @(gh secret list --env release --json name --jq '.[].name' 2>$null) + @(gh secret list --json name --jq '.[].name' 2>$null)
+    if ($secrets -contains 'GAMESHUB_UPDATE_SIGNING_KEY') { Write-Host '  update signing secret: present' -ForegroundColor Green }
+    elseif ($secrets.Count -gt 0 -and -not $DryRun) { Fail 'Secret GAMESHUB_UPDATE_SIGNING_KEY is missing (see docs/PIPELINE.md, "Assinatura das atualizações").' }
+    else { Write-Host '  (could not confirm the GAMESHUB_UPDATE_SIGNING_KEY secret; the release workflow will fail without it)' -ForegroundColor Yellow }
+}
+
 $asm = Get-Content $asmFile -Raw
 $current = [regex]::Match($asm, 'AssemblyInformationalVersion\("([^"]+)"\)').Groups[1].Value
 if (-not (IsNewer $Version $current)) { Fail "Version $Version must be greater than the current $current." }

@@ -24,6 +24,26 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
   (detectada por desinstalador, marcas de loja, estrutura Unity/Unreal etc.), e não a subpasta do executável
   (como `Binaries\Win64`).
 
+### Segurança
+
+- **Atualizações assinadas:** cada versão publica o hash do instalador assinado com a chave do projeto (ECDSA P-256);
+  o app confere a assinatura e o hash antes de executar e **recusa** a atualização se faltar qualquer peça. O
+  download só é aceito dos servidores do GitHub e com o tamanho anunciado, e o repositório de atualização é fixo.
+- **Confirmação nativa** (fora da página) antes de salvar uma automação que executa um programa novo e antes de
+  rodar um desinstalador — a entrada executada é exatamente a mostrada.
+- Cliente da Riot só é usado com assinatura digital da Riot Games; atalhos `.url` só abrem esquemas de launchers
+  conhecidos; caminhos de rede (UNC) vindos de manifestos da Epic, Riot e Hydra são ignorados.
+- Limites de tamanho em respostas da internet, arquivos lidos e imagens; imagens da SteamGridDB só do CDN oficial;
+  TLS 1.2/1.3 garantido.
+- Chave pessoal da SteamGridDB guardada criptografada (DPAPI) e nunca enviada à interface.
+- Configurações e biblioteca corrompidas são preservadas (`.corrupt-*`) e restauradas do backup `.bak`.
+- Logs sem nome de usuário nem ID da Steam, e sem linhas forjadas; instância única com pipe restrito à sessão do
+  usuário; janela da busca rápida com as mesmas travas da principal.
+- Instalador: pasta personalizada com permissões só do usuário, não encerra processos desconhecidos, avisa antes de
+  instalar uma versão mais antiga e limpa instaladores antigos.
+- CI: o gate de PR roda a versão confiável do script (commit base) e fecha contornos por nomes de arquivo, linhas
+  `++` e arquivos em `tests/`; assinatura das DLLs do WebView2 verificada no build.
+
 ## [2.0.2] - 2026-09-30
 
 Suporte completo a controles genéricos, artes do SteamGridDB sem nenhuma configuração e uma rodada ampla de

@@ -72,15 +72,19 @@ namespace GamesHub
             string url = "https://store.steampowered.com/api/appdetails?appids=" + appId + "&l=portuguese&cc=br";
             try
             {
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                TlsPolicy.Ensure();
                 var req = (HttpWebRequest)WebRequest.Create(url);
                 req.Timeout = 8000;
                 req.ReadWriteTimeout = 8000;
                 req.UserAgent = AppInfo.Name + "/" + AppInfo.Version;
                 req.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
                 using (var resp = (HttpWebResponse)req.GetResponse())
-                using (var reader = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
-                    return ParseAppDetailsName(reader.ReadToEnd(), appId);
+                using (Stream s = resp.GetResponseStream())
+                {
+                    byte[] body = BoundedRead.ReadAll(s, MetadataStoreClient.MaxBytes);
+                    if (body == null) { Log.Warn("Steam appdetails response too large for " + appId); return ""; }
+                    return ParseAppDetailsName(Encoding.UTF8.GetString(body), appId);
+                }
             }
             catch (Exception ex) when (ExpectedErrors.IsNetwork(ex) || ExpectedErrors.IsJson(ex))
             {

@@ -25,8 +25,6 @@ namespace GamesHub
         public SemanticVersion Version =>
             SemanticVersion.TryParse(TagName, out SemanticVersion v) || SemanticVersion.TryParse(Title, out v) ? v : null;
 
-        private static readonly Regex InstallerName = new Regex(@"^GamesHub-Setup-.*\.exe$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-
         /// <summary>Parses the object returned by GET /repos/{owner}/{repo}/releases/latest. Throws FormatException on garbage.</summary>
         public static GitHubRelease Parse(string json)
         {
@@ -51,29 +49,39 @@ namespace GamesHub
             return r;
         }
 
-        /// <summary>The installer asset (GamesHub-Setup-*.exe); prefers the one whose name contains the release version.</summary>
-        public ReleaseAsset FindInstaller()
-        {
-            List<ReleaseAsset> c = Assets.Where(x => InstallerName.IsMatch(x.Name) && IsHttps(x.DownloadUrl)).ToList();
-            SemanticVersion v = Version;
-            return (v == null ? null : c.FirstOrDefault(x => x.Name.IndexOf(v.ToString(), StringComparison.OrdinalIgnoreCase) >= 0))
-                ?? c.FirstOrDefault();
-        }
+        /// <summary>Hosts the updater downloads release assets from (github.com redirects to the CDN hosts).</summary>
+        private static readonly string[] DownloadHosts = { "github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com" };
+        private static readonly string[] PageHosts = { "github.com" };
 
-        /// <summary>Checksum asset for the installer: "&lt;installer&gt;.sha256", else any *.sha256 / SHA256SUMS.</summary>
-        public ReleaseAsset FindChecksum(ReleaseAsset installer)
-        {
-            if (installer == null) return null;
-            var sums = Assets.Where(x => IsHttps(x.DownloadUrl)).ToList();
-            return sums.FirstOrDefault(x => x.Name.Equals(installer.Name + ".sha256", StringComparison.OrdinalIgnoreCase))
-                ?? sums.FirstOrDefault(x => x.Name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase)
-                                            && x.Name.StartsWith("GamesHub-Setup-", StringComparison.OrdinalIgnoreCase))
-                ?? sums.FirstOrDefault(x => x.Name.Equals("SHA256SUMS", StringComparison.OrdinalIgnoreCase)
-                                            || x.Name.Equals("SHA256SUMS.txt", StringComparison.OrdinalIgnoreCase));
-        }
+        /// <summary>Exact installer file name for this release: "GamesHub-Setup-&lt;version&gt;.exe"; null without a version.</summary>
+        public string InstallerName => Version == null ? null : "GamesHub-Setup-" + Version + ".exe";
+
+        /// <summary>The installer asset, named exactly after the release version and served over https.</summary>
+        public ReleaseAsset FindInstaller() => FindAsset(InstallerName);
+
+        /// <summary>Checksum manifest of the installer: exactly "&lt;installer&gt;.sha256".</summary>
+        public ReleaseAsset FindChecksum(ReleaseAsset installer) => installer == null ? null : FindAsset(installer.Name + ".sha256");
+
+        /// <summary>Signature of the checksum manifest: exactly "&lt;installer&gt;.sha256.sig".</summary>
+        public ReleaseAsset FindSignature(ReleaseAsset installer) => installer == null ? null : FindAsset(installer.Name + ".sha256.sig");
+
+        private ReleaseAsset FindAsset(string name) => name == null ? null
+            : Assets.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) && IsHttps(x.DownloadUrl));
 
         public static bool IsHttps(string url) =>
             Uri.TryCreate(url, UriKind.Absolute, out Uri u) && u.Scheme == Uri.UriSchemeHttps;
+
+        /// <summary>https on the default port, no credentials, and a GitHub release download/CDN host.</summary>
+        public static bool IsAllowedDownloadUrl(Uri u) => IsHttpsOn(u, DownloadHosts);
+
+        public static bool IsAllowedDownloadUrl(string url) => Uri.TryCreate(url, UriKind.Absolute, out Uri u) && IsAllowedDownloadUrl(u);
+
+        /// <summary>An https://github.com/... page (release pages opened in the browser).</summary>
+        public static bool IsGitHubPage(string url) => Uri.TryCreate(url, UriKind.Absolute, out Uri u) && IsHttpsOn(u, PageHosts);
+
+        public static bool IsHttpsOn(Uri u, IEnumerable<string> hosts) =>
+            u != null && u.IsAbsoluteUri && u.Scheme == Uri.UriSchemeHttps && u.IsDefaultPort && string.IsNullOrEmpty(u.UserInfo)
+            && hosts.Any(h => string.Equals(u.Host, h, StringComparison.OrdinalIgnoreCase));
     }
 
     public static class Sha256File
@@ -105,6 +113,29 @@ namespace GamesHub
                 if (fileName == null || bare.Equals(fileName, StringComparison.OrdinalIgnoreCase)) return hash;
             }
             return anyName;
+        }
+
+        /// <summary>
+        /// Strict variant for signed manifests: only lines that name <paramref name="fileName"/> explicitly count (a bare
+        /// hash or a path matches nothing), and two different hashes for the same name make the result null.
+        /// </summary>
+        public static string ParseExact(string text, string fileName)
+        {
+            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(fileName)) return null;
+            string found = null;
+            foreach (string line in text.Replace("\r", "").Split('\n').Select(raw => raw.Trim().TrimStart('﻿'))
+                                        .Where(l => l.Length > 0 && !l.StartsWith("#")))
+            {
+                string hash = null, name = null;
+                Match m = Gnu.Match(line);
+                if (m.Success && m.Groups[2].Success) { hash = m.Groups[1].Value; name = m.Groups[2].Value.Trim(); }
+                else if ((m = Bsd.Match(line)).Success) { name = m.Groups[1].Value.Trim(); hash = m.Groups[2].Value; }
+                if (hash == null || !string.Equals(name, fileName, StringComparison.OrdinalIgnoreCase)) continue;
+                hash = hash.ToLowerInvariant();
+                if (found != null && found != hash) return null;
+                found = hash;
+            }
+            return found;
         }
     }
 }

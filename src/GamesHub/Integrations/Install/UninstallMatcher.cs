@@ -19,6 +19,8 @@ namespace GamesHub
     public static class UninstallMatcher
     {
         public const int MinScore = 50;
+        /// <summary>Lowest score that comes from a folder/icon match (75 = entry inside the game folder).</summary>
+        public const int MinRunScore = 75;
 
         /// <summary>Score of one entry for a game with (normalized) install dir and name. 0 = no match.
         /// Location match beats icon match beats a strong name match.</summary>
@@ -52,9 +54,21 @@ namespace GamesHub
             => Best(entries, gameDir, gameName, InstallPaths.IsForbiddenRoot);
 
         public static UninstallEntry Best(IEnumerable<UninstallEntry> entries, string gameDir, string gameName, Func<string, bool> isForbidden)
+            => Best(entries, gameDir, gameName, isForbidden, MinScore);
+
+        /// <summary>Entry whose uninstaller may actually be RUN for the game: it must match the game's folder
+        /// (InstallLocation) or icon (score &gt;= MinRunScore). A name alone never qualifies — any program can
+        /// register itself under a game's name.</summary>
+        public static UninstallEntry BestToRun(IEnumerable<UninstallEntry> entries, string gameDir, string gameName)
+            => Best(entries, gameDir, gameName, InstallPaths.IsForbiddenRoot, MinRunScore);
+
+        public static UninstallEntry BestToRun(IEnumerable<UninstallEntry> entries, string gameDir, string gameName, Func<string, bool> isForbidden)
+            => Best(entries, gameDir, gameName, isForbidden, MinRunScore);
+
+        private static UninstallEntry Best(IEnumerable<UninstallEntry> entries, string gameDir, string gameName, Func<string, bool> isForbidden, int minScore)
         {
             UninstallEntry best = null;
-            int bestScore = MinScore - 1;
+            int bestScore = minScore - 1;
             foreach (UninstallEntry e in entries ?? Enumerable.Empty<UninstallEntry>())
             {
                 int s = Score(e, gameDir, gameName, isForbidden);

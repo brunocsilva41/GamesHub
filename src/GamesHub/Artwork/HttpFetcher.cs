@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -78,6 +79,69 @@ namespace GamesHub
         }
     }
 
+    /// <summary>Reads HTTP bodies with a byte cap enforced while reading (after gzip/deflate decoding), so neither a
+    /// missing/lying Content-Length nor a compression bomb can make us buffer an unbounded response.</summary>
+    public static class BoundedRead
+    {
+        /// <summary>The whole stream, or null when it exceeds <paramref name="maxBytes"/>.</summary>
+        public static async Task<byte[]> ReadAllAsync(Stream s, int maxBytes)
+        {
+            if (s == null) return new byte[0];
+            using (var ms = new MemoryStream())
+            {
+                var buf = new byte[81920];
+                int n;
+                while ((n = await s.ReadAsync(buf, 0, buf.Length).ConfigureAwait(false)) > 0)
+                {
+                    if (ms.Length + n > maxBytes) return null;
+                    ms.Write(buf, 0, n);
+                }
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>Synchronous variant of <see cref="ReadAllAsync"/>.</summary>
+        public static byte[] ReadAll(Stream s, int maxBytes)
+        {
+            if (s == null) return new byte[0];
+            using (var ms = new MemoryStream())
+            {
+                var buf = new byte[81920];
+                int n;
+                while ((n = s.Read(buf, 0, buf.Length)) > 0)
+                {
+                    if (ms.Length + n > maxBytes) return null;
+                    ms.Write(buf, 0, n);
+                }
+                return ms.ToArray();
+            }
+        }
+    }
+
+    /// <summary>
+    /// TLS protocol selection. GamesHub is compiled by csc without a TargetFrameworkAttribute, so the .NET 4.8
+    /// runtime applies its pre-4.7 compatibility default (Ssl3 | Tls 1.0) instead of SystemDefault — measured:
+    /// ServicePointManager.SecurityProtocol reads "Ssl3, Tls" and store.steampowered.com fails the handshake, and
+    /// assigning SystemDefault alone still fails (the legacy SChannel defaults stay in effect). So: when the
+    /// runtime already uses SystemDefault (e.g. a future build that targets 4.7+), leave it to the OS; otherwise
+    /// enable only TLS 1.2 and TLS 1.3 (1.3 is used where the OS supports it), dropping SSL 3 / TLS 1.0 / 1.1.
+    /// </summary>
+    public static class TlsPolicy
+    {
+        private const SecurityProtocolType Modern = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+
+        public static void Ensure()
+        {
+            SecurityProtocolType cur = ServicePointManager.SecurityProtocol;
+            SecurityProtocolType next = Choose(cur);
+            if (next != cur) ServicePointManager.SecurityProtocol = next;
+        }
+
+        /// <summary>Pure: the protocol set to use given the current one.</summary>
+        public static SecurityProtocolType Choose(SecurityProtocolType current)
+            => current == SecurityProtocolType.SystemDefault ? current : Modern;
+    }
+
     /// <summary>Shared HTTP client for artwork: max 3 concurrent requests, timeout, UA, back-off.</summary>
     public sealed class HttpFetcher : IDisposable
     {
@@ -89,7 +153,7 @@ namespace GamesHub
 
         public HttpFetcher(NetworkBackoff backoff = null)
         {
-            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            TlsPolicy.Ensure();
             Backoff = backoff ?? new NetworkBackoff();
             var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate };
             _client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(25) };
@@ -120,7 +184,14 @@ namespace GamesHub
                         if (!resp.IsSuccessStatusCode) return new FetchResult { Status = FetchStatus.NotFound, Code = code };
                         long? len = resp.Content.Headers.ContentLength;
                         if (len > MaxBytes) return new FetchResult { Status = FetchStatus.NotFound, Code = code };
-                        byte[] body = await resp.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                        byte[] body;
+                        using (Stream s = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                            body = await BoundedRead.ReadAllAsync(s, MaxBytes).ConfigureAwait(false);
+                        if (body == null)
+                        {
+                            Log.Info("Art: response over " + MaxBytes + " bytes ignored: " + url);
+                            return new FetchResult { Status = FetchStatus.NotFound, Code = code };
+                        }
                         return new FetchResult { Status = FetchStatus.Ok, Code = code, Body = body };
                     }
                 }

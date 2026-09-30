@@ -16,7 +16,14 @@ namespace GamesHub
         private readonly ConcurrentDictionary<string, byte> _openablePaths =
             new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>Uninstaller shown to the user per game (getGameInfo): uninstallGame runs exactly that one.</summary>
+        private readonly UninstallOffers _uninstallOffers = new UninstallOffers();
+        private AutomationRunApprovals _runApprovals;
+
         private GameCatalog Cat => _app.Catalog;
+
+        private AutomationRunApprovals RunApprovals
+            => _runApprovals ?? (_runApprovals = new AutomationRunApprovals(Path.Combine(AppPaths.DataDir, "automation-approvals.json")));
 
         /// <summary>Returns null when the command is not an integration command.</summary>
         private Task<BridgeResult> ExecuteIntegration(string name, IDictionary<string, object> args)
@@ -27,14 +34,14 @@ namespace GamesHub
                 case "getPcgw": return GetPcgw(args);
                 case "openPath": return Done(OpenPath(args));
                 case "validateGame": return Done(ValidateGame(args));
-                case "uninstallGame": return Lib(() => UninstallGame(RequireString(args, "id")));
+                case "uninstallGame": return UninstallGame(RequireString(args, "id"));
                 case "getDrives": return Work(DriveUsage);
                 case "cleanupBroken": return Work(() => Wrap("results", Cat.CleanupBroken().Select(BridgeDto.OpResultEntry).ToList()));
                 case "getGenres": return Work(() => Wrap("genres", Cat.GetGames().SelectMany(g => g.Genres ?? new List<string>())
                     .Distinct(StringComparer.CurrentCultureIgnoreCase).OrderBy(s => s, StringComparer.CurrentCulture).ToList()));
 
                 case "getAutomation": return Work(() => Camel(AutomationFor(Json.Str(args, "id"))));
-                case "saveAutomation": return Lib(() => SaveAutomation(args));
+                case "saveAutomation": return SaveAutomation(args);
                 case "automationOptions": return Work(() => new Dictionary<string, object>
                 {
                     ["powerPlans"] = Camel(Cat.Automation.ListPowerPlans()),
@@ -166,6 +173,7 @@ namespace GamesHub
                 SteamLocalStats steam = null;
                 if (!string.IsNullOrEmpty(g.SteamAppId)) Cat.Steam.Load()?.TryGetValue(g.SteamAppId, out steam);
                 UninstallInfo un = Cat.Install.FindUninstaller(g) ?? new UninstallInfo();
+                _uninstallOffers.Remember(g.Id, un);
                 long size = g.SizeBytes >= 0 ? g.SizeBytes : await Cat.Install.GetSizeBytesAsync(g).ConfigureAwait(false);
                 return new Dictionary<string, object>
                 {
@@ -217,25 +225,48 @@ namespace GamesHub
                 : BridgeResult.Fail("Não foi possível abrir a Steam.");
         }
 
-        private OpResult UninstallGame(string id)
+        /// <summary>Runs the uninstaller the details page offered (never a fresh search), after a native
+        /// confirmation for registry uninstallers. The prompt runs on the UI thread, the start off it.</summary>
+        private async Task<BridgeResult> UninstallGame(string id)
         {
             Game g = Cat.Get(id);
-            if (g == null) return OpResult.Fail("Jogo não encontrado.");
-            UninstallInfo info = Cat.Install.FindUninstaller(g);
-            if (info == null || info.Method == "none")
-                return OpResult.Fail("Não encontrei um desinstalador para " + g.Name + ". Use Configurações do Windows › Aplicativos.");
-            return Cat.Install.RunUninstaller(info);
+            if (g == null) return BridgeResult.Fail("Jogo não encontrado.");
+            UninstallInfo offer = _uninstallOffers.Get(id);
+            OpResult refused = UninstallGate.Check(g.Name, offer, ConfirmUninstall);
+            if (refused != null) return BridgeResult.From(refused);
+            OpResult r = await Task.Run(() => Cat.Install.RunUninstaller(offer));
+            if (r != null && r.Ok) _uninstallOffers.Forget(id);
+            return BridgeResult.From(r);
         }
+
+        private bool ConfirmUninstall(UninstallInfo offer)
+            => _app.Form.ConfirmDangerous("Desinstalar jogo", UninstallGate.Describe(offer, UninstallCommand.Parse(offer.Command)),
+                                          "Deseja abrir este desinstalador?");
 
         private AutomationProfile AutomationFor(string id)
             => string.IsNullOrEmpty(id) ? Cat.Automation.GetDefaultProfile() : Cat.Automation.GetProfile(id);
 
-        private OpResult SaveAutomation(IDictionary<string, object> args)
+        /// <summary>New or changed "run" actions need a native confirmation; declined ones are left out and the
+        /// rest of the profile is saved (the reply then carries the profile that was actually stored).</summary>
+        private async Task<BridgeResult> SaveAutomation(IDictionary<string, object> args)
         {
             string id = Json.Str(args, "id");
-            AutomationProfile p = ParseProfile(Json.Obj(args, "profile"));
-            return string.IsNullOrEmpty(id) ? Cat.Automation.SaveDefaultProfile(p) : Cat.Automation.SaveProfile(id, p);
+            AutomationProfile incoming = ParseProfile(Json.Obj(args, "profile"));
+            AutomationProfile p = AutomationRunGate.Decide(incoming, AutomationFor(id), RunApprovals, ConfirmRuns, out int refused);
+            OpResult r = await Task.Run(() => string.IsNullOrEmpty(id) ? Cat.Automation.SaveDefaultProfile(p) : Cat.Automation.SaveProfile(id, p));
+            if (r == null || !r.Ok || refused == 0) return BridgeResult.From(r);
+            Dictionary<string, object> data = BridgeDto.OpResultData(r);
+            data["message"] = refused == 1
+                ? "Automação salva sem o programa que não foi autorizado."
+                : "Automação salva sem os " + refused + " programas que não foram autorizados.";
+            data["profile"] = Camel(AutomationFor(id));
+            data["refusedRuns"] = refused;
+            return BridgeResult.Success(data);
         }
+
+        private bool ConfirmRuns(IList<AutomationAction> runs)
+            => _app.Form.ConfirmDangerous("Autorizar programa na automação", AutomationRunGate.Describe(runs),
+                                          "Sim: autorizar e salvar. Não: salvar a automação sem esses programas.");
 
         private static AutomationProfile ParseProfile(IDictionary<string, object> d)
         {

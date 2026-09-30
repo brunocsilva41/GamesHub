@@ -50,10 +50,10 @@ namespace GamesHub
 
         public void Load()
         {
-            object raw = null;
-            try { if (File.Exists(_file)) raw = Json.DeserializeObject(File.ReadAllText(_file)); }
-            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("library.json is unreadable; starting empty", ex); }
-            lock (_gate) FromJson(raw as IDictionary<string, object>);
+            // Json.Load quarantines a corrupt file and falls back to library.json.bak, so the next save cannot
+            // overwrite the last good copy.
+            var raw = Json.Load<Dictionary<string, object>>(_file, null);
+            lock (_gate) FromJson(raw);
         }
 
         /// <summary>Copy of the metadata for id, or null.</summary>

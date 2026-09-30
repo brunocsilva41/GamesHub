@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace GamesHub
@@ -25,7 +27,6 @@ namespace GamesHub
     public static class SettingsStore
     {
         private static readonly object Gate = new object();
-        private static readonly Regex RepoRx = new Regex(@"^[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}$");
         private static readonly Regex KeyRx = new Regex(@"^[A-Za-z0-9]{0,128}$");
         private const int MaxStringLength = 2048;
 
@@ -53,12 +54,12 @@ namespace GamesHub
             ["hotkey"] = NormalizeHotkey,
             ["quickLaunchHotkey"] = NormalizeHotkey,
             ["steamGridDbKey"] = v => KeyRx.IsMatch(v.Trim()) ? v.Trim() : null,
-            ["updateRepo"] = v =>
-            {
-                string repo = v.Trim().Trim('/');
-                return repo.Length == 0 || RepoRx.IsMatch(repo) ? repo : null;
-            },
         };
+
+        /// <summary>Secret settings: never sent to the UI (only "&lt;key&gt;Set": bool) and stored DPAPI-protected on disk
+        /// under "&lt;key&gt;Protected". A plain value found in an older settings.json is re-saved protected.</summary>
+        private static readonly string[] SecretKeys = { "steamGridDbKey" };
+        private const string ProtectedSuffix = "Protected";
 
         public static AppSettings Current { get; private set; } = new AppSettings();
 
@@ -72,21 +73,15 @@ namespace GamesHub
             {
                 var s = new AppSettings();
                 bool exists = File.Exists(AppPaths.SettingsFile);
+                bool migrated = false;
                 if (exists)
                 {
                     var dict = Json.Load<Dictionary<string, object>>(AppPaths.SettingsFile, null);
                     if (dict != null)
                     {
-                        // A games folder on an unplugged drive must survive a restart: don't check existence here.
-                        SettingsPatchResult r = ApplyPatchTo(s, dict, _ => true);
+                        SettingsPatchResult r = FromDisk(s, dict, out migrated);
                         if (r.Rejected.Count > 0) Log.Warn("settings.json: ignored invalid values: " + string.Join(", ", r.Rejected));
                     }
-                }
-                bool migrated = false;
-                if (string.IsNullOrWhiteSpace(s.UpdateRepo))
-                {
-                    s.UpdateRepo = AppInfo.DefaultUpdateRepo; // installs from before the public repo existed
-                    migrated = true;
                 }
                 if (string.IsNullOrWhiteSpace(s.GamesDir))
                 {
@@ -106,7 +101,7 @@ namespace GamesHub
             {
                 try
                 {
-                    Json.Save(AppPaths.SettingsFile, ToDto(Current));
+                    Json.Save(AppPaths.SettingsFile, ToDisk(Current));
                 }
                 catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
                                            || ex is NotSupportedException || ex is ArgumentException || ex is InvalidOperationException)
@@ -134,9 +129,58 @@ namespace GamesHub
             return r;
         }
 
-        /// <summary>All supported AppSettings fields as a camelCase dictionary.</summary>
+        /// <summary>DTO for the UI: all supported AppSettings fields as a camelCase dictionary, except that secrets are
+        /// blanked and reported only as "&lt;key&gt;Set": bool (the UI treats them as write-only).</summary>
         public static Dictionary<string, object> ToDto(AppSettings s)
-            => Fields.ToDictionary(kv => kv.Key, kv => kv.Value.GetValue(s));
+        {
+            Dictionary<string, object> d = Fields.ToDictionary(kv => kv.Key, kv => kv.Value.GetValue(s));
+            foreach (string k in SecretKeys)
+            {
+                d[k + "Set"] = !string.IsNullOrEmpty(d[k] as string);
+                d[k] = "";
+            }
+            return d;
+        }
+
+        /// <summary>What settings.json stores: every field, with secrets replaced by their DPAPI-protected form.</summary>
+        public static Dictionary<string, object> ToDisk(AppSettings s)
+        {
+            Dictionary<string, object> d = Fields.ToDictionary(kv => kv.Key, kv => kv.Value.GetValue(s));
+            foreach (string k in SecretKeys)
+            {
+                string plain = d[k] as string;
+                d.Remove(k);
+                if (string.IsNullOrEmpty(plain)) continue;
+                string blob = SecretProtector.Protect(plain);
+                if (blob != null) d[k + ProtectedSuffix] = blob;
+                else Log.Warn("Could not protect " + k + " with DPAPI; it is kept for this session only");
+            }
+            return d;
+        }
+
+        /// <summary>Pure (apart from DPAPI): applies a settings.json dictionary to <paramref name="s"/>. Protected secrets
+        /// are decrypted; resave is true when the file holds a legacy plain secret or obsolete keys and should be
+        /// rewritten. Folder existence is not checked (a games folder on an unplugged drive must survive a restart).</summary>
+        public static SettingsPatchResult FromDisk(AppSettings s, IDictionary<string, object> dict, out bool resave)
+        {
+            resave = dict != null && dict.ContainsKey("updateRepo"); // no longer a setting (the updater's repo is fixed)
+            SettingsPatchResult r = ApplyPatchTo(s, dict, _ => true);
+            if (dict == null) return r;
+            foreach (string k in SecretKeys)
+            {
+                if (dict.TryGetValue(k, out object plain) && plain is string p && p.Length > 0) resave = true; // migrate to DPAPI
+                if (!dict.TryGetValue(k + ProtectedSuffix, out object blob) || !(blob is string b) || b.Length == 0) continue;
+                string value = SecretProtector.Unprotect(b);
+                if (value == null)
+                {
+                    Log.Warn("settings.json: " + k + " could not be decrypted (another Windows user or machine?); ignored");
+                    continue;
+                }
+                SettingsPatchResult sr = ApplyPatchTo(s, new Dictionary<string, object> { [k] = value }, _ => true);
+                r.Rejected.AddRange(sr.Rejected);
+            }
+            return r;
+        }
 
         /// <summary>Pure: applies a patch to <paramref name="s"/>. Unknown keys are ignored; invalid values are
         /// reported in Rejected and leave the field unchanged. dirExists defaults to Directory.Exists.</summary>
@@ -238,5 +282,101 @@ namespace GamesHub
             }
             return AppPaths.DefaultGamesDir;
         }
+    }
+
+    /// <summary>
+    /// DPAPI with CurrentUser scope (CryptProtectData, called directly so System.Security.dll is not needed): only the
+    /// same Windows user on the same machine can decrypt. Output is Base64; both methods return null on failure.
+    /// </summary>
+    public static class SecretProtector
+    {
+        private const int UiForbidden = 0x1; // CRYPTPROTECT_UI_FORBIDDEN
+        private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("GamesHub.settings.secret.v1");
+
+        public static string Protect(string plain)
+        {
+            if (plain == null) return null;
+            byte[] data = Encoding.UTF8.GetBytes(plain);
+            try
+            {
+                byte[] blob = Transform(data, true);
+                return blob == null ? null : Convert.ToBase64String(blob);
+            }
+            finally { Array.Clear(data, 0, data.Length); }
+        }
+
+        public static string Unprotect(string base64)
+        {
+            if (string.IsNullOrEmpty(base64)) return null;
+            byte[] blob;
+            try { blob = Convert.FromBase64String(base64); }
+            catch (FormatException) { return null; }
+            byte[] data = Transform(blob, false);
+            if (data == null) return null;
+            try { return new UTF8Encoding(false, true).GetString(data); }
+            catch (ArgumentException) { return null; } // DecoderFallbackException
+            finally { Array.Clear(data, 0, data.Length); }
+        }
+
+        private static byte[] Transform(byte[] input, bool protect)
+        {
+            DataBlob src = default, entropy = default, dst = default;
+            try
+            {
+                src = Alloc(input);
+                entropy = Alloc(Entropy);
+                bool ok = protect
+                    ? CryptProtectData(ref src, IntPtr.Zero, ref entropy, IntPtr.Zero, IntPtr.Zero, UiForbidden, out dst)
+                    : CryptUnprotectData(ref src, IntPtr.Zero, ref entropy, IntPtr.Zero, IntPtr.Zero, UiForbidden, out dst);
+                if (!ok || dst.pbData == IntPtr.Zero) return null;
+                var result = new byte[dst.cbData];
+                Marshal.Copy(dst.pbData, result, 0, dst.cbData);
+                return result;
+            }
+            finally
+            {
+                Free(src);
+                Free(entropy);
+                if (dst.pbData != IntPtr.Zero)
+                {
+                    Marshal.Copy(new byte[dst.cbData], 0, dst.pbData, dst.cbData);
+                    LocalFree(dst.pbData);
+                }
+            }
+        }
+
+        private static DataBlob Alloc(byte[] bytes)
+        {
+            var b = new DataBlob { cbData = bytes.Length, pbData = Marshal.AllocHGlobal(Math.Max(1, bytes.Length)) };
+            Marshal.Copy(bytes, 0, b.pbData, bytes.Length);
+            return b;
+        }
+
+        private static void Free(DataBlob b)
+        {
+            if (b.pbData == IntPtr.Zero) return;
+            Marshal.Copy(new byte[b.cbData], 0, b.pbData, b.cbData);
+            Marshal.FreeHGlobal(b.pbData);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct DataBlob
+        {
+            public int cbData;
+            public IntPtr pbData;
+        }
+
+        [DllImport("crypt32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CryptProtectData(ref DataBlob pDataIn, IntPtr szDataDescr, ref DataBlob pOptionalEntropy,
+                                                    IntPtr pvReserved, IntPtr pPromptStruct, int dwFlags, out DataBlob pDataOut);
+
+        [DllImport("crypt32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CryptUnprotectData(ref DataBlob pDataIn, IntPtr ppszDataDescr, ref DataBlob pOptionalEntropy,
+                                                      IntPtr pvReserved, IntPtr pPromptStruct, int dwFlags, out DataBlob pDataOut);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr LocalFree(IntPtr hMem);
     }
 }

@@ -163,17 +163,24 @@ namespace GamesHub.Installer
         }
 
         /// <summary>After this process exits: deletes Uninstall.exe and removes the install folder if it is empty
-        /// (non-recursive, so anything the user put there survives).</summary>
+        /// (non-recursive, so anything the user put there survives).
+        /// The paths never appear in cmd's command text: they travel in environment variables read with delayed expansion
+        /// (!GH_SELF!), whose result cmd does not parse again — so '%', '^', '&' or '!' in a folder name can't expand
+        /// variables or chain commands. (MoveFileEx(MOVEFILE_DELAY_UNTIL_REBOOT) is not an option: it needs
+        /// administrator rights, and this per-user uninstaller runs unelevated.)</summary>
         public void ScheduleSelfDelete()
         {
             try
             {
-                string cmd = "/d /c ping 127.0.0.1 -n 3 >nul & del /f /q " + Product.Quote(self) + " & rmdir " + Product.Quote(InstallDir);
-                using (Process.Start(new ProcessStartInfo("cmd.exe", cmd)
+                const string cmd = "/d /v:on /c ping 127.0.0.1 -n 3 >nul & del /f /q \"!GH_SELF!\" & rmdir \"!GH_DIR!\"";
+                var psi = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"), cmd)
                 {
                     UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden,
                     WorkingDirectory = Path.GetTempPath(),
-                })) { }
+                };
+                psi.EnvironmentVariables["GH_SELF"] = self;
+                psi.EnvironmentVariables["GH_DIR"] = InstallDir;
+                using (Process.Start(psi)) { }
                 InstallerLog.Info("Self-delete scheduled");
             }
             catch (Exception ex) { InstallerLog.Warn("Could not schedule self-delete", ex); }

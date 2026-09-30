@@ -165,8 +165,10 @@ export function createAutomationEditor(root, { perGame }) {
     btn.disabled = true;
     const data = await A.run('saveAutomation', { id, profile: M.profilePayload(model) });
     if (data) {
+      // Programs the user did not authorize in the native prompt were left out: show what was really stored.
+      if (data.profile) model = M.normalizeProfile(data.profile);
       saved = M.normalizeProfile(M.profilePayload(model));
-      toast(data.message || 'Automação salva.');
+      toast(data.message || 'Automação salva.', data.refusedRuns ? { kind: 'err' } : undefined);
     }
     renderLists();
   }

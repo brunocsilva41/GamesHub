@@ -61,21 +61,53 @@ function Format-Size([long]$b) { if ($b -ge 1MB) { '{0:N1} MB' -f ($b / 1MB) } e
 
 # Optional Authenticode signing: active only when a certificate is provided through the environment
 # (CI secrets GAMESHUB_SIGN_PFX_BASE64 + GAMESHUB_SIGN_PFX_PASSWORD). Unsigned builds are the default.
-$script:SignPfx = $null
+# The PFX is decoded in memory (never written to disk) and imported into CurrentUser\My only for this build;
+# signtool picks it by thumbprint, so neither a key file nor the password ever appears on a command line.
+# Remove-SignCert (in the finally block at the end of the script) removes the certificate and its private key.
+$script:SignCert = $null
 function Invoke-Sign([string]$file) {
     if (-not $env:GAMESHUB_SIGN_PFX_BASE64) { return }
-    if (-not $script:SignPfx) {
-        $script:SignPfx = Join-Path ([IO.Path]::GetTempPath()) ("gh-sign-" + [guid]::NewGuid() + ".pfx")
-        [IO.File]::WriteAllBytes($script:SignPfx, [Convert]::FromBase64String($env:GAMESHUB_SIGN_PFX_BASE64))
-    }
     $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
         Sort-Object FullName -Descending | Select-Object -First 1
     if (-not $signtool) { throw 'signtool.exe not found (Windows SDK)' }
-    & $signtool.FullName sign /fd SHA256 /f $script:SignPfx /p $env:GAMESHUB_SIGN_PFX_PASSWORD `
+    if (-not $script:SignCert) {
+        $flags = [Security.Cryptography.X509Certificates.X509KeyStorageFlags]'UserKeySet, PersistKeySet'
+        $cert = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
+            [Convert]::FromBase64String($env:GAMESHUB_SIGN_PFX_BASE64), $env:GAMESHUB_SIGN_PFX_PASSWORD, $flags)
+        if (-not $cert.HasPrivateKey) { $cert.Dispose(); throw 'The signing certificate has no private key' }
+        $script:SignCert = $cert
+        $store = [Security.Cryptography.X509Certificates.X509Store]::new('My', 'CurrentUser')
+        $store.Open('ReadWrite')
+        try { $store.Add($cert) } finally { $store.Close() }
+    }
+    & $signtool.FullName sign /fd SHA256 /s My /sha1 $script:SignCert.Thumbprint `
         /tr 'http://timestamp.digicert.com' /td SHA256 /d 'GamesHub' $file | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "Signing failed: $file" }
     Write-Host "Signed $(Split-Path $file -Leaf)" -ForegroundColor Green
 }
+function Remove-SignCert {
+    if (-not $script:SignCert) { return }
+    $cert = $script:SignCert
+    $script:SignCert = $null
+    try {
+        $store = [Security.Cryptography.X509Certificates.X509Store]::new('My', 'CurrentUser')
+        $store.Open('ReadWrite')
+        try { $store.Remove($cert) } finally { $store.Close() }
+    }
+    catch { Write-Warning "Could not remove the signing certificate from CurrentUser\My: $_" }
+    try {
+        # PersistKeySet left the private key in the user's key store: delete it too.
+        $key = [Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($cert)
+        if ($key -is [Security.Cryptography.RSACng]) { $key.Key.Delete() }
+        elseif ($key -is [Security.Cryptography.RSACryptoServiceProvider]) { $key.PersistKeyInCsp = $false; $key.Clear() }
+    }
+    catch { Write-Warning "Could not delete the signing private key: $_" }
+    finally { $cert.Dispose() }
+}
+
+# Everything below runs inside try/finally so the signing certificate never outlives the build, even on failure.
+# (The body is intentionally not re-indented, to keep the diff reviewable.)
+try {
 
 # ---------------------------------------------------------------- app
 New-Item -ItemType Directory -Force $appOut, $objOut | Out-Null
@@ -206,5 +238,6 @@ using System.Reflection;
     Write-Host ("  SHA-256        {0}" -f $hash)
     Write-Host "OK -> $pkg" -ForegroundColor Green
 }
-if ($script:SignPfx -and (Test-Path $script:SignPfx)) { Remove-Item $script:SignPfx -Force }
+}
+finally { Remove-SignCert }
 Write-Host ("Done in {0:N1}s" -f $sw.Elapsed.TotalSeconds) -ForegroundColor DarkGray

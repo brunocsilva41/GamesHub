@@ -214,6 +214,7 @@ function Start-GamesHub([string]$Exe, [string]$DataDir, [int]$Port, [string]$Arg
     # Environment for THIS child only (never set on the current session).
     $psi.EnvironmentVariables['GAMESHUB_DATA_DIR'] = $DataDir
     $psi.EnvironmentVariables['GAMESHUB_DEVTOOLS_PORT'] = "$Port"   # honoured by isolated instances only (WebViewEnv.cs)
+    $psi.EnvironmentVariables['GAMESHUB_E2E'] = '1'                 # explicit opt-in required on top of the two above
     $p = [Diagnostics.Process]::Start($psi)
     $null = $p.Handle # keep a handle so ExitCode stays readable after exit
     Add-Owned $p.Id $p.StartTime

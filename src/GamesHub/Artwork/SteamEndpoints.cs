@@ -50,10 +50,14 @@ namespace GamesHub
         // ------------------------------------------------------------ SteamGridDB
 
         public static string SgdbAutocomplete(string term) => SgdbApi + "search/autocomplete/" + Uri.EscapeDataString(term);
-        public static string SgdbBySteamId(string appId) => SgdbApi + "games/steam/" + appId;
+        /// <summary>Null when <paramref name="appId"/> is not a Steam app id (digits only).</summary>
+        public static string SgdbBySteamId(string appId) => ArtKind.IsAppId(appId) ? SgdbApi + "games/steam/" + appId : null;
 
+        /// <summary>Null for an unknown kind or when <paramref name="sgdbGameId"/> (taken from API JSON) is not
+        /// purely numeric: it is concatenated into the path, so "../", "?", "#" or "/" must never get through.</summary>
         public static string SgdbAssets(string sgdbGameId, string kind)
         {
+            if (!IsNumericId(sgdbGameId)) return null;
             switch (kind)
             {
                 case ArtKind.Capsule: return SgdbApi + "grids/game/" + sgdbGameId + "?dimensions=600x900&types=static&nsfw=false";
@@ -62,6 +66,14 @@ namespace GamesHub
                 case ArtKind.Logo: return SgdbApi + "logos/game/" + sgdbGameId + "?types=static&nsfw=false";
                 default: return null;
             }
+        }
+
+        /// <summary>^\d+$ (ASCII digits, at most 12).</summary>
+        public static bool IsNumericId(string s)
+        {
+            if (string.IsNullOrEmpty(s) || s.Length > 12) return false;
+            foreach (char c in s) if (c < '0' || c > '9') return false;
+            return true;
         }
     }
 }

@@ -18,6 +18,10 @@ namespace GamesHub
     {
         /// <summary>Marker that {{p|uid}} expands to before wildcard resolution.</summary>
         public const string UidWildcard = "*";
+        /// <summary>Upper bound of paths kept while walking wildcard segments (all branches together).</summary>
+        public const int MaxCandidates = 256;
+        /// <summary>Patterns with more wildcard segments than this are not resolved (wiki text is untrusted).</summary>
+        public const int MaxWildcardSegments = 3;
 
         private static readonly Regex PTemplate = new Regex(@"\{\{\s*p(?:ath)?\s*\|\s*([^{}|]*?)\s*\}\}", RegexOptions.IgnoreCase);
         private static readonly string[] RegistryKeys = { "hkcu", "hklm", "wow64" };
@@ -47,6 +51,8 @@ namespace GamesHub
         {
             if (string.IsNullOrWhiteSpace(raw) || IsRegistry(raw)) return null;
             string s = raw.Trim();
+            // Only template-rooted locations ({{p|appdata}}\...): never a literal absolute path from the wiki.
+            if (!PcgwWikitext.LooksLikePath(s)) return null;
             foreach (var (re, key) in ProfileAliases) s = re.Replace(s, "{{p|" + key + "}}");
             bool failed = false;
             s = PTemplate.Replace(s, m =>
@@ -103,6 +109,7 @@ namespace GamesHub
             if (!HasWildcard(pattern)) return (pattern, Exists(pattern));
 
             string[] segs = pattern.Split('\\');
+            if (segs.Count(HasWildcard) > MaxWildcardSegments) return ("", false);
             bool fileGlob = HasWildcard(segs[segs.Length - 1]);
             int dirCount = fileGlob ? segs.Length - 1 : segs.Length;
 
@@ -115,6 +122,7 @@ namespace GamesHub
                 var next = new List<string>();
                 foreach (string dir in current)
                 {
+                    if (next.Count >= MaxCandidates) break;   // global cap across every branch
                     if (!HasWildcard(seg)) { next.Add(Path.Combine(dir, seg)); continue; }
                     if (!Directory.Exists(dir)) continue;
                     try
@@ -122,7 +130,7 @@ namespace GamesHub
                         IEnumerable<string> found = last && !fileGlob
                             ? Directory.EnumerateFileSystemEntries(dir, seg)
                             : Directory.EnumerateDirectories(dir, seg);
-                        next.AddRange(found.Take(64));
+                        next.AddRange(found.Take(Math.Min(64, MaxCandidates - next.Count)));
                     }
                     catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("PCGW: cannot enumerate " + dir, ex); }
                 }

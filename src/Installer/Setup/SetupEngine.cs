@@ -4,6 +4,8 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
@@ -23,6 +25,16 @@ namespace GamesHub.Installer
         public bool StartMenuShortcut = true;
         public bool StartWithWindows;
         public bool Help;
+        /// <summary>Install even when a newer version is already in the folder (/allowdowngrade, or confirmed in the wizard).</summary>
+        public bool AllowDowngrade;
+    }
+
+    /// <summary>A newer GamesHub is installed than this installer carries and the downgrade was not allowed.</summary>
+    internal sealed class DowngradeException : InvalidOperationException
+    {
+        public DowngradeException(string installed)
+            : base("O GamesHub " + installed + " já está instalado e é mais novo que este instalador (" + Product.Version
+                   + "). Nada foi alterado. Para instalar a versão mais antiga mesmo assim, use /allowdowngrade.") { }
     }
 
     internal sealed class SetupResult
@@ -142,8 +154,15 @@ namespace GamesHub.Installer
             var result = new SetupResult { InstallDir = dir, ExePath = Path.Combine(dir, Product.ExeName) };
             InstallerLog.Info("Installing " + Product.Version + " to " + dir + " (mode " + o.Mode + ")");
 
+            string newer = NewerInstalledVersion(dir);
+            if (newer != null)
+            {
+                if (!o.AllowDowngrade) throw new DowngradeException(newer);
+                InstallerLog.Warn("Downgrading " + newer + " -> " + Product.Version + " (allowed)");
+            }
+
             Report(2, "Preparando…");
-            try { Directory.CreateDirectory(dir); }
+            try { CreateInstallDir(dir); }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Não foi possível criar a pasta '" + dir + "'. Verifique as permissões ou escolha outra pasta.", ex);
@@ -198,10 +217,85 @@ namespace GamesHub.Installer
             Report(96, "Registrando no Windows…");
             RegisterUninstall(dir, result.ExePath, bytes);
             Shortcuts.NotifyShell();
+            TryStep("old installers", DeleteOldInstallers);
 
             Report(100, "Concluído.");
             InstallerLog.Info("Install finished OK");
             return result;
+        }
+
+        /// <summary>Version of the GamesHub installed in dir when it is newer than this installer (a downgrade), else null.</summary>
+        public static string NewerInstalledVersion(string dir)
+        {
+            ExistingInstall e = ExistingInstall.Detect(dir);
+            return e.HasV2 && CompareVersions(e.Version, Product.Version) > 0 ? e.Version : null;
+        }
+
+        /// <summary>Compares the numeric core (major.minor.patch) of two versions like "2.1.0-beta.1+abc"; missing parts
+        /// count as 0. Pre-release/build suffixes are ignored and unreadable versions compare as equal (never a downgrade).</summary>
+        internal static int CompareVersions(string a, string b)
+        {
+            int[] x = Core(a), y = Core(b);
+            if (x == null || y == null) return 0;
+            for (int i = 0; i < 3; i++) if (x[i] != y[i]) return x[i].CompareTo(y[i]);
+            return 0;
+        }
+
+        private static int[] Core(string v)
+        {
+            string s = (v ?? "").Trim().TrimStart('v', 'V');
+            int cut = s.IndexOfAny(new[] { '-', '+', ' ' });
+            if (cut >= 0) s = s.Substring(0, cut);
+            string[] parts = s.Split('.');
+            if (parts.Length == 0 || parts.Length > 4) return null;
+            var n = new int[3];
+            for (int i = 0; i < parts.Length && i < 3; i++)
+                if (!int.TryParse(parts[i], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out n[i])) return null;
+            return n;
+        }
+
+        /// <summary>Creates the install folder. Outside %LOCALAPPDATA% (e.g. C:\Jogos, whose parent C:\ lets every
+        /// authenticated user modify new subfolders) a new folder gets an explicit ACL without inheritance: only the
+        /// current user, SYSTEM and Administrators — otherwise another local account could replace GamesHub.exe and
+        /// run code as this user. Existing folders keep their permissions.</summary>
+        internal static void CreateInstallDir(string dir)
+        {
+            if (Directory.Exists(dir)) return;
+            if (PathSafety.IsInside(dir, Product.LocalAppData)) { Directory.CreateDirectory(dir); return; }
+            Directory.CreateDirectory(dir, PrivateAcl());
+            InstallerLog.Info("Created " + dir + " with a private ACL (user, SYSTEM, Administrators; no inheritance)");
+        }
+
+        internal static DirectorySecurity PrivateAcl()
+        {
+            var sec = new DirectorySecurity();
+            sec.SetAccessRuleProtection(true, false);
+            IdentityReference[] owners =
+            {
+                WindowsIdentity.GetCurrent().User,
+                new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
+                new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
+            };
+            foreach (IdentityReference id in owners)
+                sec.AddAccessRule(new FileSystemAccessRule(id, FileSystemRights.FullControl,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+            return sec;
+        }
+
+        /// <summary>After a successful install: deletes installers the in-app updater left in %TEMP%\GamesHub
+        /// (GamesHub-Setup-*.exe), except the one running now.</summary>
+        internal static void DeleteOldInstallers()
+        {
+            string temp = Product.TempDir;
+            if (!Directory.Exists(temp)) return;
+            string current = Path.GetFullPath(Assembly.GetEntryAssembly()?.Location ?? "");
+            foreach (string f in Directory.GetFiles(temp, "GamesHub-Setup-*.exe"))
+            {
+                if (!f.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(Path.GetFullPath(f), current, StringComparison.OrdinalIgnoreCase)) continue;
+                try { File.Delete(f); InstallerLog.Info("Deleted old installer " + f); }
+                catch (Exception ex) { InstallerLog.Warn("Could not delete old installer " + f, ex); }
+            }
         }
 
         private static void TryStep(string what, Action a)

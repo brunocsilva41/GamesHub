@@ -120,7 +120,7 @@ namespace GamesHub
             var root = new SteamKv();
             if (reader == null) return root;
             var lx = new Lexer(reader);
-            ReadBlock(lx, root, topLevel: true);
+            ReadBlock(lx, root, topLevel: true, depth: 0);
             return root;
         }
 
@@ -150,7 +150,7 @@ namespace GamesHub
                     if (depth == path.Length)
                     {
                         var node = new SteamKv();
-                        ReadBlock(lx, node, topLevel: false);
+                        ReadBlock(lx, node, topLevel: false, depth: depth);
                         return node;
                     }
                 }
@@ -182,7 +182,11 @@ namespace GamesHub
             }
         }
 
-        private static void ReadBlock(Lexer lx, SteamKv node, bool topLevel)
+        /// <summary>Nesting deeper than this is skipped (iteratively) instead of recursed into: real Steam files
+        /// nest a handful of levels, a hostile file could otherwise overflow the stack.</summary>
+        public const int MaxDepth = 64;
+
+        private static void ReadBlock(Lexer lx, SteamKv node, bool topLevel, int depth)
         {
             while (true)
             {
@@ -191,8 +195,8 @@ namespace GamesHub
                 if (t == Tok.Close) { if (topLevel) continue; return; }   // stray '}' at top level: ignore
                 if (t == Tok.Open)
                 {
-                    // Anonymous block (malformed): read it into a throwaway node.
-                    ReadBlock(lx, new SteamKv(), topLevel: false);
+                    // Anonymous block (malformed): its content is discarded, so just skip it.
+                    SkipBlock(lx);
                     continue;
                 }
                 string key = lx.Text;
@@ -201,8 +205,9 @@ namespace GamesHub
                 if (v == Tok.Str) node.SetValue(key, lx.Text);
                 else if (v == Tok.Open)
                 {
+                    if (depth >= MaxDepth) { SkipBlock(lx); continue; }
                     var child = new SteamKv();
-                    ReadBlock(lx, child, topLevel: false);
+                    ReadBlock(lx, child, topLevel: false, depth: depth + 1);
                     node.SetChild(key, child);
                 }
                 else { if (topLevel) continue; return; }  // key followed by '}' : dangling key

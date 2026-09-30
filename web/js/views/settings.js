@@ -33,17 +33,17 @@ export function initSettings(root) {
         sel('language', 'Idioma', '', [['pt-BR', 'Português (Brasil)']]))}
       ${group('art', 'Artes',
         sw('autoArtwork', 'Buscar artes automaticamente', 'Baixa capas, fundos e logotipos da Steam.') +
-        row('Chave da SteamGridDB', 'Opcional: o GamesHub já inclui uma chave. Use a sua só se preferir. <a href="#" data-link="https://www.steamgriddb.com/profile/preferences/api">Obter uma chave</a>',
-          '<span class="input-group input-group-sm"><input class="input input-sm" type="password" data-nav data-text="steamGridDbKey" placeholder="Cole sua chave" autocomplete="off" spellcheck="false">' +
-          `<button type="button" class="icon-btn" data-toggle-secret aria-label="Mostrar chave" title="Mostrar chave">${icon('eye')}</button></span>`))}
+        row('Chave da SteamGridDB', 'Opcional: o GamesHub já inclui uma chave. Use a sua só se preferir. <a href="#" data-link="https://www.steamgriddb.com/profile/preferences/api">Obter uma chave</a> <span data-secret-status></span>',
+          // Write-only: the saved key never comes back from the backend (only steamGridDbKeySet); empty = keep it.
+          '<span class="input-group input-group-sm"><input class="input input-sm" type="password" data-nav data-secret="steamGridDbKey" placeholder="Cole sua chave" autocomplete="off" spellcheck="false">' +
+          `<button type="button" class="icon-btn" data-toggle-secret aria-label="Mostrar chave" title="Mostrar chave">${icon('eye')}</button></span>` +
+          '<button type="button" class="btn btn-ghost btn-sm" data-nav data-cmd="clearSecret" data-key="steamGridDbKey" hidden>Remover</button>'))}
       ${group('time', 'Tempo de jogo',
         sw('trackPlaytime', 'Rastrear tempo de jogo', 'Conta o tempo enquanto o processo do jogo está aberto.'))}
       ${automationGroupHtml()}
       ${drivesGroupHtml()}
       ${group('updates', 'Atualizações',
-        sw('checkUpdates', 'Verificar atualizações ao iniciar') +
-        row('Repositório', 'Formato <code>dono/repositório</code> no GitHub. Vazio usa o repositório oficial; para desligar, desmarque a verificação acima.',
-          '<input class="input input-sm" type="text" data-nav data-text="updateRepo" placeholder="dono/repositório" spellcheck="false">') +
+        sw('checkUpdates', 'Verificar atualizações ao iniciar', 'As atualizações vêm do repositório oficial do GamesHub e só são instaladas se a assinatura digital conferir.') +
         row('Verificar agora', '<span data-update-status></span>',
           '<button type="button" class="btn btn-ghost btn-sm" data-nav data-cmd="checkUpdate">' + icon('refresh') + 'Verificar agora</button>' +
           '<button type="button" class="btn btn-primary btn-sm" data-nav data-cmd="installUpdate" hidden>' + icon('download') + 'Instalar</button>') +
@@ -66,7 +66,14 @@ export function initSettings(root) {
   };
   const save = async (patch) => { if (await A.saveSettings(patch)) flashSaved(); };
 
-  root.addEventListener('change', (e) => {
+  root.addEventListener('change', async (e) => {
+    const secret = e.target.dataset.secret;
+    if (secret) {
+      // Saved on commit (Enter / leaving the field); an empty field keeps the stored key.
+      const v = e.target.value.trim();
+      if (v && await A.saveSettings({ [secret]: v })) { e.target.value = ''; flashSaved(); }
+      return;
+    }
     const k = e.target.dataset.set;
     if (!k) return;
     save({ [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
@@ -105,6 +112,12 @@ export function initSettings(root) {
       case 'openDataFolder': A.run('openDataFolder'); break;
       case 'openLogs': A.run('openDataFolder', { sub: 'logs' }); break;
       case 'installUpdate': installUpdate(); break;
+      case 'clearSecret': {
+        const input = root.querySelector(`[data-secret="${b.dataset.key}"]`);
+        if (input) input.value = '';
+        save({ [b.dataset.key]: '' });
+        break;
+      }
       case 'checkUpdate': {
         const status = q('[data-update-status]');
         b.disabled = true;
@@ -135,6 +148,13 @@ export function initSettings(root) {
         if (el.type === 'checkbox') el.checked = !!v; else if (v !== undefined) el.value = v;
       }
       for (const el of root.querySelectorAll('[data-text]')) if (el !== document.activeElement) el.value = st[el.dataset.text] ?? '';
+      for (const el of root.querySelectorAll('[data-secret]')) {
+        const isSet = !!st[`${el.dataset.secret}Set`];
+        el.placeholder = isSet ? 'Chave salva — cole outra para trocar' : 'Cole sua chave';
+        root.querySelector(`[data-cmd="clearSecret"][data-key="${el.dataset.secret}"]`).hidden = !isSet;
+      }
+      const secretStatus = q('[data-secret-status]');
+      if (secretStatus) secretStatus.textContent = st.steamGridDbKeySet ? '· Sua chave está salva (protegida no Windows).' : '';
       q('[data-show="gamesDir"]').textContent = st.gamesDir || '(não definida)';
       q('[data-show="gamesDir"]').title = st.gamesDir || '';
     }

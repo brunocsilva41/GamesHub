@@ -23,11 +23,87 @@ namespace GamesHub
             return null;
         }
 
-        /// <summary>True when the bytes are a JPEG/PNG that GDI+ can decode, at least 16x16.</summary>
+        /// <summary>Decode limits checked from the file header before GDI+ allocates the bitmap (a tiny PNG can
+        /// declare 65535x65535 = 16 GB of pixels).</summary>
+        public const int MaxDecodeSide = 8192;
+        public const long MaxDecodePixels = 40L * 1000 * 1000;
+
+        /// <summary>Pure: width/height from a PNG IHDR or a JPEG SOFn header. False when the header is missing/truncated.</summary>
+        public static bool TryReadDimensions(byte[] data, out int width, out int height)
+        {
+            width = height = 0;
+            string ext = SniffExt(data);
+            if (ext == ".png")
+            {
+                // 8-byte signature, then the IHDR chunk: length(4) "IHDR"(4) width(4, BE) height(4, BE).
+                if (data.Length < 24 || data[12] != 'I' || data[13] != 'H' || data[14] != 'D' || data[15] != 'R') return false;
+                long w = BigEndian32(data, 16), h = BigEndian32(data, 20);
+                if (w <= 0 || h <= 0 || w > int.MaxValue || h > int.MaxValue) return false;
+                width = (int)w; height = (int)h;
+                return true;
+            }
+            if (ext == ".jpg")
+            {
+                int p = 2;
+                while (p + 3 < data.Length)
+                {
+                    if (data[p] != 0xFF) return false;
+                    byte marker = data[p + 1];
+                    if (marker == 0xFF) { p++; continue; }                                   // fill byte
+                    if (marker == 0xD8 || marker == 0x01 || (marker >= 0xD0 && marker <= 0xD7)) { p += 2; continue; } // no length
+                    if (marker == 0xD9 || marker == 0xDA) return false;                       // EOI / SOS before any SOF
+                    int len = (data[p + 2] << 8) | data[p + 3];
+                    if (len < 2) return false;
+                    bool sof = marker >= 0xC0 && marker <= 0xCF && marker != 0xC4 && marker != 0xC8 && marker != 0xCC;
+                    if (sof)
+                    {
+                        // length(2) precision(1) height(2) width(2)
+                        if (p + 8 >= data.Length) return false;
+                        height = (data[p + 5] << 8) | data[p + 6];
+                        width = (data[p + 7] << 8) | data[p + 8];
+                        return width > 0 && height > 0;
+                    }
+                    p += 2 + len;
+                }
+                return false;
+            }
+            if (data != null && data.Length >= 10 && data[0] == 'G' && data[1] == 'I' && data[2] == 'F' && data[3] == '8')
+            {
+                width = data[6] | (data[7] << 8);            // logical screen size, little-endian
+                height = data[8] | (data[9] << 8);
+                return width > 0 && height > 0;
+            }
+            if (data != null && data.Length >= 26 && data[0] == 'B' && data[1] == 'M')
+            {
+                int w = BitConverter.ToInt32(data, 18), h = BitConverter.ToInt32(data, 22);   // BITMAPINFOHEADER
+                if (w <= 0 || h == 0 || h == int.MinValue) return false;
+                width = w; height = Math.Abs(h);             // negative height = top-down bitmap
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Pure: true when the header declares dimensions within the decode limits.</summary>
+        public static bool WithinDecodeLimits(byte[] data)
+        {
+            if (!TryReadDimensions(data, out int w, out int h)) return false;
+            return w <= MaxDecodeSide && h <= MaxDecodeSide && (long)w * h <= MaxDecodePixels;
+        }
+
+        private static long BigEndian32(byte[] b, int i)
+            => ((long)b[i] << 24) | ((long)b[i + 1] << 16) | ((long)b[i + 2] << 8) | b[i + 3];
+
+        /// <summary>True when the bytes are a JPEG/PNG that GDI+ can decode, at least 16x16 and within the decode
+        /// limits (checked from the header first).</summary>
         public static bool IsValidImage(byte[] data, out string ext)
         {
             ext = SniffExt(data);
             if (ext == null) return false;
+            if (!WithinDecodeLimits(data))
+            {
+                Log.Info("Art: image rejected (unreadable header or larger than " + MaxDecodeSide + "px / " + MaxDecodePixels / 1000000 + " MP)");
+                return false;
+            }
             try
             {
                 using (var ms = new MemoryStream(data))
@@ -83,6 +159,8 @@ namespace GamesHub
         public static string SaveNormalized(byte[] data, string basePath, bool png)
         {
             string ext = png ? ".png" : ".jpg";
+            if (!WithinDecodeLimits(data))
+                throw new ArgumentException("unsupported image or larger than " + MaxDecodeSide + "px / " + MaxDecodePixels / 1000000 + " MP");
             using (var ms = new MemoryStream(data))
             using (Image src = Image.FromStream(ms, false, true))
             {

@@ -66,6 +66,9 @@ namespace GamesHub.Installer
             if (ex.HasV1)
                 note = "Encontramos a versão anterior (1.x) em " + opts.InstallDir + ". Ela será atualizada para a " + Product.Version
                      + " — seus jogos, capas e histórico são preservados.";
+            else if (ex.HasV2 && SetupEngine.CompareVersions(ex.Version, Product.Version) > 0)
+                note = "Atenção: o GamesHub " + ex.Version + " instalado é mais novo que este instalador (" + Product.Version
+                     + "). Continuar vai substituí-lo por uma versão mais antiga.";
             else if (ex.HasV2)
                 note = "O GamesHub " + ex.Version + " já está instalado. Continuar vai atualizar para a " + Product.Version + " mantendo seus dados.";
             else
@@ -157,6 +160,15 @@ namespace GamesHub.Installer
                 && Ask("A pasta de jogos não existe:\n" + pathGames.Value + "\n\nEla será criada quando você adicionar o primeiro jogo. Continuar?")
                    != DialogResult.Yes)
                 return;
+            string newer = SetupEngine.NewerInstalledVersion(dir);
+            if (newer != null)
+            {
+                if (Ask("O GamesHub " + newer + " já está instalado em\n" + dir + "\n\nEle é mais novo que este instalador (" + Product.Version
+                        + "). Instalar uma versão mais antiga pode deixar de lado recursos e correções.\n\nInstalar a versão " + Product.Version + " mesmo assim?",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                    return;
+                opts.AllowDowngrade = true;
+            }
 
             opts.InstallDir = dir;
             opts.GamesDir = pathGames.Value;

@@ -135,7 +135,9 @@ namespace GamesHub.Tests
                 Directory.CreateDirectory(Path.Combine(data, "Metadata", "bacon.live"));      // no yaml
                 Directory.CreateDirectory(Path.Combine(data, "Metadata", "Riot Client"));
 
-                var games = new RiotSource(data).Scan();
+                Assert.Equal(0, new RiotSource(data, p => false).Scan().Count, "client not signed by Riot: nothing imported");
+                Assert.Equal(0, new RiotSource(data).Scan().Count, "real Authenticode check: the empty fake client is unsigned");
+                var games = new RiotSource(data, p => true).Scan();
                 games.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
                 Assert.Equal(2, games.Count, "installed products");
                 Game g = games[0];

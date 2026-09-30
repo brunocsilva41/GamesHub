@@ -34,12 +34,15 @@ namespace GamesHub
             };
         }
 
-        /// <summary>"steam-730/header.jpg" → https://art.gameshub.example/steam-730/header.jpg?v=&lt;mtime ticks&gt; (null when empty).</summary>
+        /// <summary>"steam-730/header.jpg" → https://art.gameshub.example/steam-730/header.jpg?v=&lt;mtime ticks&gt; (null when empty or unsafe).</summary>
         public static string ArtUrl(string rel)
         {
             if (string.IsNullOrWhiteSpace(rel)) return null;
             string clean = rel.Replace('\\', '/').TrimStart('/');
-            string url = ArtBase + string.Join("/", clean.Split('/').Select(Uri.EscapeDataString));
+            string[] segments = clean.Split('/');
+            // Same rule as BridgeDto.ArtUrl: no empty, "." or ".." segments and no drive/stream colons.
+            if (segments.Any(s => s.Length == 0 || s == "." || s == ".." || s.IndexOf(':') >= 0)) return null;
+            string url = ArtBase + string.Join("/", segments.Select(Uri.EscapeDataString));
             try
             {
                 // rel comes from game data: never stat a file outside the art cache (rooted or ".." paths).

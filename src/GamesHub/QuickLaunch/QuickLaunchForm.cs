@@ -87,9 +87,30 @@ namespace GamesHub
                     e.Cancel = true;
                     Log.Warn("Quick-launch: blocked navigation to " + Truncate(e.Uri));
                 };
-                core.NewWindowRequested += (o, e) => e.Handled = true;
+                // Same lock-down as the main window: no frames outside the palette, no popups, no external
+                // protocol handlers, no downloads, no permissions.
+                core.FrameNavigationStarting += (o, e) =>
+                {
+                    if (IsAppUri(e.Uri) || e.Uri == "about:blank") return;
+                    e.Cancel = true;
+                    Log.Warn("Quick-launch: blocked frame navigation to " + Truncate(e.Uri));
+                };
+                core.NewWindowRequested += (o, e) =>
+                {
+                    e.Handled = true;
+                    Log.Warn("Quick-launch: blocked new window " + Truncate(e.Uri));
+                };
+                core.LaunchingExternalUriScheme += (o, e) =>
+                {
+                    e.Cancel = true;
+                    Log.Warn("Quick-launch: blocked external scheme " + Truncate(e.Uri));
+                };
                 core.PermissionRequested += (o, e) => e.State = CoreWebView2PermissionState.Deny;
-                core.DownloadStarting += (o, e) => e.Cancel = true;
+                core.DownloadStarting += (o, e) =>
+                {
+                    e.Cancel = true;
+                    Log.Warn("Quick-launch: blocked download " + Truncate(e.DownloadOperation?.Uri));
+                };
                 core.WebMessageReceived += OnWebMessage;
                 core.ProcessFailed += (o, e) =>
                 {
@@ -121,7 +142,7 @@ namespace GamesHub
         {
             if (!IsAppUri(e.Source)) return;
             IDictionary<string, object> msg;
-            try { msg = Json.DeserializeObject(e.WebMessageAsJson) as IDictionary<string, object>; }
+            try { msg = Json.DeserializeMessage(e.WebMessageAsJson) as IDictionary<string, object>; }
             catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException)
             { Log.Warn("Quick-launch: invalid page message", ex); return; }
             if (msg == null) return;

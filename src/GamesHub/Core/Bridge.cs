@@ -129,7 +129,7 @@ namespace GamesHub
             List<string> files;
             try
             {
-                msg = Json.DeserializeObject(e.WebMessageAsJson) as IDictionary<string, object>;
+                msg = Json.DeserializeMessage(e.WebMessageAsJson) as IDictionary<string, object>;
                 files = DroppedFiles(e); // only valid during this event
             }
             catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException

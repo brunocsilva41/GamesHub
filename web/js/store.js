@@ -6,7 +6,7 @@ export const DEFAULT_SETTINGS = {
   gamesDir: '', importSteam: true, importEpic: true, onLaunch: 'tray', startWithWindows: false,
   startMinimized: false, closeToTray: true, hotkeyEnabled: true, hotkey: 'Ctrl+Alt+G', sortBy: 'name',
   view: 'grid', cardStyle: 'landscape', reduceMotion: false, autoArtwork: true, steamGridDbKey: '',
-  trackPlaytime: true, checkUpdates: true, updateRepo: '', language: 'pt-BR',
+  trackPlaytime: true, checkUpdates: true, language: 'pt-BR',
   // integrations
   importRiot: true, importHydra: true, importSteamPlaytime: true, fetchMetadata: true, pcgwEnabled: true,
   quickLaunchEnabled: true, quickLaunchHotkey: 'Ctrl+Shift+Space', automationEnabled: true, minimizeLaunchers: true,

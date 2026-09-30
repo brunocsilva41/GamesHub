@@ -14,6 +14,15 @@ try {
     Add-Check '.NET SDK (Roslyn compiler) available' ([bool]$sdk) (($sdk | Select-Object -Last 1) ?? 'install the .NET SDK 8')
     Add-Check '.NET Framework 4.8 reference assemblies' (Test-Path "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
 
+    # Bundled third-party binaries: besides the pinned SHA-256 (Hygiene), each must carry a valid Authenticode
+    # signature from Microsoft, so a replaced DLL with a re-pinned hash still cannot slip into the installer.
+    $microsoft = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+    foreach ($dll in Get-ChildItem (Join-Path $root 'lib') -Filter *.dll) {
+        $sig = Get-AuthenticodeSignature -LiteralPath $dll.FullName
+        $subject = if ($sig.SignerCertificate) { $sig.SignerCertificate.Subject } else { '(unsigned)' }
+        Add-Check "Authenticode: lib/$($dll.Name)" ($sig.Status -eq 'Valid' -and $subject -ceq $microsoft) "$($sig.Status), $subject" -File "lib/$($dll.Name)"
+    }
+
     $junit = Join-Path $root 'dist' 'reports' 'unit-tests.xml'
     $built = Invoke-Checked 'strict build + unit tests (build.ps1 -Clean -Strict -Test)' {
         pwsh -NoProfile -File build.ps1 -Clean -Strict -Test -JUnit $junit

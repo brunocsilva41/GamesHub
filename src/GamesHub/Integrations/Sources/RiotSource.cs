@@ -9,13 +9,21 @@ namespace GamesHub
 {
     public sealed class RiotSource : IExtraSource
     {
+        public const string ClientFileName = "RiotClientServices.exe";
+
         private readonly string _riotDataDir;
+        private readonly Func<string, bool> _isSignedByRiot;
 
         public RiotSource() : this(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Riot Games")) { }
 
-        /// <summary>For tests / alternative roots: the folder containing RiotClientInstalls.json and Metadata\.</summary>
-        public RiotSource(string riotDataDir) { _riotDataDir = riotDataDir ?? ""; }
+        /// <summary>For tests / alternative roots: the folder containing RiotClientInstalls.json and Metadata\.
+        /// <paramref name="isSignedByRiot"/> replaces the Authenticode check (default: valid signature by Riot Games).</summary>
+        public RiotSource(string riotDataDir, Func<string, bool> isSignedByRiot = null)
+        {
+            _riotDataDir = riotDataDir ?? "";
+            _isSignedByRiot = isSignedByRiot ?? Authenticode.IsRiotSigned;
+        }
 
         public string Name => "riot";
 
@@ -28,10 +36,12 @@ namespace GamesHub
                 if (!Directory.Exists(metaDir)) return games;
 
                 var clients = ReadClientPaths(Path.Combine(_riotDataDir, "RiotClientInstalls.json"));
-                string client = FirstExisting(clients);
+                // RiotClientInstalls.json lives in ProgramData, writable by any local user: the path it names is
+                // launched by us, so only a local, Riot-signed RiotClientServices.exe is accepted.
+                string client = FirstTrusted(clients, _isSignedByRiot);
                 if (client == "")
                 {
-                    Log.Warn("RiotSource: RiotClientServices.exe not found; skipping Riot games");
+                    Log.Warn("RiotSource: no trusted RiotClientServices.exe (missing, not local or not signed by Riot Games); skipping Riot games");
                     return games;
                 }
 
@@ -61,7 +71,8 @@ namespace GamesHub
             var y = FlatYaml.Parse(File.ReadAllText(yamlFile, Encoding.UTF8));
             y.TryGetValue("product_install_full_path", out string full);
             string installDir = RiotCatalog.NormalizePath(full);
-            if (installDir == "" || !Directory.Exists(installDir)) return null;
+            // A UNC/relative install path is never probed (would contact an SMB server named by the file).
+            if (!SafePath.IsLocalAbsolute(installDir) || !Directory.Exists(installDir)) return null;
 
             y.TryGetValue("shortcut_name", out string shortcut);
             string exe = "";
@@ -110,10 +121,28 @@ namespace GamesHub
             return list;
         }
 
-        private static string FirstExisting(List<string> paths)
+        /// <summary>First candidate that is a local absolute path to an existing RiotClientServices.exe accepted by
+        /// <paramref name="isSignedByRiot"/>; "" when none.</summary>
+        public static string FirstTrusted(IEnumerable<string> paths, Func<string, bool> isSignedByRiot)
         {
-            foreach (string p in paths) if (File.Exists(p)) return p;
+            foreach (string p in paths ?? Enumerable.Empty<string>())
+            {
+                if (IsTrustedClient(p, isSignedByRiot)) return p;
+            }
             return "";
+        }
+
+        public static bool IsTrustedClient(string path, Func<string, bool> isSignedByRiot)
+        {
+            if (!SafePath.IsLocalAbsolute(path) || isSignedByRiot == null) return false;
+            string name;
+            try { name = Path.GetFileName(path); }
+            catch (ArgumentException ex) { Log.Warn("RiotSource: bad client path " + path, ex); return false; }
+            if (!string.Equals(name, ClientFileName, StringComparison.OrdinalIgnoreCase)) return false;
+            if (!File.Exists(path)) return false;
+            if (isSignedByRiot(path)) return true;
+            Log.Warn("RiotSource: ignoring " + path + " (Authenticode signature missing, invalid or not from Riot Games)");
+            return false;
         }
 
         private static DateTime SafeCreationTime(string file)

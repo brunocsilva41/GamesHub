@@ -66,7 +66,8 @@ body:
       description: |
         Abra a pasta em Configurações → Sobre → **Abrir logs** (ou `%LOCALAPPDATA%\GamesHub\logs\gameshub.log`) e cole as linhas próximas ao horário do problema, principalmente as com `WARN` ou `ERROR`.
         Problemas de instalação: `%TEMP%\GamesHub\setup.log` ou `uninstall.log`.
-        Revise antes de colar para remover dados pessoais.
+        ⚠️ **Esta issue é pública.** O log pode conter caminhos locais com o seu nome de usuário do Windows (ex.: `C:\Users\<seu nome>\...`), nomes de pastas e de jogos.
+        Revise o trecho antes de colar e troque o que for pessoal por algo genérico (ex.: `C:\Users\<usuário>\...`). Cole só as linhas necessárias, nunca o arquivo inteiro.
       render: text
   - type: checkboxes
     id: checks

@@ -30,6 +30,13 @@ namespace GamesHub
             }
         }
 
+        /// <summary>True for a drive-letter absolute path ("C:\x", "C:/x") without invalid characters. False for UNC
+        /// ("\\server\share"), device ("\\?\", "\\.\"), drive-relative ("C:x") and relative paths: values read from
+        /// third-party manifests must never make us touch the network (SMB auth leaks) or odd namespaces.</summary>
+        public static bool IsLocalAbsolute(string p)
+            => !string.IsNullOrEmpty(p) && p.Length >= 3 && p[0] < 128 && char.IsLetter(p[0]) && p[1] == ':'
+               && (p[2] == '\\' || p[2] == '/') && p.IndexOfAny(Path.GetInvalidPathChars()) < 0;
+
         /// <summary>True when <paramref name="path"/> resolves to <paramref name="baseDir"/> or somewhere below it.
         /// False for invalid paths.</summary>
         public static bool IsInside(string baseDir, string path)

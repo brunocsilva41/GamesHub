@@ -56,10 +56,15 @@ namespace GamesHub
             map[key] = new Entry { Seq = seq, Deleted = deleted, Value = value };
         }
 
-        private static byte[] ReadShared(string path)
+        /// <summary>Larger table/log files are skipped: the whole file is held in memory, and LevelDB rolls tables
+        /// at about 2 MB and logs at about 4 MB, so real databases never come close.</summary>
+        public const long MaxFileBytes = 64L * 1024 * 1024;
+
+        internal static byte[] ReadShared(string path)
         {
             using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
             {
+                if (fs.Length > MaxFileBytes) throw new IOException("LevelDB: file too large (" + fs.Length + " bytes)");
                 var buf = new byte[fs.Length];
                 int read = 0;
                 while (read < buf.Length)

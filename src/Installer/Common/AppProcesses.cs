@@ -13,7 +13,8 @@ namespace GamesHub.Installer
     {
         private static readonly string[] Names = { "GamesHub", "GamesLounge" };
 
-        /// <summary>Running app processes whose image lives in installDir (or whose path can't be read).</summary>
+        /// <summary>Running app processes whose image lives in installDir. A process whose path can't be read is never
+        /// included: it can't be proven to be ours, so it must not be closed or killed (same name ≠ same program).</summary>
         public static List<Process> Find(string installDir)
         {
             var list = new List<Process>();
@@ -24,8 +25,12 @@ namespace GamesHub.Installer
                 {
                     if (p.Id == self) { p.Dispose(); continue; }
                     string img = ImagePath(p);
-                    if (img == null || PathSafety.IsInside(img, installDir)) list.Add(p);
-                    else p.Dispose();
+                    if (img != null && PathSafety.IsInside(img, installDir)) list.Add(p);
+                    else
+                    {
+                        if (img == null) InstallerLog.Warn("Ignoring " + p.ProcessName + "#" + p.Id + ": its image path can't be read");
+                        p.Dispose();
+                    }
                 }
             }
             return list;

@@ -17,7 +17,7 @@ export function createMockHost() {
   const games = sampleGames(Number(params.get('many')) || 0);
   const defaults = new Map(games.map((g) => [g.id, { name: g.name, art: { ...g.art } }]));
   let collections = ['Competitivo', 'Single-player', 'Com amigos'];
-  const settings = { ...DEFAULT_SETTINGS, gamesDir: 'C:\\Users\\Demo\\Desktop\\jogos', updateRepo: 'demo/gameshub' };
+  const settings = { ...DEFAULT_SETTINGS, gamesDir: 'C:\\Users\\Demo\\Desktop\\jogos' };
   const windowState = { maximized: false, fullscreen: false, pinned: false };
   const undoStack = new Map(); let undoSeq = 0, emitTimer = null;
 

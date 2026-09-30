@@ -64,10 +64,10 @@ namespace GamesHub
 
         /// <summary>Game root from its exe. Unreal "…\&lt;Game&gt;\&lt;Project&gt;\Binaries\Win64\x.exe" → "…\&lt;Game&gt;".
         /// Never returns a drive root or a library folder ("" instead). See <see cref="GameRootResolver"/>.</summary>
-        public static string InstallDirFromExe(string exe) => GameRootResolver.Resolve(exe);
+        public static string InstallDirFromExe(string exe) => IsLocalPath(exe ?? "") ? GameRootResolver.Resolve(exe) : "";
 
-        private static bool IsLocalPath(string p)
-            => p.Length > 2 && ((char.IsLetter(p[0]) && p[1] == ':') || p.StartsWith(@"\\")) && p.IndexOfAny(Path.GetInvalidPathChars()) < 0;
+        // UNC paths are rejected: probing them (fileExists) would reach out to an SMB server named by the record.
+        private static bool IsLocalPath(string p) => SafePath.IsLocalAbsolute(p);
 
         private static bool IsDigits(string s)
         {

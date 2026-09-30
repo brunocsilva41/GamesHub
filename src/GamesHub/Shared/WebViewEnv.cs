@@ -26,7 +26,10 @@ namespace GamesHub
                     int port = DevToolsPort();
                     if (port > 0)
                     {
-                        options.AdditionalBrowserArguments = "--remote-debugging-port=" + port + " --remote-allow-origins=*";
+                        // Only a DevTools client that presents this exact origin (or none, like a non-browser
+                        // test harness) is accepted; web pages from any other origin are refused.
+                        options.AdditionalBrowserArguments = "--remote-debugging-port=" + port
+                                                             + " --remote-allow-origins=" + DevToolsOrigin(port);
                         Log.Info("DevTools protocol enabled on 127.0.0.1:" + port + " (isolated test instance)");
                     }
                     _env = CoreWebView2Environment.CreateAsync(null, AppPaths.WebViewDir, options);
@@ -37,15 +40,22 @@ namespace GamesHub
 
         /// <summary>
         /// Automated tests observe the UI through the DevTools protocol. The port is honoured ONLY for isolated
-        /// instances (GAMESHUB_DATA_DIR set), so a normal installation can never be told to expose it; setting it
-        /// through the API also works where machine policy ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS.
+        /// instances (GAMESHUB_DATA_DIR set) that also opt in explicitly with GAMESHUB_E2E=1, so a normal
+        /// installation can never be told to expose it; setting it through the API also works where machine policy
+        /// ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS.
         /// </summary>
-        private static int DevToolsPort()
+        private static int DevToolsPort() => DevToolsPort(AppPaths.IsIsolated, Environment.GetEnvironmentVariable("GAMESHUB_E2E"),
+                                                          Environment.GetEnvironmentVariable("GAMESHUB_DEVTOOLS_PORT"));
+
+        /// <summary>Pure decision (testable): 0 = DevTools protocol stays off.</summary>
+        internal static int DevToolsPort(bool isolated, string e2eFlag, string portValue)
         {
-            if (!AppPaths.IsIsolated) return 0;
-            string v = Environment.GetEnvironmentVariable("GAMESHUB_DEVTOOLS_PORT");
-            return int.TryParse(v, out int p) && p >= 1024 && p <= 65535 ? p : 0;
+            if (!isolated || (e2eFlag ?? "").Trim() != "1") return 0;
+            return int.TryParse(portValue, out int p) && p >= 1024 && p <= 65535 ? p : 0;
         }
+
+        /// <summary>The only Origin the DevTools endpoint accepts: the endpoint itself.</summary>
+        internal static string DevToolsOrigin(int port) => "http://127.0.0.1:" + port;
 
         /// <summary>Applies the standard virtual-host mappings (app + art) to a WebView.</summary>
         public static void MapHosts(CoreWebView2 core)

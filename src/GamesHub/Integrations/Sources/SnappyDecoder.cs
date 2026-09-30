@@ -5,12 +5,18 @@ namespace GamesHub
 {
     public static class SnappyDecoder
     {
-        /// <summary>Decompresses a raw Snappy block. Throws InvalidDataException on corrupt input.</summary>
+        /// <summary>Hard cap on one decompressed block (LevelDB blocks are about 4 KB; 256 MB is far beyond real data).</summary>
+        public const int MaxDecompressedBytes = 256 * 1024 * 1024;
+
+        /// <summary>Decompresses a raw Snappy block. Throws InvalidDataException on corrupt input, including a
+        /// declared length the input could not possibly expand to (a 2-byte copy op emits at most 64 bytes, so
+        /// real data never exceeds about 32x) — checked before allocating.</summary>
         public static byte[] Decompress(byte[] src, int offset, int count)
         {
             int pos = offset, end = offset + count;
             ulong len = ReadVarint(src, ref pos, end);
-            if (len > int.MaxValue) throw new InvalidDataException("snappy: length too large");
+            if (len > MaxDecompressedBytes || len > (ulong)Math.Max(0, count) * 32 + 1024)
+                throw new InvalidDataException("snappy: declared length too large");
             var dst = new byte[(int)len];
             int d = 0;
             while (pos < end)

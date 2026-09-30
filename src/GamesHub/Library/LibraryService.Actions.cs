@@ -32,7 +32,15 @@ namespace GamesHub
                 ShortcutInfo lnk = g.Ext == ".lnk" && g.LaunchArgs.Trim().Length > 0 ? _folder.GetShortcut(g.FilePath) : null;
                 string sourceArgs;
                 lock (_gate) sourceArgs = _sourceById.TryGetValue(g.Id, out Game src) ? src.LaunchArgs ?? "" : "";
-                GameLauncher.Start(GameLauncher.BuildStartInfo(g, lnk, g.Source == GameRules.SourceFolder ? "" : sourceArgs));
+                if (g.Source == GameRules.SourceFolder) sourceArgs = "";
+                var psi = GameLauncher.BuildStartInfo(g, lnk, sourceArgs);
+                string unsafeArgs = GameLauncher.UnsafeBatchArgs(psi, g.LaunchArgs, sourceArgs);
+                if (unsafeArgs != null)
+                {
+                    Log.Warn("Launch refused (batch script with shell metacharacters in arguments): " + id);
+                    return OpResult.Fail(unsafeArgs);
+                }
+                GameLauncher.Start(psi);
             }
             catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException || ex is IOException || ex is FileNotFoundException)
             {

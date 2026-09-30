@@ -164,9 +164,9 @@ namespace GamesHub.Tests
             try
             {
                 Assert.True(QuickDto.ArtUrl("quick-probe.jpg").Contains("?v="), "file inside the art cache gets a stamp");
-                string u = QuickDto.ArtUrl("../quick-escape-probe.txt");
-                Assert.False(u.Contains("?v="), "'..' must not reach files outside the art cache: " + u);
-                Assert.False(QuickDto.ArtUrl(outside).Contains("?v="), "rooted paths must not be stat'ed");
+                // Unsafe paths get no URL at all (same rule as BridgeDto.ArtUrl), so nothing outside is stat'ed.
+                Assert.True(QuickDto.ArtUrl("../quick-escape-probe.txt") == null, "'..' must not reach files outside the art cache");
+                Assert.True(QuickDto.ArtUrl(outside) == null, "rooted paths must not be stat'ed");
             }
             finally
             {

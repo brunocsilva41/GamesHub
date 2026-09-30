@@ -49,6 +49,8 @@ namespace GamesHub
 
             string ns = Json.Str(d, "CatalogNamespace"), item = Json.Str(d, "CatalogItemId");
             string install = Json.Str(d, "InstallLocation").Replace('/', '\\').TrimEnd('\\');
+            // Only local drive paths: a UNC/relative location from a (user-writable) manifest is treated as unknown.
+            if (!SafePath.IsLocalAbsolute(install)) install = "";
             string exe = Json.Str(d, "LaunchExecutable").Replace('/', '\\').TrimStart('\\');
             string display = Json.Str(d, "DisplayName").Trim();
             return new Game

@@ -193,7 +193,7 @@ namespace GamesHub
                     _form.HidePalette();
                     break;
                 case "log":
-                    string text = "Quick-launch page: " + Json.Str(msg, "msg");
+                    string text = "Quick-launch page: " + LimitLogText(Json.Str(msg, "msg"));
                     if (Json.Str(msg, "level") == "error") Log.Error(text); else Log.Warn(text);
                     break;
                 default:
@@ -201,6 +201,12 @@ namespace GamesHub
                     break;
             }
         }
+
+        /// <summary>Maximum characters of one page-provided log message (the page is untrusted input).</summary>
+        internal const int MaxLogChars = 2000;
+
+        internal static string LimitLogText(string s)
+            => string.IsNullOrEmpty(s) ? "" : s.Length > MaxLogChars ? s.Substring(0, MaxLogChars) + "…" : s;
 
         private async void Launch(string id)
         {

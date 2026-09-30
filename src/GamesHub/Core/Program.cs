@@ -75,7 +75,7 @@ namespace GamesHub
             int hr = CoreNative.SetCurrentProcessExplicitAppUserModelID(appId);
             if (hr != 0) Log.Warn("SetCurrentProcessExplicitAppUserModelID failed: 0x" + hr.ToString("X8"));
 
-            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            TlsPolicy.Ensure();   // TLS 1.2/1.3 only (see TlsPolicy: no TargetFrameworkAttribute → legacy Ssl3|Tls default)
             ServicePointManager.Expect100Continue = false;
         }
 

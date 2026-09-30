@@ -15,12 +15,15 @@ $required = 'LICENSE', 'README.md', 'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING
             'docs/ARCHITECTURE.md', 'docs/PIPELINE.md', 'lib/checksums.sha256', 'build.ps1',
             'src/GamesHub/Properties/AssemblyInfo.cs', '.github/workflows/ci.yml', '.github/workflows/release.yml',
             '.github/workflows/codeql.yml', '.github/workflows/pr-guard.yml', '.github/CODEOWNERS',
-            '.github/codeql/codeql-config.yml', 'ci/security/Test-PullRequest.ps1'
+            '.github/codeql/codeql-config.yml', 'ci/security/Test-PullRequest.ps1', 'ci/security/FilePolicy.ps1',
+            'ci/security/tests/Test-PullRequest.Tests.ps1'
 foreach ($r in $required) { Add-Check "required file: $r" ($files -contains $r) }
 
 # ------------------------------------------------------------------ binaries
+. (Join-Path $root 'ci' 'security' 'FilePolicy.ps1')
 $binaryExt = '.dll', '.exe', '.ico', '.png', '.jpg', '.jpeg', '.gif', '.woff2', '.zip', '.pdb'
-$allowedBinaryDirs = '^(lib/|assets/|web/(fonts/|[^/]+\.(png|ico)$)|docs/screenshots/)'
+# web/ ships inside the app: only the bundled font and the top-level icon/logo (see ci/security/FilePolicy.ps1).
+$allowedBinaryDirs = '^(lib/|assets/|web/(fonts/[^/]+\.woff2|[^/]+\.(png|ico))$|docs/screenshots/)'
 $maxBytes = 3MB
 foreach ($f in $files) {
     $full = Join-Path $root $f
@@ -30,7 +33,11 @@ foreach ($f in $files) {
     if ($size -gt $maxBytes) { Add-Check 'file size ≤ 3 MB' $false "$([math]::Round($size / 1MB, 1)) MB" -File $f }
     if ($binaryExt -contains $ext) {
         if ($ext -in '.exe', '.pdb', '.zip') { Add-Check 'no build output committed' $false 'executables/archives never belong in git' -File $f }
-        elseif ($f -notmatch $allowedBinaryDirs) { Add-Check 'binary in an allowed folder' $false 'binaries only in lib/, assets/, web/fonts, docs/screenshots' -File $f }
+        elseif ($f -notmatch $allowedBinaryDirs) { Add-Check 'binary in an allowed folder' $false 'binaries only in lib/, assets/, web/fonts/*.woff2, web/*.png|ico, docs/screenshots' -File $f }
+    }
+    if ($f -match '^web/') {
+        $why = Get-FilePolicyViolation $f   # scripts (.bat/.cmd/.vbs/.ps1…) and anything else unexpected in the UI folder
+        if ($why) { Add-Check 'allowed file type in web/' $false $why -File $f }
     }
 }
 Add-Check 'binary files in allowed folders / sizes' $true "$($files.Count) tracked files scanned"
@@ -138,5 +145,12 @@ if ($ver -notmatch '-') {
     $esc = [regex]::Escape($ver)
     Add-Check "CHANGELOG has a dated section for $ver" ($changelog -match "(?m)^## \[$esc\] - \d{4}-\d{2}-\d{2}\s*$") -File 'CHANGELOG.md'
 }
+
+# ------------------------------------------------------------------ PR security gate self-test
+# Synthetic diffs for every known bypass of ci/security/Test-PullRequest.ps1 (quoted names, forged headers, "++"
+# lines, tests/, web/ file types, binary-diff attributes, approval bound to a commit).
+Invoke-Checked 'PR security gate self-test (ci/security/tests)' {
+    pwsh -NoProfile -File (Join-Path $root 'ci' 'security' 'tests' 'Test-PullRequest.Tests.ps1')
+} | Out-Null
 
 exit (Complete-Stage)

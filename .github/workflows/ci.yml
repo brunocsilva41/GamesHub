@@ -158,7 +158,8 @@ jobs:
           Write-Host 'WebView2 Runtime missing: installing the Evergreen bootstrapper'
           Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile "$env:RUNNER_TEMP\wv2setup.exe"
           $sig = Get-AuthenticodeSignature "$env:RUNNER_TEMP\wv2setup.exe"
-          if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch 'Microsoft') { throw "Unexpected signature: $($sig.Status) $($sig.SignerCertificate.Subject)" }
+          $microsoft = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+          if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -cne $microsoft) { throw "Unexpected signature: $($sig.Status) $($sig.SignerCertificate.Subject)" }
           Start-Process "$env:RUNNER_TEMP\wv2setup.exe" -ArgumentList '/silent', '/install' -Wait
           "WebView2 Runtime $((Get-ItemProperty $key).pv) installed"
 

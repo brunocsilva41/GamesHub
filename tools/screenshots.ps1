@@ -55,6 +55,7 @@ $lib | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $data 'library.json') -E
 
 $env:GAMESHUB_DATA_DIR = $data
 $env:GAMESHUB_DEVTOOLS_PORT = "$Port"
+$env:GAMESHUB_E2E = '1'   # explicit opt-in the app requires before exposing DevTools (WebViewEnv.cs)
 $proc = Start-Process $exe -ArgumentList '--show' -PassThru
 try {
     $out = Join-Path $root 'docs' 'screenshots'
@@ -65,6 +66,6 @@ try {
 finally {
     Start-Process $exe -ArgumentList '--quit' -Wait
     if (-not $proc.WaitForExit(10000)) { Stop-Process -Id $proc.Id -Force }
-    Remove-Item Env:GAMESHUB_DATA_DIR, Env:GAMESHUB_DEVTOOLS_PORT
+    Remove-Item Env:GAMESHUB_DATA_DIR, Env:GAMESHUB_DEVTOOLS_PORT, Env:GAMESHUB_E2E
     Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
 }

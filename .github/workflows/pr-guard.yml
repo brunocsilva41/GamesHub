@@ -1,8 +1,10 @@
 name: PR security
 
-# Runs on every pull request with the PR's own code but WITHOUT secrets and with a read-only token
-# (`pull_request`, never `pull_request_target`). Re-runs when labels change, so the maintainer's
-# "seguranca-aprovada" label can unblock a reviewed external contribution.
+# Runs on every pull request WITHOUT secrets and with a read-only token (`pull_request`, never
+# `pull_request_target`). The gate script is the BASE branch's copy: the PR checkout is only read as git data,
+# so a PR cannot weaken the check that reviews it. Re-runs when labels change: the maintainer's
+# "seguranca-aprovada" label unblocks a reviewed external contribution, but only for the commit it was added
+# on — any later run (new commits, reopen, other label changes) fails until the label is removed and re-added.
 on:
   pull_request:
     branches: [main]
@@ -21,8 +23,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out the gate from the base commit (trusted code)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Check out the pull request (data only, never executed)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pr
           fetch-depth: 0
           persist-credentials: false
 
@@ -34,7 +45,11 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           AUTHOR: ${{ github.event.pull_request.author_association }}
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: ./ci/security/Test-PullRequest.ps1 -Base $env:BASE_SHA -Head $env:HEAD_SHA -Author $env:AUTHOR -Labels $env:LABELS
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_LABEL: ${{ github.event.label.name }}
+        run: >-
+          ./trusted/ci/security/Test-PullRequest.ps1 -RepoPath ./pr -Base $env:BASE_SHA -Head $env:HEAD_SHA
+          -Author $env:AUTHOR -Labels $env:LABELS -Action $env:EVENT_ACTION -AddedLabel $env:EVENT_LABEL
 
       - name: Dependency review (known-vulnerable or disallowed dependencies)
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0

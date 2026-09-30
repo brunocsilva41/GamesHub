@@ -92,7 +92,8 @@ namespace GamesHub
         private void OnNewWindowRequested(object sender, CoreWebView2NewWindowRequestedEventArgs e)
         {
             e.Handled = true; // never open WebView popups
-            if (ShellActions.IsSafeExternalUrl(e.Uri)) ShellActions.OpenUrl(e.Uri);
+            // Only a real click (not a script calling window.open) may hand an https link to the browser.
+            if (e.IsUserInitiated && ShellActions.IsSafeExternalUrl(e.Uri)) ShellActions.OpenUrl(e.Uri);
             else Log.Warn("Blocked new window: " + ShellActions.Truncate(e.Uri));
         }
 

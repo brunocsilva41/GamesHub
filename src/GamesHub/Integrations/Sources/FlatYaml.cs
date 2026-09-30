@@ -14,9 +14,10 @@ namespace GamesHub
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (string.IsNullOrEmpty(text)) return result;
-            foreach (string line in text.Split('\n').Select(raw => raw.TrimEnd('\r')))
+            // Only top-level "key: value" lines: skip blanks, nested/indented lines, comments and list items.
+            foreach (string line in text.Split('\n').Select(raw => raw.TrimEnd('\r'))
+                                        .Where(l => l.Length > 0 && " \t#-".IndexOf(l[0]) < 0))
             {
-                if (line.Length == 0 || line[0] == ' ' || line[0] == '\t' || line[0] == '#' || line[0] == '-') continue;
                 if (line.StartsWith("---") || line.StartsWith("...")) continue;
                 int colon = FindKeyColon(line);
                 if (colon <= 0) continue;

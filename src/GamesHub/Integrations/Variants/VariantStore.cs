@@ -64,10 +64,10 @@ namespace GamesHub
                 groupIds.Add(gid);
                 clean.Groups.Add(new VariantGroup { Id = gid, PrimaryId = primary, MemberIds = members, Labels = labels });
             }
-            foreach (List<string> key in (d.Dismissed ?? new List<List<string>>()).Select(SetKey))
-            {
-                if (key.Count >= 2 && !clean.Dismissed.Any(x => SameSet(x, key))) clean.Dismissed.Add(key);
-            }
+            // Where is lazy: each candidate is checked against the sets already added in this loop.
+            foreach (List<string> key in (d.Dismissed ?? new List<List<string>>()).Select(SetKey)
+                         .Where(k => k.Count >= 2 && !clean.Dismissed.Any(x => SameSet(x, k))))
+                clean.Dismissed.Add(key);
             return clean;
         }
 

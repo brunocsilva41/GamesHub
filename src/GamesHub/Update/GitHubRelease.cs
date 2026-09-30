@@ -90,9 +90,9 @@ namespace GamesHub
         {
             if (string.IsNullOrEmpty(text)) return null;
             string anyName = null;
-            foreach (string line in text.Replace("\r", "").Split('\n').Select(raw => raw.Trim().TrimStart('﻿')))
+            foreach (string line in text.Replace("\r", "").Split('\n').Select(raw => raw.Trim().TrimStart('﻿'))
+                                        .Where(l => l.Length > 0 && !l.StartsWith("#")))
             {
-                if (line.Length == 0 || line.StartsWith("#")) continue;
                 string hash = null, name = null;
                 Match m = Gnu.Match(line);
                 if (m.Success) { hash = m.Groups[1].Value; name = m.Groups[2].Success ? m.Groups[2].Value.Trim() : null; }

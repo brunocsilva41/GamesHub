@@ -54,12 +54,10 @@ namespace GamesHub
             VdfNode root = VdfParser.Parse(vdfText);
             VdfNode lf = root.Node("libraryfolders") ?? root.Node("LibraryFolders");
             if (lf == null) return list;
-            foreach (string key in lf.Keys.Where(k => Regex.IsMatch(k, @"^\d+$")))
-            {
-                object v = lf.Items[key];
-                string path = v is VdfNode n ? n.Str("path") : v as string;
-                if (!string.IsNullOrEmpty(path)) list.Add(path);
-            }
+            // Library entries are numbered keys; newer files nest {"path": …}, older ones store the path directly.
+            list.AddRange(lf.Keys.Where(k => Regex.IsMatch(k, @"^\d+$"))
+                .Select(k => lf.Items[k] is VdfNode n ? n.Str("path") : lf.Items[k] as string)
+                .Where(p => !string.IsNullOrEmpty(p)));
             return list;
         }
 

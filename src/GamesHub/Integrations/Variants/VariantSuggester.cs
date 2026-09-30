@@ -47,9 +47,9 @@ namespace GamesHub
             LinkBy(cands, g => Platform(g) + "|" + PathKey(g.InstallDir), g => UsableDir(g.InstallDir), union);
 
             var result = new List<VariantGroup>();
-            foreach (var members in Enumerable.Range(0, n).GroupBy(find).Select(cluster => cluster.Select(i => cands[i]).ToList()))
+            foreach (var members in Enumerable.Range(0, n).GroupBy(find).Select(cluster => cluster.Select(i => cands[i]).ToList())
+                                              .Where(m => m.Count >= 2 && m.Count <= MaxGroupSize))
             {
-                if (members.Count < 2 || members.Count > MaxGroupSize) continue;
                 List<string> key = VariantStore.SetKey(members.Select(m => m.Id));
                 if (dismissed.Any(d => !key.Except(d, StringComparer.OrdinalIgnoreCase).Any())) continue;
                 result.Add(Build(members, key));

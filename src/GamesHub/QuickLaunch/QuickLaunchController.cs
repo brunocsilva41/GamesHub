@@ -103,7 +103,9 @@ namespace GamesHub
                 _hotkey?.Dispose();
                 _form?.CloseForGood();
             }
-            catch (Exception ex) { Log.Warn("Quick-launch dispose failed", ex); }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is System.ComponentModel.Win32Exception
+                                       || ex is System.Runtime.InteropServices.COMException)
+            { Log.Warn("Quick-launch dispose failed", ex); }
             _hotkey = null;
             _form = null;
         }
@@ -150,7 +152,8 @@ namespace GamesHub
                 if (_index == null || Interlocked.Exchange(ref _dirty, 0) == 1)
                 {
                     try { _index = QuickSearch.BuildIndex(_library.GetGames()); }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
+                                               || ex is InvalidOperationException || ex is ArgumentException)
                     {
                         Log.Error("Quick-launch: failed to build index", ex);
                         if (_index == null) _index = new List<QuickEntry>();
@@ -205,6 +208,7 @@ namespace GamesHub
             _form.Post(new { type = "launching", id });
             OpResult r;
             try { r = await Task.Run(() => _library.Launch(id)); }
+            // Resilience boundary: async void entry point running the whole launch pipeline (automation, processes).
             catch (Exception ex)
             {
                 Log.Error("Quick-launch: launch failed for " + id, ex);
@@ -215,6 +219,7 @@ namespace GamesHub
             if (r.Ok) _form.HidePalette();
             else _form.Post(new { type = "status", kind = "err", text = r.Message });
             try { Launched?.Invoke(id, r); }
+            // Resilience boundary: raising an event to arbitrary host subscribers from an async void method.
             catch (Exception ex) { Log.Error("Quick-launch: Launched handler failed", ex); }
         }
 
@@ -222,7 +227,8 @@ namespace GamesHub
         {
             string path = "";
             try { path = _library.RevealPath(id) ?? ""; }
-            catch (Exception ex) { Log.Warn("Quick-launch: RevealPath failed for " + id, ex); }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException || ex is NotSupportedException)
+            { Log.Warn("Quick-launch: RevealPath failed for " + id, ex); }
             if (path.Length == 0 || (!Directory.Exists(path) && !File.Exists(path)))
             {
                 _form.Post(new { type = "status", kind = "err", text = "Este jogo não tem pasta para abrir." });
@@ -234,7 +240,7 @@ namespace GamesHub
                 Process.Start(new ProcessStartInfo("explorer.exe", args) { UseShellExecute = true });
                 _form.HidePalette();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception || ex is InvalidOperationException || ex is IOException)
             {
                 Log.Warn("Quick-launch: could not open Explorer for " + path, ex);
                 _form.Post(new { type = "status", kind = "err", text = "Não foi possível abrir a pasta." });

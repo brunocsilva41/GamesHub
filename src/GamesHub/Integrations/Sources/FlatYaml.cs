@@ -1,6 +1,7 @@
 // product_settings.yaml). Nested maps, lists and multi-line values are ignored.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace GamesHub
@@ -13,9 +14,8 @@ namespace GamesHub
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (string.IsNullOrEmpty(text)) return result;
-            foreach (string raw in text.Split('\n'))
+            foreach (string line in text.Split('\n').Select(raw => raw.TrimEnd('\r')))
             {
-                string line = raw.TrimEnd('\r');
                 if (line.Length == 0 || line[0] == ' ' || line[0] == '\t' || line[0] == '#' || line[0] == '-') continue;
                 if (line.StartsWith("---") || line.StartsWith("...")) continue;
                 int colon = FindKeyColon(line);
@@ -36,7 +36,11 @@ namespace GamesHub
             for (int i = 0; i < line.Length; i++)
             {
                 char c = line[i];
-                if (quote != '\0') { if (c == quote) quote = '\0'; continue; }
+                if (quote != '\0')
+                {
+                    if (c == quote) quote = '\0';
+                    continue;
+                }
                 if (c == '"' || c == '\'') { quote = c; continue; }
                 if (c == ':' && (i + 1 == line.Length || line[i + 1] == ' ' || line[i + 1] == '\t')) return i;
             }

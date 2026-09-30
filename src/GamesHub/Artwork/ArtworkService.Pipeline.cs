@@ -43,6 +43,7 @@ namespace GamesHub
             {
                 result = await ProcessAsync(g).ConfigureAwait(false);
             }
+            // Resilience boundary: background task entry point (network, GDI+, shell and third-party data); the game is simply retried later.
             catch (Exception ex)
             {
                 Log.Warn("Art: background work failed for " + g.Id, ex);

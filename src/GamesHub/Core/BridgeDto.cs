@@ -83,8 +83,8 @@ namespace GamesHub
         {
             try
             {
-                string full = Path.Combine(AppPaths.ArtDir, rel.Replace('/', Path.DirectorySeparatorChar));
-                return File.Exists(full) ? File.GetLastWriteTimeUtc(full).Ticks : (long?)null;
+                string full = PathGuard.ResolveUnder(AppPaths.ArtDir, rel.Replace('/', Path.DirectorySeparatorChar));
+                return full != null && File.Exists(full) ? File.GetLastWriteTimeUtc(full).Ticks : (long?)null;
             }
             catch (Exception ex) when (ex is ArgumentException || ex is IOException || ex is NotSupportedException || ex is UnauthorizedAccessException)
             {
@@ -142,7 +142,7 @@ namespace GamesHub
         public static List<Game> RecentGames(IEnumerable<Game> games, int count)
             => (games ?? Enumerable.Empty<Game>())
                 .Where(g => g != null && !g.Hidden && g.LastPlayed.HasValue)
-                .OrderByDescending(g => g.LastPlayed.Value)
+                .OrderByDescending(g => g.LastPlayed.GetValueOrDefault())
                 .ThenBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase)
                 .Take(count)
                 .ToList();

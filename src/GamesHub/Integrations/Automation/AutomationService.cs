@@ -47,7 +47,7 @@ namespace GamesHub
         {
             if (string.IsNullOrWhiteSpace(gameId)) return OpResult.Fail("Jogo inválido.");
             try { return Saved(profiles.Set(gameId, profile), gameId); }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex))
             {
                 Log.Error("Automation: save profile failed for " + gameId, ex);
                 return OpResult.Fail("Não foi possível salvar a automação.");
@@ -57,7 +57,7 @@ namespace GamesHub
         public OpResult SaveDefaultProfile(AutomationProfile profile)
         {
             try { return Saved(profiles.SetDefault(profile), null); }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex))
             {
                 Log.Error("Automation: save default profile failed", ex);
                 return OpResult.Fail("Não foi possível salvar a automação padrão.");
@@ -81,6 +81,7 @@ namespace GamesHub
                 TakeSnapshot(game.Id, plan);
                 await RunListAsync(game, "before", plan).ConfigureAwait(false);
             }
+            // Resilience boundary: fire-and-forget automation around a game launch (OS settings, user programs); it must never break the launch itself.
             catch (Exception ex) { Log.Error("Automation: before failed for " + game.Id, ex); }
             finally { runGate.Release(); }
         }
@@ -95,6 +96,7 @@ namespace GamesHub
                 List<AutomationAction> plan = AutomationValidation.Compose(profiles.GetDefault(), profiles.Get(game.Id), false);
                 if (plan.Count > 0) await RunListAsync(game, "after", plan).ConfigureAwait(false);
             }
+            // Resilience boundary: fire-and-forget automation after a game exits (OS settings, user programs).
             catch (Exception ex) { Log.Error("Automation: after failed for " + game.Id, ex); }
             finally { runGate.Release(); }
         }
@@ -125,6 +127,7 @@ namespace GamesHub
                         }
                         Log.Info(what + ": " + await t.ConfigureAwait(false));
                     }
+                    // Resilience boundary: per-action loop over pluggable executors (user programs, OS settings); by design a failing action never aborts the rest of the list.
                     catch (Exception ex) { Log.Warn(what + ": failed", ex); }
                 }
             }
@@ -153,15 +156,15 @@ namespace GamesHub
                     snap = new AutomationSnapshot { GameId = gameId, Order = order };
                 }
                 bool changed = false;
-                foreach (string t in types)
+                // Types already captured keep the value from the first (still pending) launch.
+                foreach (string t in types.Where(x => !snap.Values.ContainsKey(x)))
                 {
-                    if (snap.Values.ContainsKey(t)) continue;   // keep the value from the first (still pending) launch
                     try
                     {
                         string v = settings.Get(t);
                         if (!string.IsNullOrEmpty(v)) { snap.Values[t] = v; changed = true; }
                     }
-                    catch (Exception ex) { Log.Warn("Automation[" + gameId + "]: could not snapshot " + t, ex); }
+                    catch (Exception ex) when (ExpectedErrors.IsOsCall(ex)) { Log.Warn("Automation[" + gameId + "]: could not snapshot " + t, ex); }
                 }
                 if (!changed) return;
                 if (isNew) state.All.Add(snap);
@@ -179,9 +182,9 @@ namespace GamesHub
                 AutomationSnapshot snap = state.Find(gameId);
                 if (snap == null) return;
                 state.All.Remove(snap);
-                foreach (string type in AutomationTypes.Settings)
+                foreach (string type in AutomationTypes.Settings.Where(snap.Values.ContainsKey))
                 {
-                    if (!snap.Values.TryGetValue(type, out string value)) continue;
+                    string value = snap.Values[type];
                     AutomationSnapshot other = state.All.Where(s => s.Values.ContainsKey(type)).OrderBy(s => s.Order).FirstOrDefault();
                     if (other != null)
                     {
@@ -223,7 +226,7 @@ namespace GamesHub
             {
                 string cur = null;
                 try { cur = settings.Get(type); }
-                catch (Exception ex) { Log.Warn("Automation[" + who + "]: could not read " + type + " before restore", ex); }
+                catch (Exception ex) when (ExpectedErrors.IsOsCall(ex)) { Log.Warn("Automation[" + who + "]: could not read " + type + " before restore", ex); }
                 if (string.Equals(cur, value, StringComparison.OrdinalIgnoreCase))
                 {
                     Log.Info("Automation[" + who + "]: " + type + " already " + value);
@@ -233,7 +236,7 @@ namespace GamesHub
                 Log.Info("Automation[" + who + "]: restored " + type + " = " + value);
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsOsCall(ex))
             {
                 Log.Warn("Automation[" + who + "]: restore " + type + " = " + value + " failed", ex);
                 return false;
@@ -249,7 +252,7 @@ namespace GamesHub
         private static List<NamedOption> SafeList(string what, Func<List<NamedOption>> f)
         {
             try { return f(); }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsOsCall(ex))
             {
                 Log.Warn("Automation: listing " + what + " failed", ex);
                 return new List<NamedOption>();

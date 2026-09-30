@@ -88,9 +88,8 @@ namespace GamesHub
             if (!knownApp && NameMatcher.IsLikelyNonGame(g.Name)) return false; // launchers, tools…
             bool steamSearchable = !knownApp && g.SteamAppId != ArtKind.NotOnSteam && !NameMatcher.IsNonSteamPlatform(g.Platform);
             if (steamSearchable && appId.Length == 0 && !_index.TryGetMatch(MatchKey(g.Name), out _)) return true;
-            foreach (string kind in ArtKind.Remote)
+            foreach (string kind in ArtKind.Remote.Where(k => ArtKind.Get(art, k) == null))
             {
-                if (ArtKind.Get(art, kind) != null) continue;
                 bool steamDone = appId.Length == 0 || _index.IsNegative(NegSteam(appId, kind));
                 if (!steamDone) return true;
                 if (_sgdb.Enabled && !_index.IsNegative(NegSgdb(gk, kind))) return true;
@@ -178,7 +177,7 @@ namespace GamesHub
         {
             if (!File.Exists(path)) return;
             try { File.Delete(path); }
-            catch (Exception ex) { Log.Warn("Art: cannot delete " + path, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Art: cannot delete " + path, ex); }
         }
 
         // ------------------------------------------------------------ manual search
@@ -246,6 +245,7 @@ namespace GamesHub
             Action<string> h = ArtworkUpdated;
             if (h == null) return;
             try { h(gameId); }
+            // Resilience boundary: raises an event to arbitrary subscribers, often from a timer thread.
             catch (Exception ex) { Log.Warn("Art: ArtworkUpdated handler failed for " + gameId, ex); }
         }
 

@@ -122,7 +122,8 @@ namespace GamesHub
                     File.WriteAllText(LegacyMarker, DateTime.Now.ToString("o"));
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
+                                       || ex is ArgumentException || ex is NotSupportedException || ex is InvalidOperationException)
             {
                 Log.Warn("Legacy artwork import failed", ex);
             }
@@ -133,6 +134,7 @@ namespace GamesHub
             {
                 Library.Start();
             }
+            // Resilience boundary: background task entry point (Task.Run); any failure must become the tray error state.
             catch (Exception ex)
             {
                 ok = false;
@@ -181,6 +183,7 @@ namespace GamesHub
                 });
                 RunOnUi(() => _tray.Flash(TrayState.Notification));
             }
+            // Resilience boundary: fire-and-forget background task entry point (Task.Run); nothing observes it.
             catch (Exception ex)
             {
                 Log.Warn("Startup update check failed", ex);
@@ -309,6 +312,7 @@ namespace GamesHub
             {
                 r = await Catalog.LaunchAsync(id, null);
             }
+            // Resilience boundary: async void entry point running the whole launch pipeline (automation, processes).
             catch (Exception ex)
             {
                 Log.Error("Launch failed: " + id, ex);
@@ -355,7 +359,10 @@ namespace GamesHub
                     TaskbarJumpList.Update(recent, Application.ExecutablePath);
                     _jumpListSignature = signature;
                 }
-                catch (Exception ex)
+                // Marshal.ThrowExceptionForHR maps shell HRESULTs to several exception types.
+                catch (Exception ex) when (ex is System.Runtime.InteropServices.ExternalException || ex is UnauthorizedAccessException
+                                           || ex is ArgumentException || ex is InvalidCastException || ex is IOException
+                                           || ex is InvalidOperationException || ex is NotImplementedException)
                 {
                     Log.Warn("Jump List update failed", ex);
                 }
@@ -371,7 +378,8 @@ namespace GamesHub
                 OpResult r = _quick.Start();
                 if (r != null && !r.Ok && Settings.QuickLaunchEnabled) _bridge.Toast(r.Message, "err");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is InvalidOperationException || ex is System.ComponentModel.Win32Exception
+                                       || ex is System.Runtime.InteropServices.ExternalException)
             {
                 Log.Error("Quick launch failed to start", ex);
             }
@@ -418,11 +426,16 @@ namespace GamesHub
             {
                 Autostart.Apply(true, Settings.StartMinimized);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsRegistryError(ex))
             {
                 Log.Warn("Could not refresh the autostart entry", ex);
             }
         }
+
+        /// <summary>Failures of Autostart.Apply: access denied, registry I/O, or the Run key being unavailable.</summary>
+        private static bool IsRegistryError(Exception ex)
+            => ex is System.Security.SecurityException || ex is UnauthorizedAccessException || ex is IOException
+               || ex is ArgumentException || ex is InvalidOperationException;
 
         public void ApplySettingsSideEffects(SettingsPatchResult r)
         {
@@ -432,7 +445,7 @@ namespace GamesHub
                 {
                     Autostart.Apply(Settings.StartWithWindows, Settings.StartMinimized);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsRegistryError(ex))
                 {
                     Log.Warn("Could not update the autostart entry", ex);
                     _bridge.Toast("Não foi possível alterar a inicialização com o Windows.", "err");
@@ -453,6 +466,7 @@ namespace GamesHub
                 Task.Run(() =>
                 {
                     try { Library.Rescan(); }
+                    // Resilience boundary: background task entry point (Task.Run); nothing observes the task.
                     catch (Exception ex) { Log.Error("Rescan after settings change failed", ex); }
                 });
             }
@@ -497,6 +511,7 @@ namespace GamesHub
                 Catalog.Dispose();
                 Library.Dispose();
             }
+            // Resilience boundary: orderly exit must still close the window and ExitThread if a module's dispose fails.
             catch (Exception ex)
             {
                 Log.Warn("Library dispose failed", ex);
@@ -505,6 +520,7 @@ namespace GamesHub
             {
                 (Art as IDisposable)?.Dispose(); // after the library: persists the artwork index
             }
+            // Resilience boundary: orderly exit must still close the window and ExitThread if a module's dispose fails.
             catch (Exception ex)
             {
                 Log.Warn("Artwork service dispose failed", ex);

@@ -150,7 +150,9 @@ export function checkHtml(files, report) {
       if (!html || attr(html[0], 'lang') !== 'pt-BR') report('error', f.rel, html ? line(html.index) : 1, 'html', '<html> must have lang="pt-BR"');
       if (!/<meta\s[^>]*charset\s*=/i.test(src)) report('error', f.rel, 1, 'html', 'missing <meta charset>');
       checkMarkup(f, src, 0, line, report);
-      for (const m of src.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+      // End tag per the HTML tokenizer: `</script` + optional whitespace/attributes + `>` (e.g. `</script >`);
+      // an unterminated <script> runs to the end of the file.
+      for (const m of src.matchAll(/<script\b([^>]*)>([\s\S]*?)(?:<\/script\b[^>]*>|$)/gi)) {
         if (!/\ssrc\s*=/.test(m[1]) && m[2].trim()) report('error', f.rel, line(m.index), 'html', 'inline <script> (CSP: script-src \'self\')');
       }
     } else if (/\.m?js$/.test(f.rel)) {
@@ -161,6 +163,20 @@ export function checkHtml(files, report) {
       checkMarkup(f, lit, 0, line, report, true);
     }
   }
+}
+
+/**
+ * Visible text of an HTML fragment (for "does this button have a name?"): drops <svg>...</svg> blocks and
+ * tags, repeating until nothing changes so nested/overlapping input such as `<scr<script>ipt>` cannot
+ * reassemble a tag after one pass; any stray `<`/`>` left over is not text either.
+ */
+export function visibleText(html) {
+  let s = String(html);
+  for (let prev = null; s !== prev;) {
+    prev = s;
+    s = s.replace(/<svg\b[\s\S]*?<\/svg\b[^>]*>/gi, '').replace(/<[^<>]*>/g, '');
+  }
+  return s.replace(/[<>]/g, '').replace(/&nbsp;/g, ' ').trim();
 }
 
 function checkMarkup(f, src, offset, line, report, fromJs = false) {
@@ -174,7 +190,7 @@ function checkMarkup(f, src, offset, line, report, fromJs = false) {
     if (name === 'button' && !fromJs) {
       const end = src.indexOf('</button>', m.index);
       const inner = end > 0 ? src.slice(m.index + tag.length, end) : '';
-      const text = inner.replace(/<svg[\s\S]*?<\/svg>/gi, '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+      const text = visibleText(inner);
       if (!text && attr(tag, 'aria-label') === null && attr(tag, 'aria-labelledby') === null) {
         report('error', f.rel, at, 'html', '<button> without text or aria-label');
       }

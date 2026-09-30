@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace GamesHub
@@ -36,14 +37,25 @@ namespace GamesHub
 
         /// <summary>Base file name (no extension) of a kind inside a cache folder.</summary>
         public static string BaseName(string kind, string origin)
-            => origin == "steam" ? kind : origin + "-" + kind;   // "header", "custom-header", "sgdb-header"
+        {
+            // kind becomes part of a file name: only the known kinds are accepted.
+            if (!ArtKind.IsValid(kind)) throw new ArgumentException("Unknown artwork kind: " + kind, nameof(kind));
+            return origin == "steam" ? kind : origin + "-" + kind;   // "header", "custom-header", "sgdb-header"
+        }
 
         public static string ExtFor(string kind) => ArtKind.NeedsAlpha(kind) ? ".png" : ".jpg";
 
         // ------------------------------------------------------------ paths
 
-        public string GameDir(string gameId) => Path.Combine(Root, GameKey(gameId));
-        public string SteamDir(string appId) => Path.Combine(Root, SteamKey(appId));
+        public string GameDir(string gameId) => Path.Combine(Root, GameKey(gameId));   // hashed: always a plain name
+
+        /// <summary>Folder of a Steam app's art. Throws ArgumentException unless appId is a plain numeric app id,
+        /// so a crafted id ("..\x") can never point outside the cache.</summary>
+        public string SteamDir(string appId)
+        {
+            if (!ArtKind.IsAppId(appId)) throw new ArgumentException("Not a Steam app id: " + appId, nameof(appId));
+            return Path.Combine(Root, SteamKey(appId));
+        }
 
         /// <summary>Path without extension; callers add the extension of the actual image format.</summary>
         public string SteamBase(string appId, string kind) => Path.Combine(SteamDir(appId), BaseName(kind, "steam"));
@@ -54,24 +66,17 @@ namespace GamesHub
         /// <summary>Returns the existing file for a base path (any known extension) or null.</summary>
         public static string FindExisting(string basePath)
         {
-            foreach (string ext in Exts)
-            {
-                string p = basePath + ext;
-                if (File.Exists(p)) return p;
-            }
-            return null;
+            return Exts.Select(ext => basePath + ext).FirstOrDefault(File.Exists);
         }
 
         /// <summary>Deletes every extension variant of a base path. Returns true if something was deleted.</summary>
         public static bool DeleteAll(string basePath)
         {
             bool any = false;
-            foreach (string ext in Exts)
+            foreach (string p in Exts.Select(ext => basePath + ext).Where(File.Exists))
             {
-                string p = basePath + ext;
-                if (!File.Exists(p)) continue;
                 try { File.Delete(p); any = true; }
-                catch (Exception ex) { Log.Warn("Art: cannot delete " + p, ex); }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Art: cannot delete " + p, ex); }
             }
             return any;
         }

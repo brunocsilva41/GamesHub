@@ -87,10 +87,12 @@ namespace GamesHub
                     return info;
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException || ex is WebException || ex is OperationCanceledException
+                                       || ex is IOException || ex is FormatException || ex is ArgumentException || ex is InvalidOperationException)
             {
+                // Network failures, timeouts (TaskCanceledException), bad status codes and malformed release JSON.
                 LastError = "Não foi possível verificar atualizações. Verifique sua conexão.";
-                Log.Warn("Update check failed", ex is AggregateException ae ? ae.Flatten().InnerException ?? ex : ex);
+                Log.Warn("Update check failed", ex);
                 return new UpdateInfo();
             }
         }
@@ -161,7 +163,7 @@ namespace GamesHub
                     if (sums != null)
                     {
                         string text = await http.GetStringAsync(sums.DownloadUrl).ConfigureAwait(false);
-                        string expected = Sha256File.Parse(text, name) ?? Sha256File.Parse(text, installer?.Name);
+                        string expected = Sha256File.Parse(text, name) ?? Sha256File.Parse(text, installer.Name); // sums != null implies installer != null
                         string actual = ComputeSha256(part);
                         if (expected == null || !string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase))
                         {
@@ -184,12 +186,15 @@ namespace GamesHub
                 Log.Info("Update installer started: " + file + " " + args);
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is HttpRequestException || ex is WebException || ex is OperationCanceledException
+                                       || ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
+                                       || ex is NotSupportedException || ex is FormatException || ex is ArgumentException
+                                       || ex is InvalidOperationException || ex is System.ComponentModel.Win32Exception)
             {
                 LastError = "Não foi possível baixar a atualização. Verifique sua conexão e tente novamente.";
                 Log.Warn("Update download/start failed", ex);
                 try { if (file != null && File.Exists(file + ".part")) File.Delete(file + ".part"); }
-                catch (Exception e2) { Log.Warn("Could not remove partial download", e2); }
+                catch (Exception e2) when (e2 is IOException || e2 is UnauthorizedAccessException) { Log.Warn("Could not remove partial download", e2); }
                 return false;
             }
         }

@@ -226,6 +226,11 @@ export function braceDepths(bare) {
   return out;
 }
 
+/** Escapes every RegExp syntax character (backslash included) so `s` matches literally inside `new RegExp()`. */
+export function escapeRegExp(s) {
+  return String(s).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+}
+
 /** Splits "a, b as c, default as d" into [{ imported, local }]. */
 export function specifiers(list) {
   return list.split(',').map((s) => s.trim()).filter(Boolean).map((s) => {

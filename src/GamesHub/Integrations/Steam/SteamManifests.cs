@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Win32;
 
 namespace GamesHub
@@ -72,7 +73,7 @@ namespace GamesHub
                     }
                 }
             }
-            catch (Exception ex) { Log.Warn("Steam: reading SteamPath from registry failed", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsRegistry(ex) || ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Steam: reading SteamPath from registry failed", ex); }
 
             string pf = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
             if (string.IsNullOrEmpty(pf)) pf = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
@@ -96,9 +97,8 @@ namespace GamesHub
             SteamKv lf = doc?.Node("libraryfolders");
             if (lf != null)
             {
-                foreach (string key in lf.Order)
+                foreach (string key in lf.Order.Where(IsDigits))
                 {
-                    if (!IsDigits(key)) continue;
                     SteamKv child = lf.Node(key);
                     if (child != null) Add(child.Str("path"));
                     else Add(lf.Str(key));
@@ -120,8 +120,9 @@ namespace GamesHub
             {
                 AppId = id,
                 Name = st.Str("name"),
+                // installdir comes from the manifest: it must name a folder inside steamapps\common.
                 InstallDir = dir.Length == 0 || string.IsNullOrEmpty(libraryRoot) ? "" :
-                    Path.Combine(libraryRoot, "steamapps", "common", dir),
+                    SafePath.Combine(Path.Combine(libraryRoot, "steamapps", "common"), dir) ?? "",
                 SizeOnDisk = st.Values.ContainsKey("SizeOnDisk") ? st.Long("SizeOnDisk", -1) : -1,
                 StateFlags = flags,
                 LastPlayedUnix = st.Long("LastPlayed"),

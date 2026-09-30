@@ -48,6 +48,7 @@ namespace GamesHub
             if (m.Msg == QuickNative.WM_HOTKEY && m.WParam.ToInt32() == HotkeyId)
             {
                 try { Pressed?.Invoke(); }
+                // Resilience boundary: WndProc message handler; an escaping exception would tear down the message loop.
                 catch (Exception ex) { Log.Error("Quick-launch hotkey handler failed", ex); }
                 return;
             }

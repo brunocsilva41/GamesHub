@@ -153,6 +153,27 @@ namespace GamesHub.Tests
             string u = QuickDto.ArtUrl("folder-meu jogo/header.jpg");
             Assert.True(u.StartsWith("https://art.gameshub.example/folder-meu%20jogo/header.jpg"), u);
         }
+
+        public static void TestArtUrlNeverStatsOutsideArtCache()
+        {
+            System.IO.Directory.CreateDirectory(AppPaths.ArtDir);
+            string outside = System.IO.Path.Combine(AppPaths.DataDir, "quick-escape-probe.txt");
+            string inside = System.IO.Path.Combine(AppPaths.ArtDir, "quick-probe.jpg");
+            System.IO.File.WriteAllText(outside, "x");
+            System.IO.File.WriteAllText(inside, "x");
+            try
+            {
+                Assert.True(QuickDto.ArtUrl("quick-probe.jpg").Contains("?v="), "file inside the art cache gets a stamp");
+                string u = QuickDto.ArtUrl("../quick-escape-probe.txt");
+                Assert.False(u.Contains("?v="), "'..' must not reach files outside the art cache: " + u);
+                Assert.False(QuickDto.ArtUrl(outside).Contains("?v="), "rooted paths must not be stat'ed");
+            }
+            finally
+            {
+                System.IO.File.Delete(outside);
+                System.IO.File.Delete(inside);
+            }
+        }
             public static void TestPerformanceTwoThousandGames()
         {
             var games = Enumerable.Range(0, 2000).Select(i => G("Jogo Número " + i + " Édition Spéciale", i % 2 == 0 ? "Steam" : "PC",

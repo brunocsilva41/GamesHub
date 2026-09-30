@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -29,7 +30,7 @@ namespace GamesHub
                     fi = new FileInfo(path);
                     if ((fi.Attributes & (FileAttributes.Hidden | FileAttributes.System)) != 0) continue;
                 }
-                catch (Exception ex) { Log.Warn("Folder scan: cannot stat " + path, ex); continue; }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Folder scan: cannot stat " + path, ex); continue; }
                 seen.Add(path);
                 ShortcutInfo info = GetInfo(fi, ext);
                 Game g = BuildGame(path, info, gamesDir);
@@ -39,9 +40,7 @@ namespace GamesHub
             }
             lock (_gate)
             {
-                var stale = new List<string>();
-                foreach (string k in _cache.Keys) if (!seen.Contains(k)) stale.Add(k);
-                foreach (string k in stale) _cache.Remove(k);
+                foreach (string k in _cache.Keys.Where(k => !seen.Contains(k)).ToList()) _cache.Remove(k);
             }
             return games;
         }
@@ -50,7 +49,7 @@ namespace GamesHub
         public ShortcutInfo GetShortcut(string path)
         {
             try { return GetInfo(new FileInfo(path), Path.GetExtension(path).ToLowerInvariant()); }
-            catch (Exception ex) { Log.Warn("GetShortcut failed: " + path, ex); return new ShortcutInfo(); }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("GetShortcut failed: " + path, ex); return new ShortcutInfo(); }
         }
 
         private ShortcutInfo GetInfo(FileInfo fi, string ext)
@@ -68,7 +67,7 @@ namespace GamesHub
                 info = ext == ".lnk" ? LibShellLink.ReadLnk(fi.FullName)
                                      : LibShellLink.ParseUrlFile(File.ReadAllText(fi.FullName, Encoding.Default));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex) || ExpectedErrors.IsInterop(ex))
             {
                 Log.Warn("Cannot parse shortcut " + fi.FullName, ex);
                 info = new ShortcutInfo();

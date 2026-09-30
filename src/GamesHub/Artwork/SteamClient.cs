@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GamesHub
@@ -54,10 +55,8 @@ namespace GamesHub
             var list = new List<MatchCandidate>();
             var doc = SafeParse(json) as IDictionary<string, object>;
             if (doc == null || !(doc.TryGetValue("items", out object items) && items is IEnumerable arr)) return list;
-            foreach (object o in arr)
+            foreach (IDictionary<string, object> e in arr.OfType<IDictionary<string, object>>())
             {
-                var e = o as IDictionary<string, object>;
-                if (e == null) continue;
                 string type = Json.Str(e, "type", "app");
                 if (type != "app") continue;
                 string id = Json.Str(e, "id");
@@ -71,10 +70,8 @@ namespace GamesHub
         {
             var list = new List<MatchCandidate>();
             if (!(SafeParse(json) is IEnumerable arr) || arr is string) return list;
-            foreach (object o in arr)
+            foreach (IDictionary<string, object> e in arr.OfType<IDictionary<string, object>>())
             {
-                var e = o as IDictionary<string, object>;
-                if (e == null) continue;
                 string id = Json.Str(e, "appid");
                 if (ArtKind.IsAppId(id)) list.Add(new MatchCandidate(id, Json.Str(e, "name"), Json.Str(e, "icon")));
             }

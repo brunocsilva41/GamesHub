@@ -106,7 +106,7 @@ namespace GamesHub
 
             string created;
             try { created = ShortcutFactory.CreateFromFile(gamesDir, full, displayName); }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex) || ExpectedErrors.IsInterop(ex))
             {
                 Log.Warn("AddFromFile failed: " + full, ex);
                 return OpResult.Fail("Não foi possível adicionar " + displayName + ": " + ex.Message);
@@ -138,7 +138,7 @@ namespace GamesHub
             if (display.Length == 0) display = "Steam " + id;
             string created;
             try { created = ShortcutFactory.CreateSteamUrl(gamesDir, id, display); }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex))
             {
                 Log.Warn("AddSteamApp failed: " + id, ex);
                 return OpResult.Fail("Não foi possível adicionar " + display + ": " + ex.Message);

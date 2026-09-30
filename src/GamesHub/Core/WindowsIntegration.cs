@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -36,9 +37,8 @@ namespace GamesHub
             uint mods = 0;
             string keyName = null;
             uint vk = 0;
-            foreach (string raw in parts)
+            foreach (string p in parts.Select(raw => raw.Trim()))
             {
-                string p = raw.Trim();
                 if (p.Length == 0) return false;
                 uint mod = ModifierOf(p);
                 if (mod != 0)
@@ -236,7 +236,7 @@ namespace GamesHub
                 using (Process.Start(psi)) { }
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException || ex is IOException)
             {
                 Log.Warn("Shell start failed: " + psi.FileName + " " + psi.Arguments, ex);
                 return false;

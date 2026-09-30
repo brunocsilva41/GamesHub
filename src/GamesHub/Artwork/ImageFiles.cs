@@ -69,12 +69,10 @@ namespace GamesHub
 
         private static void RemoveOtherVariants(string basePath, string keepExt)
         {
-            foreach (string ext in new[] { ".jpg", ".png" }.Where(e => e != keepExt))
+            foreach (string p in new[] { ".jpg", ".png" }.Where(e => e != keepExt).Select(e => basePath + e).Where(File.Exists))
             {
-                string p = basePath + ext;
-                if (!File.Exists(p)) continue;
                 try { File.Delete(p); }
-                catch (Exception ex) { Log.Warn("Art: cannot delete " + p, ex); }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Art: cannot delete " + p, ex); }
             }
         }
 
@@ -118,9 +116,10 @@ namespace GamesHub
         {
             if (png) { bmp.Save(file, ImageFormat.Png); return; }
             ImageCodecInfo jpeg = ImageCodecInfo.GetImageEncoders().First(c => c.FormatID == ImageFormat.Jpeg.Guid);
+            using (var quality = new EncoderParameter(Encoder.Quality, 92L))
             using (var ps = new EncoderParameters(1))
             {
-                ps.Param[0] = new EncoderParameter(Encoder.Quality, 92L);
+                ps.Param[0] = quality;
                 bmp.Save(file, jpeg, ps);
             }
         }

@@ -1,7 +1,7 @@
 // Bridge contract extraction: which commands/events the UI uses, which the C# host implements, and
 // which the dev-mode mock implements. Pure functions over source text (+ one runtime import of mock.js).
 import { pathToFileURL } from 'node:url';
-import { scanJs, scanCs, lineIndex, matchBrace, braceDepths } from './scan.mjs';
+import { scanJs, scanCs, lineIndex, matchBrace, braceDepths, escapeRegExp } from './scan.mjs';
 
 const KEYWORDS = new Set(['if', 'for', 'while', 'switch', 'catch', 'with', 'function', 'return']);
 const THIS_ARGS = new Set(['this', 'null', 'undefined', 'globalThis', 'window']);
@@ -20,7 +20,7 @@ export function uiCommands(files) {
     const before = wrappers.size;
     commands.clear();
     dynamic = [];
-    const names = [...wrappers].map((w) => w.replace(/\$/g, '\\$')).join('|');
+    const names = [...wrappers].map(escapeRegExp).join('|');
     const re = new RegExp(`(?<![\\w$.])((?:[\\w$]+\\??\\.)*(?:getBridge\\(\\)\\??\\.)?)(${names})\\s*\\(`, 'g');
     for (const s of scanned) {
       for (const m of s.bare.matchAll(re)) {
@@ -42,7 +42,7 @@ export function uiCommands(files) {
         if (!arg) continue; // call() without args: not a bridge command
         // A wrapper definition forwarding its own parameter? Look back a few lines for its signature.
         const lookback = s.bare.slice(Math.max(0, m.index - 400), m.index);
-        const id = arg.replace(/\$/g, '\\$');
+        const id = escapeRegExp(arg);
         const def = new RegExp(`(?:function\\s+([\\w$]+)\\s*\\(\\s*${id}\\b|(?:const|let|var)\\s+([\\w$]+)\\s*=\\s*(?:async\\s*)?\\(\\s*${id}\\b|([\\w$]+)\\s*\\(\\s*${id}\\b[^)]*\\)\\s*\\{)`, 'g');
         const defs = [...lookback.matchAll(def)];
         const d = defs.length ? defs[defs.length - 1] : null;
@@ -228,7 +228,7 @@ export function staticMockCommands(files) {
 
 /** First line in any of `files` where `name` is defined as a property/method (for reporting). */
 export function findDefinition(files, name) {
-  const re = new RegExp(`(?<![\\w$.])${name.replace(/\$/g, '\\$')}\\s*(?:\\(|:)`);
+  const re = new RegExp(`(?<![\\w$.])${escapeRegExp(name)}\\s*(?:\\(|:)`);
   for (const [file, src] of files) {
     const { bare } = scanJs(src);
     const m = re.exec(bare);

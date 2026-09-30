@@ -26,11 +26,11 @@ namespace GamesHub
                 var data = Json.Deserialize<VariantData>(File.ReadAllText(file, Encoding.UTF8)) ?? new VariantData();
                 return Sanitize(data);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex))
             {
                 Log.Warn("Variants: could not read " + file + "; starting empty (backup kept as .bad)", ex);
                 try { File.Copy(file, file + ".bad", true); }
-                catch (Exception ex2) { Log.Warn("Variants: backup of corrupt file failed", ex2); }
+                catch (Exception ex2) when (ExpectedErrors.IsFileSystem(ex2)) { Log.Warn("Variants: backup of corrupt file failed", ex2); }
                 return new VariantData();
             }
         }
@@ -46,9 +46,8 @@ namespace GamesHub
             var clean = new VariantData { Version = 1 };
             var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var groupIds = new HashSet<string>(StringComparer.Ordinal);
-            foreach (VariantGroup g in d.Groups ?? new List<VariantGroup>())
+            foreach (VariantGroup g in (d.Groups ?? new List<VariantGroup>()).Where(x => x != null))
             {
-                if (g == null) continue;
                 var members = (g.MemberIds ?? new List<string>())
                     .Where(id => !string.IsNullOrWhiteSpace(id) && !used.Contains(id))
                     .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -57,16 +56,16 @@ namespace GamesHub
                 string primary = members.FirstOrDefault(m => string.Equals(m, g.PrimaryId, StringComparison.OrdinalIgnoreCase)) ?? members[0];
                 var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 if (g.Labels != null)
-                    foreach (var kv in g.Labels)
-                        if (members.Contains(kv.Key, StringComparer.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(kv.Value))
-                            labels[kv.Key] = kv.Value.Trim();
+                {
+                    foreach (var kv in g.Labels.Where(l => members.Contains(l.Key, StringComparer.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(l.Value)))
+                        labels[kv.Key] = kv.Value.Trim();
+                }
                 foreach (string m in members) used.Add(m);
                 groupIds.Add(gid);
                 clean.Groups.Add(new VariantGroup { Id = gid, PrimaryId = primary, MemberIds = members, Labels = labels });
             }
-            foreach (List<string> set in d.Dismissed ?? new List<List<string>>())
+            foreach (List<string> key in (d.Dismissed ?? new List<List<string>>()).Select(SetKey))
             {
-                List<string> key = SetKey(set);
                 if (key.Count >= 2 && !clean.Dismissed.Any(x => SameSet(x, key))) clean.Dismissed.Add(key);
             }
             return clean;

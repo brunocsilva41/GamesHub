@@ -59,7 +59,7 @@ namespace GamesHub
         private void Save(string file, object value)
         {
             try { Json.Save(file, value); }
-            catch (Exception ex) { Log.Warn("PCGW: cannot write cache " + file, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("PCGW: cannot write cache " + file, ex); }
         }
 
         private string FileFor(string prefix, string key)

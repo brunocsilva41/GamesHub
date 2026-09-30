@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace GamesHub
@@ -93,7 +94,8 @@ namespace GamesHub
             {
                 recent = _recentGames();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
+                                       || ex is InvalidOperationException || ex is ArgumentException)
             {
                 Log.Warn("Could not list recent games for the tray", ex);
                 recent = new List<Game>();
@@ -144,7 +146,7 @@ namespace GamesHub
                 {
                     _icons[kv.Key] = new Icon(path, SystemInformation.SmallIconSize);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsIconLoadError(ex))
                 {
                     Log.Warn("Could not load tray icon " + kv.Value, ex);
                 }
@@ -155,7 +157,7 @@ namespace GamesHub
                 {
                     _icons[TrayState.Normal] = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsIconLoadError(ex))
                 {
                     Log.Warn("Falling back to the default application icon for the tray", ex);
                     _icons[TrayState.Normal] = SystemIcons.Application;
@@ -171,12 +173,17 @@ namespace GamesHub
             {
                 using (var ic = new Icon(path, SystemInformation.SmallIconSize)) return ic.ToBitmap();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsIconLoadError(ex))
             {
                 Log.Warn("Could not load menu icon " + file, ex);
                 return null;
             }
         }
+
+        /// <summary>Failures of System.Drawing.Icon loading: bad/missing file, access denied or a GDI+ error.</summary>
+        private static bool IsIconLoadError(Exception ex)
+            => ex is ArgumentException || ex is IOException || ex is UnauthorizedAccessException
+               || ex is System.Runtime.InteropServices.ExternalException;
 
         public void Dispose()
         {
@@ -185,8 +192,8 @@ namespace GamesHub
             _icon.Visible = false; // removes the icon from the notification area immediately
             _icon.Dispose();
             _menu.Dispose();
-            foreach (Icon ic in _icons.Values)
-                if (!ReferenceEquals(ic, SystemIcons.Application)) ic.Dispose();
+            foreach (Icon ic in _icons.Values.Where(i => !ReferenceEquals(i, SystemIcons.Application)))
+                ic.Dispose();
         }
     }
 }

@@ -58,7 +58,24 @@ namespace GamesHub
                 return v.TrimEnd('\\', '/');
             });
             if (failed || s.Contains("{{") || s.Contains("}}") || s.Contains("[[")) return null;
-            return NormalizePath(s);
+            string path = NormalizePath(s);
+            // Wiki text is untrusted: a path must stay inside the folder its template names.
+            return HasTraversal(path) ? null : path;
+        }
+
+        /// <summary>True when a path has a ".." segment, or a drive/stream colon after its root (e.g.
+        /// "C:\Users\x\..\..\Windows", "C:\Games\D:\x"), i.e. it could leave the folder it starts from.</summary>
+        public static bool HasTraversal(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            string[] segs = path.Split('\\', '/');
+            int start = path.StartsWith("\\\\") ? 2 : 1;   // skip the drive ("C:") or the UNC prefix
+            for (int i = start; i < segs.Length; i++)
+            {
+                string seg = segs[i].Trim();
+                if (seg == ".." || seg.IndexOf(':') >= 0) return true;
+            }
+            return false;
         }
 
         /// <summary>Forward → back slashes, collapses repeated separators (keeps a UNC prefix), trims trailing '\'.</summary>
@@ -82,7 +99,7 @@ namespace GamesHub
         /// the containing folder. No match → ("", false).</summary>
         public static (string path, bool exists) Resolve(string pattern)
         {
-            if (string.IsNullOrEmpty(pattern)) return ("", false);
+            if (string.IsNullOrEmpty(pattern) || HasTraversal(pattern)) return ("", false);
             if (!HasWildcard(pattern)) return (pattern, Exists(pattern));
 
             string[] segs = pattern.Split('\\');
@@ -107,7 +124,7 @@ namespace GamesHub
                             : Directory.EnumerateDirectories(dir, seg);
                         next.AddRange(found.Take(64));
                     }
-                    catch (Exception ex) { Log.Warn("PCGW: cannot enumerate " + dir, ex); }
+                    catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("PCGW: cannot enumerate " + dir, ex); }
                 }
                 current = next;
                 if (current.Count == 0) return ("", false);
@@ -131,13 +148,13 @@ namespace GamesHub
         private static bool AnyEntry(string dir, string glob)
         {
             try { return Directory.EnumerateFileSystemEntries(dir, glob).Any(); }
-            catch (Exception ex) { Log.Warn("PCGW: cannot enumerate " + dir, ex); return false; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("PCGW: cannot enumerate " + dir, ex); return false; }
         }
 
         private static bool Exists(string p)
         {
             try { return Directory.Exists(p) || File.Exists(p); }
-            catch (Exception ex) { Log.Warn("PCGW: exists check failed " + p, ex); return false; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("PCGW: exists check failed " + p, ex); return false; }
         }
 
         private static string MostRecent(List<string> paths)
@@ -146,7 +163,7 @@ namespace GamesHub
             return paths.OrderByDescending(p =>
             {
                 try { return Directory.Exists(p) ? Directory.GetLastWriteTimeUtc(p) : File.GetLastWriteTimeUtc(p); }
-                catch (Exception ex) { Log.Warn("PCGW: mtime failed " + p, ex); return DateTime.MinValue; }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("PCGW: mtime failed " + p, ex); return DateTime.MinValue; }
             }).ThenBy(p => p, StringComparer.OrdinalIgnoreCase).First();
         }
 

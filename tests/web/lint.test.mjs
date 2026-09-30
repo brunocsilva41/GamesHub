@@ -73,8 +73,9 @@ describe('lint on a deliberately broken copy', () => {
     ['bridge', 'web/js/main.js', /event "ghostEvent" but C# never emits it/],
     ['bridge', 'src/GamesHub/Core/BridgeCommands.cs', /C# command "newThing" is not implemented in the mock/],
     ['bridge', 'web/quick/quick.js', /sends "teleport"/],
-    ['urls', 'web/js/util.js', /http:\/\/tracker\.example\.com/],
-    ['urls', 'web/index.html', /cdn\.jsdelivr\.net/],
+    // plain substrings (not regexes): these are URLs quoted inside the message, not URL validators
+    ['urls', 'web/js/util.js', 'http://tracker.example.com'],
+    ['urls', 'web/index.html', 'cdn.jsdelivr.net'],
     ['refs', 'web/index.html', /"https:\/\/cdn\.jsdelivr\.net\/npm\/x\.js" is not local/],
     ['refs', 'web/index.html', /"css\/nope\.css" does not exist/],
     ['refs', 'web/css/base.css', /"\.\.\/img\/missing\.png" does not exist/],
@@ -89,9 +90,11 @@ describe('lint on a deliberately broken copy', () => {
     ['html', 'web/index.html', /inline event handler onclick=/],
     ['html', 'web/quick/index.html', /lang="pt-BR"/],
   ];
-  for (const [check, file, re] of EXPECT) {
-    test(`catches [${check}] ${file} ${re.source.slice(0, 50)}`, () => {
-      const hit = errorsOf(res).find((p) => p.check === check && p.file === file && re.test(p.msg));
+  for (const [check, file, want] of EXPECT) {
+    const matches = typeof want === 'string' ? (msg) => msg.includes(want) : (msg) => want.test(msg);
+    const label = typeof want === 'string' ? want : want.source;
+    test(`catches [${check}] ${file} ${label.slice(0, 50)}`, () => {
+      const hit = errorsOf(res).find((p) => p.check === check && p.file === file && matches(p.msg));
       assert.ok(hit, `not reported. Errors were:\n${errorsOf(res).map((p) => `  ${p.file}:${p.line}: [${p.check}] ${p.msg}`).join('\n')}`);
       assert.ok(hit.line >= 1 || file.startsWith('src/'), 'has a line number');
     });

@@ -12,8 +12,8 @@ namespace GamesHub
             if (games == null) return result;
 
             var byId = new Dictionary<string, Game>(StringComparer.OrdinalIgnoreCase);
-            foreach (Game g in games)
-                if (g != null && !string.IsNullOrEmpty(g.Id) && !byId.ContainsKey(g.Id)) byId[g.Id] = g;
+            foreach (Game g in games.Where(x => x != null && !string.IsNullOrEmpty(x.Id) && !byId.ContainsKey(x.Id)))
+                byId[g.Id] = g;
 
             var collapsed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);   // non-primary members to drop
             var merged = new Dictionary<string, Game>(StringComparer.OrdinalIgnoreCase); // primary id -> clone
@@ -44,10 +44,8 @@ namespace GamesHub
             }
 
             var emitted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (Game g in games)
+            foreach (Game g in games.Where(x => x != null && !(x.Id != null && collapsed.Contains(x.Id))))
             {
-                if (g == null) continue;
-                if (g.Id != null && collapsed.Contains(g.Id)) continue;
                 if (g.Id != null && merged.TryGetValue(g.Id, out Game card))
                 {
                     if (emitted.Add(g.Id)) result.Add(card);
@@ -79,9 +77,8 @@ namespace GamesHub
 
         private static void FillMissingArt(Artwork art, IEnumerable<Game> others)
         {
-            foreach (Game o in others)
+            foreach (Game o in others.Where(x => x.Art != null))
             {
-                if (o.Art == null) continue;
                 if (string.IsNullOrEmpty(art.Header)) art.Header = o.Art.Header;
                 if (string.IsNullOrEmpty(art.Capsule)) art.Capsule = o.Art.Capsule;
                 if (string.IsNullOrEmpty(art.Hero)) art.Hero = o.Art.Hero;

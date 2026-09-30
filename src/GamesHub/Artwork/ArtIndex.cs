@@ -124,7 +124,7 @@ namespace GamesHub
                     Json.Save(_file, doc);
                     _dirty = false;
                 }
-                catch (Exception ex) { Log.Warn("Art: cannot save " + _file, ex); }
+                catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("Art: cannot save " + _file, ex); }
             }
         }
 
@@ -133,7 +133,7 @@ namespace GamesHub
             if (!File.Exists(_file)) return;
             IDictionary<string, object> doc;
             try { doc = Json.DeserializeObject(File.ReadAllText(_file)) as IDictionary<string, object>; }
-            catch (Exception ex) { Log.Warn("Art: index unreadable, starting fresh: " + _file, ex); return; }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("Art: index unreadable, starting fresh: " + _file, ex); return; }
             if (doc == null) return;
             if (Json.Long(doc, "schema") != SchemaVersion)
             {
@@ -148,7 +148,10 @@ namespace GamesHub
                 foreach (string k in search.Keys)
                 {
                     IDictionary<string, object> e = Json.Obj(search, k);
-                    if (e != null) _search[k] = new SearchEntry { AppId = Json.Str(e, "appId"), At = Json.Long(e, "at") };
+                    if (e == null) continue;
+                    // The app id ends up in cache folder names: drop anything that is not "" (no match) or a numeric id.
+                    string appId = Json.Str(e, "appId");
+                    if (appId.Length == 0 || ArtKind.IsAppId(appId)) _search[k] = new SearchEntry { AppId = appId, At = Json.Long(e, "at") };
                 }
         }
 

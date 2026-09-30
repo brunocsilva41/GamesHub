@@ -2,6 +2,7 @@
 // e.g. "Ctrl+Shift+Space", "Alt+F5", "Win+Num3". web/quick/hotkey-input.js emits the same format.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace GamesHub
 {
@@ -48,9 +49,8 @@ namespace GamesHub
             string[] parts = t.Split('+');
             uint mods = 0, vk = 0;
             string keyName = null;
-            foreach (string raw in parts)
+            foreach (string p in parts.Select(raw => raw.Trim()))
             {
-                string p = raw.Trim();
                 if (p.Length == 0) return false;
                 uint mod = ModifierOf(p);
                 if (mod != 0)

@@ -23,7 +23,7 @@ namespace GamesHub
             if (string.IsNullOrEmpty(json)) return null;
             IDictionary<string, object> d;
             try { d = Json.DeserializeObject(json) as IDictionary<string, object>; }
-            catch (Exception ex) { Log.Warn("Hydra: bad JSON for " + key, ex); return null; }
+            catch (Exception ex) when (ExpectedErrors.IsJson(ex)) { Log.Warn("Hydra: bad JSON for " + key, ex); return null; }
             if (d == null || Json.Bool(d, "isDeleted")) return null;
 
             string shop = Json.Str(d, "shop"), objectId = Json.Str(d, "objectId");
@@ -81,7 +81,7 @@ namespace GamesHub
                 }
                 return dir == "" || Path.GetPathRoot(dir) == dir ? "" : dir;
             }
-            catch (Exception ex) { Log.Warn("Hydra: bad executable path " + exe, ex); return ""; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Hydra: bad executable path " + exe, ex); return ""; }
         }
 
         private static bool IsLocalPath(string p)

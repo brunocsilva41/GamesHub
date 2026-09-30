@@ -12,6 +12,11 @@ namespace GamesHub
         private readonly Func<string, bool> _filter;
         public string Dir { get; }
 
+        /// <summary>Watches <paramref name="dir"/> (not recursive) and calls <paramref name="onChange"/> once the
+        /// events settle for <paramref name="delayMs"/>.</summary>
+        /// <param name="dir">Folder to watch.</param>
+        /// <param name="delayMs">Quiet period before the callback runs.</param>
+        /// <param name="onChange">Callback, run on a timer thread.</param>
         /// <param name="filter">Optional predicate on the changed file name; events it rejects are ignored.</param>
         public DebouncedWatcher(string dir, int delayMs, Action onChange, Func<string, bool> filter = null)
         {
@@ -39,6 +44,7 @@ namespace GamesHub
         private static void Fire(Action onChange)
         {
             try { onChange(); }
+            // Resilience boundary: timer-thread entry point; an unhandled exception here would crash the process.
             catch (Exception ex) { Log.Error("Watcher callback failed", ex); }
         }
 

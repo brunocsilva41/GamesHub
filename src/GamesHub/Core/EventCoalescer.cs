@@ -58,6 +58,7 @@ namespace GamesHub
             {
                 _action();
             }
+            // Resilience boundary: thread-pool timer callback running an arbitrary action; an escape would kill the process.
             catch (Exception ex)
             {
                 Log.Warn("Coalesced action failed", ex);

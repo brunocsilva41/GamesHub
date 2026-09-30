@@ -19,7 +19,7 @@ namespace GamesHub
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             IEnumerable<string> files;
             try { files = Directory.EnumerateFiles(manifestsDir, "*.item").ToList(); }
-            catch (Exception ex) { Log.Warn("Cannot list " + manifestsDir, ex); return games; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Cannot list " + manifestsDir, ex); return games; }
             foreach (string file in files)
             {
                 try
@@ -27,7 +27,7 @@ namespace GamesHub
                     Game g = ParseManifest(File.ReadAllText(file));
                     if (g != null && seen.Add(g.Id)) games.Add(g);
                 }
-                catch (Exception ex) { Log.Warn("Cannot read Epic manifest " + file, ex); }
+                catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("Cannot read Epic manifest " + file, ex); }
             }
             return games;
         }
@@ -60,8 +60,9 @@ namespace GamesHub
                 LaunchTarget = "com.epicgames.launcher://apps/" + Uri.EscapeDataString(ns) + "%3A" + Uri.EscapeDataString(item)
                                + "%3A" + Uri.EscapeDataString(appName) + "?action=launch&silent=true",
                 InstallDir = install,
+                // LaunchExecutable is relative to the install folder; anything escaping it is ignored.
                 Exe = install.Length > 0 && exe.Length > 0 && exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                      ? Path.Combine(install, exe) : "",
+                      ? SafePath.Combine(install, exe) ?? "" : "",
             };
         }
     }

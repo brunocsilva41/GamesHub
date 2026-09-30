@@ -66,7 +66,7 @@ namespace GamesHub
                     return body;
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsNetwork(ex))
             {
                 Log.Warn("PCGW: request failed " + url, ex);
                 return null;
@@ -106,11 +106,11 @@ namespace GamesHub
                 else File.Move(tmp, file);
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsNetwork(ex) || ExpectedErrors.IsFileSystem(ex))
             {
                 Log.Warn("PCGW: download failed " + url, ex);
                 try { if (File.Exists(tmp)) File.Delete(tmp); }
-                catch (Exception ex2) { Log.Warn("PCGW: cannot delete " + tmp, ex2); }
+                catch (Exception ex2) when (ExpectedErrors.IsFileSystem(ex2)) { Log.Warn("PCGW: cannot delete " + tmp, ex2); }
                 return false;
             }
         }

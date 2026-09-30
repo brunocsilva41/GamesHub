@@ -62,6 +62,31 @@ namespace GamesHub
         }
     }
 
+    /// <summary>Guards Path.Combine against untrusted segments (game data, settings, web input) that could
+    /// escape the intended base folder through a rooted path or "..".</summary>
+    public static class PathGuard
+    {
+        /// <summary>Full path of <paramref name="relative"/> under <paramref name="baseDir"/>, or null when the
+        /// segment is empty, rooted (C:\x, \x, C:x, \\server\x), invalid, or resolves outside baseDir.</summary>
+        public static string ResolveUnder(string baseDir, string relative)
+        {
+            if (string.IsNullOrWhiteSpace(baseDir) || string.IsNullOrWhiteSpace(relative)) return null;
+            try
+            {
+                if (Path.IsPathRooted(relative)) return null;
+                string root = Path.GetFullPath(baseDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                              + Path.DirectorySeparatorChar;
+                string full = Path.GetFullPath(Path.Combine(root, relative));
+                return full.StartsWith(root, StringComparison.OrdinalIgnoreCase) && full.Length > root.Length ? full : null;
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException
+                                       || ex is System.Security.SecurityException)
+            {
+                return null;
+            }
+        }
+    }
+
     /// <summary>Thread-safe rolling log in AppPaths.LogDir (gameshub.log, rotated at 1 MB, keeps 3).</summary>
     public static class Log
     {
@@ -87,6 +112,7 @@ namespace GamesHub
                     File.AppendAllText(file, line + Environment.NewLine, Encoding.UTF8);
                 }
             }
+            // Resilience boundary: logging itself must never throw into the caller (and cannot log its own failure).
             catch { /* logging must never throw */ }
         }
 
@@ -122,6 +148,8 @@ namespace GamesHub
                 T v = Deserialize<T>(File.ReadAllText(file, Encoding.UTF8));
                 return v == null ? fallback : v;
             }
+            // Resilience boundary: corrupt user files must fall back; JavaScriptSerializer's type converters
+            // (e.g. BaseNumberConverter) throw plain System.Exception for bad values, so no narrower type is safe.
             catch (Exception ex)
             {
                 Log.Warn("Json.Load failed: " + file, ex);
@@ -152,7 +180,8 @@ namespace GamesHub
         public static long Long(IDictionary<string, object> d, string key, long def = 0)
         {
             if (d == null || !d.TryGetValue(key, out object v) || v == null) return def;
-            try { return Convert.ToInt64(v); } catch { return def; }
+            try { return Convert.ToInt64(v); }
+            catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException) { return def; }
         }
         public static IDictionary<string, object> Obj(IDictionary<string, object> d, string key)
             => d != null && d.TryGetValue(key, out object v) ? v as IDictionary<string, object> : null;

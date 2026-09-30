@@ -71,17 +71,20 @@ namespace GamesHub
         private MetadataCacheEntry Put(MetadataCacheEntry e)
         {
             lock (_gate) { _mem[e.AppId] = e; _diskMiss.Remove(e.AppId); }
-            try { Json.Save(PathFor(e.AppId), e); }
-            catch (Exception ex) { Log.Warn("Metadata: could not write cache for app " + e.AppId, ex); }
+            string file = PathFor(e.AppId);
+            if (file == null) return e;   // not a storable id: memory only
+            try { Json.Save(file, e); }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("Metadata: could not write cache for app " + e.AppId, ex); }
             return e;
         }
 
-        private string PathFor(string appId) => Path.Combine(_dir, appId + ".json");
+        /// <summary>Cache file of an app id, or null when the id would resolve outside the cache folder.</summary>
+        private string PathFor(string appId) => SafePath.Combine(_dir, (appId ?? "") + ".json");
 
         private MetadataCacheEntry Load(string appId)
         {
             string file = PathFor(appId);
-            if (!File.Exists(file)) return null;
+            if (file == null || !File.Exists(file)) return null;
             var e = Json.Load<MetadataCacheEntry>(file, null);
             if (e == null || e.AppId != appId || (!e.Negative && e.Info == null)) return null;
             if (e.Info != null)

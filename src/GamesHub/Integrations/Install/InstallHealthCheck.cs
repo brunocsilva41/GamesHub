@@ -18,7 +18,7 @@ namespace GamesHub
                 if (IsLocalAbsolutePath(t)) return CheckPath(t, false, "O executável do jogo não existe mais");
                 return Ok(); // URI launch targets (steam://, com.epicgames..., battlenet://) are never broken here
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex) || ExpectedErrors.IsInterop(ex))
             {
                 Log.Warn("InstallHealthCheck failed for " + game.Id, ex);
                 return Ok();

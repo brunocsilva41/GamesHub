@@ -39,11 +39,12 @@ namespace GamesHub
                         Game g = HydraRecords.Parse(kv.Key, kv.Value, File.Exists);
                         if (g != null) games.Add(g);
                     }
+                    // Resilience boundary: per-record parse of untrusted third-party Hydra data; one bad record must not stop the scan.
                     catch (Exception ex) { Log.Warn("HydraSource: bad record " + kv.Key, ex); }
                 }
                 games.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
             }
-            catch (Exception ex) { Log.Warn("HydraSource: scan failed", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("HydraSource: scan failed", ex); }
             return games;
         }
     }

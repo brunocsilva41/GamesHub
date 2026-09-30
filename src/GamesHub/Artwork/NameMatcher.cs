@@ -144,8 +144,8 @@ namespace GamesHub
         private static string RemoveDiacritics(string s)
         {
             var sb = new StringBuilder(s.Length);
-            foreach (char c in s.Normalize(NormalizationForm.FormD))
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c);
+            foreach (char c in s.Normalize(NormalizationForm.FormD).Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark))
+                sb.Append(c);
             return sb.ToString().Normalize(NormalizationForm.FormC);
         }
 
@@ -225,9 +225,8 @@ namespace GamesHub
             string q = Normalize(name);
             if (q.Length == 0 || candidates == null) return null;
             var scored = new List<KeyValuePair<MatchCandidate, double>>();
-            foreach (MatchCandidate c in candidates)
+            foreach (MatchCandidate c in candidates.Where(x => x != null && !string.IsNullOrEmpty(x.AppId)))
             {
-                if (c == null || string.IsNullOrEmpty(c.AppId)) continue;
                 string n = Normalize(c.Name);
                 if (IsExcludedCandidate(q, n)) continue;
                 double s = Score(q, n);

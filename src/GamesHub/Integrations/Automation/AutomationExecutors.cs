@@ -56,7 +56,7 @@ namespace GamesHub
                 using (Process me = Process.GetCurrentProcess())
                     if (string.Equals(me.ProcessName, n, StringComparison.OrdinalIgnoreCase)) return true;
             }
-            catch (Exception ex) { Log.Warn("Automation: could not read own process name", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsProcess(ex)) { Log.Warn("Automation: could not read own process name", ex); }
             return false;
         }
     }
@@ -74,7 +74,7 @@ namespace GamesHub
             {
                 if (File.Exists(target)) psi.WorkingDirectory = Path.GetDirectoryName(Path.GetFullPath(target));
             }
-            catch (Exception ex) { Log.Warn("Automation run: bad path " + target, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Automation run: bad path " + target, ex); }
             using (Process.Start(psi)) { }
             return Task.FromResult("started " + target);
         }
@@ -96,22 +96,23 @@ namespace GamesHub
                 throw new InvalidOperationException("refused to close protected process '" + name + "'");
             int session;
             using (Process me = Process.GetCurrentProcess()) session = me.SessionId;
-            Process[] procs = Process.GetProcessesByName(name).Where(p => SafeSession(p) == session).ToArray();
+            Process[] all = Process.GetProcessesByName(name);
             try
             {
+                Process[] procs = all.Where(p => SafeSession(p) == session).ToArray();
                 if (procs.Length == 0) return "no running process '" + name + "'";
                 int noWindow = 0;
                 foreach (Process p in procs)
                 {
                     try { if (!p.CloseMainWindow()) noWindow++; }
-                    catch (Exception ex) { Log.Warn("Automation close: CloseMainWindow failed for " + name, ex); }
+                    catch (Exception ex) when (ExpectedErrors.IsProcess(ex)) { Log.Warn("Automation close: CloseMainWindow failed for " + name, ex); }
                 }
                 DateTime deadline = DateTime.UtcNow + grace;
                 foreach (Process p in procs)
                 {
                     int left = (int)Math.Max(0, (deadline - DateTime.UtcNow).TotalMilliseconds);
                     try { p.WaitForExit(left); }
-                    catch (Exception ex) { Log.Warn("Automation close: wait failed for " + name, ex); }
+                    catch (Exception ex) when (ExpectedErrors.IsProcess(ex)) { Log.Warn("Automation close: wait failed for " + name, ex); }
                 }
                 int still = procs.Count(StillRunning);
                 if (still > 0)
@@ -119,19 +120,25 @@ namespace GamesHub
                                                + (noWindow > 0 ? " (" + noWindow + " without a window)" : ""));
                 return "closed " + procs.Length + " '" + name + "' process(es)";
             }
-            finally { foreach (Process p in procs) p.Dispose(); }
+            finally { DisposeAll(all); }
         }, ct);
+
+        /// <summary>Disposes every process returned by GetProcessesByName (also those filtered out).</summary>
+        private static void DisposeAll(IEnumerable<Process> procs)
+        {
+            foreach (Process p in procs) p.Dispose();
+        }
 
         private static int SafeSession(Process p)
         {
             try { return p.SessionId; }
-            catch (Exception ex) { Log.Warn("Automation close: cannot read session of pid " + p.Id, ex); return -1; }
+            catch (Exception ex) when (ExpectedErrors.IsProcess(ex)) { Log.Warn("Automation close: cannot read session of pid " + p.Id, ex); return -1; }
         }
 
         private static bool StillRunning(Process p)
         {
             try { return !p.HasExited; }
-            catch (Exception ex) { Log.Warn("Automation close: cannot query pid " + p.Id, ex); return false; }
+            catch (Exception ex) when (ExpectedErrors.IsProcess(ex)) { Log.Warn("Automation close: cannot query pid " + p.Id, ex); return false; }
         }
     }
 

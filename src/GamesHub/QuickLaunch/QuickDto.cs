@@ -42,8 +42,9 @@ namespace GamesHub
             string url = ArtBase + string.Join("/", clean.Split('/').Select(Uri.EscapeDataString));
             try
             {
-                string file = Path.Combine(AppPaths.ArtDir, clean.Replace('/', Path.DirectorySeparatorChar));
-                if (File.Exists(file)) url += "?v=" + File.GetLastWriteTimeUtc(file).Ticks.ToString(CultureInfo.InvariantCulture);
+                // rel comes from game data: never stat a file outside the art cache (rooted or ".." paths).
+                string file = PathGuard.ResolveUnder(AppPaths.ArtDir, clean.Replace('/', Path.DirectorySeparatorChar));
+                if (file != null && File.Exists(file)) url += "?v=" + File.GetLastWriteTimeUtc(file).Ticks.ToString(CultureInfo.InvariantCulture);
             }
             catch (Exception ex) when (ex is ArgumentException || ex is IOException || ex is UnauthorizedAccessException || ex is NotSupportedException)
             {

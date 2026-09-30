@@ -32,7 +32,7 @@ namespace GamesHub
     {
         private readonly object gate = new object();
         private readonly string file;
-        private AutomationData data;
+        private readonly AutomationData data;
 
         public AutomationProfileStore(string file)
         {
@@ -44,9 +44,8 @@ namespace GamesHub
         {
             var r = new AutomationData { Default = AutomationValidation.Sanitize(d?.Default) };
             if (d?.Games != null)
-                foreach (var kv in d.Games)
+                foreach (var kv in d.Games.Where(g => !string.IsNullOrWhiteSpace(g.Key)))
                 {
-                    if (string.IsNullOrWhiteSpace(kv.Key)) continue;
                     AutomationProfile p = AutomationValidation.Sanitize(kv.Value);
                     if (!AutomationValidation.IsTrivial(p)) r.Games[kv.Key] = p;
                 }
@@ -97,7 +96,7 @@ namespace GamesHub
     public sealed class AutomationStateStore
     {
         private readonly string file;
-        private AutomationStateData data;
+        private readonly AutomationStateData data;
 
         public AutomationStateStore(string file)
         {
@@ -119,7 +118,7 @@ namespace GamesHub
                 if (data.Snapshots.Count == 0) { if (File.Exists(file)) File.Delete(file); }
                 else Json.Save(file, data);
             }
-            catch (Exception ex) { Log.Error("Automation: could not save " + file, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Error("Automation: could not save " + file, ex); }
         }
     }
 }

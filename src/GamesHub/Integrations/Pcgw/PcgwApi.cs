@@ -34,7 +34,7 @@ namespace GamesHub
             string body = await PcgwHttp.GetPcgwAsync(CargoByAppIdUrl(appId)).ConfigureAwait(false);
             if (body == null) return PcgwLookup.Fail;
             try { return PcgwLookup.Result(ParseCargoPages(body).FirstOrDefault()); }
-            catch (Exception ex) { Log.Warn("PCGW: bad cargo response for appid " + appId, ex); return PcgwLookup.Fail; }
+            catch (Exception ex) when (ExpectedErrors.IsJson(ex)) { Log.Warn("PCGW: bad cargo response for appid " + appId, ex); return PcgwLookup.Fail; }
         }
 
         public static async Task<PcgwLookup> FindByNameAsync(string name)
@@ -44,7 +44,7 @@ namespace GamesHub
             string body = await PcgwHttp.GetPcgwAsync(OpenSearchUrl(query)).ConfigureAwait(false);
             if (body == null) return PcgwLookup.Fail;
             try { return PcgwLookup.Result(PcgwNames.BestMatch(name, ParseOpenSearch(body))); }
-            catch (Exception ex) { Log.Warn("PCGW: bad opensearch response for " + name, ex); return PcgwLookup.Fail; }
+            catch (Exception ex) when (ExpectedErrors.IsJson(ex)) { Log.Warn("PCGW: bad opensearch response for " + name, ex); return PcgwLookup.Fail; }
         }
 
         /// <summary>Returns (resolved title, wikitext) or null on failure / missing page.</summary>
@@ -53,7 +53,7 @@ namespace GamesHub
             string body = await PcgwHttp.GetPcgwAsync(WikitextUrl(page)).ConfigureAwait(false);
             if (body == null) return null;
             try { return ParseWikitext(body); }
-            catch (Exception ex) { Log.Warn("PCGW: bad parse response for " + page, ex); return null; }
+            catch (Exception ex) when (ExpectedErrors.IsJson(ex)) { Log.Warn("PCGW: bad parse response for " + page, ex); return null; }
         }
 
         // ---------------------------------------------------------------- JSON parsing (public for tests)

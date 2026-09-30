@@ -49,9 +49,8 @@ namespace GamesHub
         {
             var r = new List<AutomationAction>();
             if (list == null) return r;
-            foreach (AutomationAction a in list)
+            foreach (AutomationAction s in list.Select(SanitizeAction))
             {
-                AutomationAction s = SanitizeAction(a);
                 if (s == null || r.Count >= MaxActions) { dropped++; continue; }
                 r.Add(s);
             }

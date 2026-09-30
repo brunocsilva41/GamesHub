@@ -59,7 +59,7 @@ namespace GamesHub
         public bool IsMaximized => WindowState == FormWindowState.Maximized;
 
         private int Dpi => IsHandleCreated ? CoreNative.DpiFor(Handle) : 96;
-        private int Px(int logical) => (int)Math.Round(logical * Dpi / 96.0);
+        private int Px(int logical) => (int)Math.Round((double)logical * Dpi / 96.0);
 
         private static Icon LoadAppIcon()
         {
@@ -69,7 +69,8 @@ namespace GamesHub
                 if (System.IO.File.Exists(file)) return new Icon(file);
                 return Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is ArgumentException || ex is System.IO.IOException || ex is UnauthorizedAccessException
+                                       || ex is System.Runtime.InteropServices.ExternalException)
             {
                 Log.Warn("Could not load window icon", ex);
                 return null;
@@ -97,7 +98,7 @@ namespace GamesHub
         /// <summary>Creates the window handle (without showing it) and applies the saved placement.</summary>
         public void Prepare(WindowPlacementData placement)
         {
-            IntPtr _ = Handle; // forces handle creation so the WebView can initialize while hidden
+            if (!IsHandleCreated) CreateHandle(); // so the WebView can initialize while hidden
             var workAreas = new List<Rectangle> { Screen.PrimaryScreen.WorkingArea };
             workAreas.AddRange(Screen.AllScreens.Where(s => !s.Primary).Select(s => s.WorkingArea));
             Size min = new Size(Px(MinLogicalSize.Width), Px(MinLogicalSize.Height));

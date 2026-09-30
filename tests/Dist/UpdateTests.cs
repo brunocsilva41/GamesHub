@@ -29,6 +29,22 @@ namespace GamesHub.Tests
             Assert.Equal(0, SemanticVersion.Compare("v2.0.0", "2.0"));
             Assert.Equal(0, SemanticVersion.Compare("2.0.0+abc", "2.0.0"));
         }
+
+        public static void TestEqualityConsistentWithCompareTo()
+        {
+            string[][] equal = { new[] { "v2.0.0", "2.0" }, new[] { "2.0.0+abc", "2.0.0" }, new[] { "1.0.0-rc.01", "1.0.0-rc.1" } };
+            foreach (string[] pair in equal)
+            {
+                SemanticVersion a = SemanticVersion.Parse(pair[0]), b = SemanticVersion.Parse(pair[1]);
+                Assert.True(a.Equals(b) && b.Equals((object)a), pair[0] + " == " + pair[1]);
+                Assert.Equal(a.GetHashCode(), b.GetHashCode(), pair[0] + " hash");
+            }
+            SemanticVersion v = SemanticVersion.Parse("1.0.0");
+            Assert.False(v.Equals(SemanticVersion.Parse("1.0.0-beta")));
+            Assert.False(v.Equals(SemanticVersion.Parse("1.0.1")));
+            Assert.False(v.Equals(null));
+            Assert.False(v.Equals("1.0.0"));
+        }
     }
 
     public static class ReleaseParsingTests

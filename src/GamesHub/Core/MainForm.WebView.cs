@@ -50,6 +50,7 @@ namespace GamesHub
                 core.Navigate(BridgeDto.StartUrl);
                 Log.Info("WebView2 ready (runtime " + env.BrowserVersionString + ")");
             }
+            // Resilience boundary: async void entry point; any failure must reach WebViewFailed (fallback UI).
             catch (Exception ex)
             {
                 Log.Error("WebView2 initialization failed", ex);
@@ -105,7 +106,8 @@ namespace GamesHub
             {
                 _web.CoreWebView2?.Navigate(BridgeDto.StartUrl);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException
+                                       || ex is System.Runtime.InteropServices.COMException)
             {
                 Log.Warn("Reload after renderer failure failed", ex);
             }

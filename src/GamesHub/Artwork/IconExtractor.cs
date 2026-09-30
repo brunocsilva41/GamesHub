@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,6 +45,7 @@ namespace GamesHub
                 _queue.Add(() =>
                 {
                     try { tcs.SetResult(ExtractNow(list, outFile)); }
+                    // Resilience boundary: STA worker-thread entry point; nothing is swallowed, the exception is handed to the awaiting caller through the task.
                     catch (Exception ex) { tcs.SetException(ex); }
                 });
             }
@@ -56,9 +58,8 @@ namespace GamesHub
 
         private bool ExtractNow(List<string> sources, string outFile)
         {
-            foreach (string src in sources)
+            foreach (string src in sources.Where(s => !string.IsNullOrEmpty(s) && File.Exists(s)))
             {
-                if (string.IsNullOrEmpty(src) || !File.Exists(src)) continue;
                 try
                 {
                     int index = SysIconIndex(src, 0, 0);

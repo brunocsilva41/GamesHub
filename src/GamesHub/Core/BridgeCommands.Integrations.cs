@@ -96,8 +96,8 @@ namespace GamesHub
             Game g = RequireCatalogGame(args);
             PcgwInfo info = await Task.Run(() => Cat.Pcgw.GetInfoAsync(g, Cat.MatchedAppId(g)));
             info = info ?? new PcgwInfo();
-            foreach (ResolvedPath p in info.SaveLocations.Concat(info.ConfigLocations))
-                if (p.Exists && !string.IsNullOrEmpty(p.Path)) _openablePaths[Path.GetFullPath(p.Path)] = 0;
+            foreach (ResolvedPath p in info.SaveLocations.Concat(info.ConfigLocations).Where(r => r.Exists && !string.IsNullOrEmpty(r.Path)))
+                _openablePaths[Path.GetFullPath(p.Path)] = 0;
             return BridgeResult.Success(Camel(info));
         }
 
@@ -106,7 +106,11 @@ namespace GamesHub
             string path = RequireString(args, "path");
             string full;
             try { full = Path.GetFullPath(path); }
-            catch (Exception) { return BridgeResult.Fail("Caminho inválido."); }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException
+                                       || ex is System.Security.SecurityException)
+            {
+                return BridgeResult.Fail("Caminho inválido.");
+            }
             if (!_openablePaths.ContainsKey(full)) return BridgeResult.Fail("Este caminho não pode ser aberto.");
             if (Directory.Exists(full) ? ShellActions.OpenFolder(full) : File.Exists(full) && ShellActions.Reveal(full))
                 return BridgeResult.From(OpResult.Success("Abrindo no Explorador de Arquivos."));
@@ -188,7 +192,7 @@ namespace GamesHub
                 Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })?.Dispose();
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception || ex is InvalidOperationException || ex is IOException)
             {
                 Log.Warn("Shell open failed: " + uri, ex);
                 return false;

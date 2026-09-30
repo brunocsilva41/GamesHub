@@ -99,6 +99,7 @@ namespace GamesHub
                 {
                     break;
                 }
+                // Resilience boundary: long-running background listener loop; it must survive any single bad connection.
                 catch (Exception ex)
                 {
                     Log.Warn("Activation pipe error", ex);
@@ -140,7 +141,7 @@ namespace GamesHub
                 if (Json.DeserializeObject(payload) is IEnumerable list && !(list is string))
                     return list.Cast<object>().Select(o => Convert.ToString(o) ?? "").ToArray();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException)
             {
                 Log.Warn("Invalid activation payload", ex);
                 return null;

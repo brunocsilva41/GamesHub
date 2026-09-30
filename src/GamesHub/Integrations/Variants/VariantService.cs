@@ -11,7 +11,7 @@ namespace GamesHub
         private const int MaxLabelLength = 40;
         private readonly object _gate = new object();
         private readonly string _file;
-        private VariantData _data;
+        private readonly VariantData _data;
 
         /// <summary>Raised (outside the lock) after any persisted change; the integration layer should re-publish games.</summary>
         public event Action Changed;
@@ -189,7 +189,7 @@ namespace GamesHub
         private bool Persist()
         {
             try { VariantStore.Save(_file, _data); return true; }
-            catch (Exception ex) { Log.Error("Variants: failed to save " + _file, ex); return false; }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Error("Variants: failed to save " + _file, ex); return false; }
         }
 
         private static OpResult SaveFailed() => OpResult.Fail("Não foi possível salvar as variantes. Tente novamente.");
@@ -197,6 +197,7 @@ namespace GamesHub
         private void RaiseChanged()
         {
             try { Changed?.Invoke(); }
+            // Resilience boundary: raises an event to arbitrary subscribers.
             catch (Exception ex) { Log.Warn("Variants: Changed handler failed", ex); }
         }
     }

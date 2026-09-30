@@ -106,7 +106,7 @@ namespace GamesHub
         {
             string current = "";
             try { current = GetDefaultId(); }
-            catch (Exception ex) { Log.Warn("Automation: could not read default audio device", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsOsCall(ex)) { Log.Warn("Automation: could not read default audio device", ex); }
             var r = new List<NamedOption>();
             var en = (IMMDeviceEnumerator)new MMDeviceEnumeratorCom();
             IMMDeviceCollection col = null;
@@ -123,7 +123,7 @@ namespace GamesHub
                         Check(dev.GetId(out string id), "IMMDevice.GetId");
                         r.Add(new NamedOption { Id = id, Name = FriendlyName(dev, id), Current = id == current });
                     }
-                    catch (Exception ex) { Log.Warn("Automation: skipping audio device #" + i, ex); }
+                    catch (Exception ex) when (ExpectedErrors.IsOsCall(ex)) { Log.Warn("Automation: skipping audio device #" + i, ex); }
                     finally { Release(dev); }
                 }
             }

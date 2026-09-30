@@ -108,7 +108,8 @@ namespace GamesHub
                 {
                     Json.Save(AppPaths.SettingsFile, ToDto(Current));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
+                                           || ex is NotSupportedException || ex is ArgumentException || ex is InvalidOperationException)
                 {
                     Log.Warn("Could not save settings", ex);
                 }
@@ -144,9 +145,9 @@ namespace GamesHub
             var r = new SettingsPatchResult();
             if (patch == null) return r;
             dirExists = dirExists ?? Directory.Exists;
-            foreach (KeyValuePair<string, object> kv in patch)
+            foreach (KeyValuePair<string, object> kv in patch.Where(p => Fields.ContainsKey(p.Key)))
             {
-                if (!Fields.TryGetValue(kv.Key, out FieldInfo field)) continue;
+                FieldInfo field = Fields[kv.Key];
                 object value = Coerce(kv.Key, field.FieldType, kv.Value, dirExists);
                 if (value == null)
                 {

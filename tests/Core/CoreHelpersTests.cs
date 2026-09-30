@@ -134,4 +134,39 @@ namespace GamesHub.Tests
             }
         }
     }
+
+    public static class PathGuardTests
+    {
+        private static readonly string Base = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "gameshub-pathguard", "art");
+
+        public static void TestAcceptsNestedRelativePaths()
+        {
+            Assert.Equal(System.IO.Path.Combine(Base, "steam-730", "header.jpg"), PathGuard.ResolveUnder(Base, @"steam-730\header.jpg"));
+            Assert.Equal(System.IO.Path.Combine(Base, "a", "b.png"), PathGuard.ResolveUnder(Base + @"\", @"a\x\..\b.png"));
+            Assert.Equal(System.IO.Path.Combine(Base, "x.png"), PathGuard.ResolveUnder(Base, "x.png"));
+        }
+
+        public static void TestRejectsEscapes()
+        {
+            foreach (string bad in new[] { @"..\settings.json", @"a\..\..\x", "..", ".", @"C:\Windows\win.ini", @"\Windows\win.ini",
+                                           "C:win.ini", @"\\server\share\x", "/etc/x", "", "   ", null, "a\0b", "a|b" })
+                Assert.Equal(null, PathGuard.ResolveUnder(Base, bad), "should reject '" + bad + "'");
+            // A sibling folder that merely shares the prefix ("art" vs "art-evil") is outside too.
+            Assert.Equal(null, PathGuard.ResolveUnder(Base, @"..\art-evil\x.png"));
+            Assert.Equal(null, PathGuard.ResolveUnder(null, "x.png"));
+        }
+    }
+
+    public static class JsonAccessorTests
+    {
+        public static void TestLongFallsBackOnBadValues()
+        {
+            var d = new Dictionary<string, object> { ["ok"] = 42, ["text"] = "abc", ["huge"] = "99999999999999999999", ["obj"] = new object() };
+            Assert.Equal(42L, Json.Long(d, "ok"));
+            Assert.Equal(-1L, Json.Long(d, "text", -1));
+            Assert.Equal(-1L, Json.Long(d, "huge", -1));
+            Assert.Equal(-1L, Json.Long(d, "obj", -1));
+            Assert.Equal(7L, Json.Long(d, "missing", 7));
+        }
+    }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace GamesHub
 {
@@ -55,17 +56,16 @@ namespace GamesHub
             }
             string best = null;
             DateTime bestTime = DateTime.MinValue;
-            foreach (string dir in Directory.GetDirectories(userdata))
+            foreach (string f in Directory.GetDirectories(userdata).Select(dir => LocalConfigPath(userdata, Path.GetFileName(dir))).Where(File.Exists))
             {
-                string f = LocalConfigPath(userdata, Path.GetFileName(dir));
-                if (!File.Exists(f)) continue;
                 DateTime t = File.GetLastWriteTimeUtc(f);
                 if (best == null || t > bestTime) { best = f; bestTime = t; }
             }
             return best;
         }
 
-        private static string LocalConfigPath(string userdata, string id) => Path.Combine(userdata, id, "config", "localconfig.vdf");
+        /// <summary>userdata\&lt;id&gt;\config\localconfig.vdf, or null when id would leave the userdata folder.</summary>
+        private static string LocalConfigPath(string userdata, string id) => SafePath.Combine(userdata, id, "config", "localconfig.vdf");
 
         public static readonly string[] AppsPath = { "UserLocalConfigStore", "Software", "Valve", "Steam", "apps" };
 
@@ -80,9 +80,8 @@ namespace GamesHub
         {
             var result = new Dictionary<string, SteamAppPlay>(StringComparer.Ordinal);
             if (apps == null) return result;
-            foreach (var kv in apps.Children)
+            foreach (var kv in apps.Children.Where(c => SteamManifests.IsDigits(c.Key)))
             {
-                if (!SteamManifests.IsDigits(kv.Key)) continue;
                 long minutes = Math.Max(0, kv.Value.Long("Playtime"));
                 long last = Math.Max(0, kv.Value.Long("LastPlayed"));
                 if (minutes == 0 && last == 0) continue;

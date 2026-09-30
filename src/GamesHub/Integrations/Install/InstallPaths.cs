@@ -19,7 +19,7 @@ namespace GamesHub
                 if (s.Length > 3) s = s.TrimEnd('\\');
                 return s;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex))
             {
                 Log.Warn("InstallPaths.Normalize: " + p, ex);
                 return "";
@@ -55,7 +55,7 @@ namespace GamesHub
                 Environment.SpecialFolder.CommonStartMenu, Environment.SpecialFolder.Programs })
             {
                 try { Add(Environment.GetFolderPath(f)); }
-                catch (Exception ex) { Log.Warn("InstallPaths: special folder " + f, ex); }
+                catch (Exception ex) when (ex is ArgumentException || ex is PlatformNotSupportedException) { Log.Warn("InstallPaths: special folder " + f, ex); }
             }
             Add(Environment.GetEnvironmentVariable("ProgramW6432"));
             Add(Environment.GetEnvironmentVariable("TEMP"));
@@ -91,11 +91,8 @@ namespace GamesHub
                 return true; // drive root or UNC share root
             string win = Key(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
             if (win.Length > 0 && IsSameOrInside(k, win)) return true;
-            foreach (string s in sensitive)
-            {
-                string sk = Key(s);
-                if (sk.Length > 0 && IsSameOrInside(sk, k)) return true; // k is the sensitive dir or one of its parents
-            }
+            // k is a sensitive dir or one of its parents
+            if (sensitive.Select(Key).Any(sk => sk.Length > 0 && IsSameOrInside(sk, k))) return true;
             string name = Path.GetFileName(k);
             string parent = Path.GetFileName(Path.GetDirectoryName(k) ?? "");
             if (ContainerNames.Contains(name)) return true;

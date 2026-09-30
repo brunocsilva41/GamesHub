@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace GamesHub
@@ -23,7 +24,7 @@ namespace GamesHub
             var merged = new Dictionary<string, Entry>(StringComparer.Ordinal);
             string[] files;
             try { files = Directory.GetFiles(dir); }
-            catch (Exception ex) { Log.Warn("LevelDB: cannot list " + dir, ex); return new Dictionary<string, string>(); }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("LevelDB: cannot list " + dir, ex); return new Dictionary<string, string>(); }
 
             foreach (string f in files)
             {
@@ -31,19 +32,19 @@ namespace GamesHub
                 if (ext != ".ldb" && ext != ".sst" && ext != ".log") continue;
                 byte[] data;
                 try { data = ReadShared(f); }
-                catch (Exception ex) { Log.Warn("LevelDB: cannot read " + f, ex); continue; }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("LevelDB: cannot read " + f, ex); continue; }
                 try
                 {
                     if (ext == ".log") ParseLog(data, (k, s, del, v) => Put(merged, k, s, del, v, keyPrefix));
                     else ParseTable(data, (k, s, del, v) => Put(merged, k, s, del, v, keyPrefix));
                 }
+                // Resilience boundary: binary parser of an untrusted third-party LevelDB file; a corrupt file is skipped.
                 catch (Exception ex) { Log.Warn("LevelDB: parse failed " + f, ex); }
             }
 
             var result = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var kv in merged)
-                if (!kv.Value.Deleted && kv.Value.Value != null)
-                    result[kv.Key] = Encoding.UTF8.GetString(kv.Value.Value);
+            foreach (var kv in merged.Where(e => !e.Value.Deleted && e.Value.Value != null))
+                result[kv.Key] = Encoding.UTF8.GetString(kv.Value.Value);
             return result;
         }
 
@@ -93,6 +94,7 @@ namespace GamesHub
                 var (off, size) = ReadHandle(v, ref vp, v.Length);
                 byte[] block;
                 try { block = ReadBlock(file, off, size); }
+                // Resilience boundary: decodes one untrusted (Snappy) block; a corrupt block must not drop the table.
                 catch (Exception ex) { Log.Warn("LevelDB: skipping unreadable block", ex); return; }
                 ParseBlock(block, (ik, val) =>
                 {
@@ -155,48 +157,50 @@ namespace GamesHub
 
         public static void ParseLog(byte[] file, RecordSink sink)
         {
-            var pending = new MemoryStream();
-            bool inFragment = false;
-            int blockStart = 0;
-            while (blockStart < file.Length)
+            using (var pending = new MemoryStream())
             {
-                int blockEnd = Math.Min(blockStart + LogBlockSize, file.Length);
-                int p = blockStart;
-                while (p + 7 <= blockEnd)
+                bool inFragment = false;
+                int blockStart = 0;
+                while (blockStart < file.Length)
                 {
-                    int length = file[p + 4] | (file[p + 5] << 8);
-                    byte type = file[p + 6];
-                    if (type == 0 && length == 0) break;            // zero padding (preallocated)
-                    if (p + 7 + length > blockEnd) break;          // truncated tail (being written)
-                    int payload = p + 7;
-                    p = payload + length;
-                    switch (type)
+                    int blockEnd = Math.Min(blockStart + LogBlockSize, file.Length);
+                    int p = blockStart;
+                    while (p + 7 <= blockEnd)
                     {
-                        case 1: // FULL
-                            ApplyBatch(file, payload, length, sink);
-                            inFragment = false; pending.SetLength(0);
-                            break;
-                        case 2: // FIRST
-                            pending.SetLength(0); pending.Write(file, payload, length); inFragment = true;
-                            break;
-                        case 3: // MIDDLE
-                            if (inFragment) pending.Write(file, payload, length);
-                            break;
-                        case 4: // LAST
-                            if (inFragment)
-                            {
-                                pending.Write(file, payload, length);
-                                byte[] rec = pending.ToArray();
-                                ApplyBatch(rec, 0, rec.Length, sink);
-                            }
-                            inFragment = false; pending.SetLength(0);
-                            break;
-                        default:
-                            inFragment = false; pending.SetLength(0);
-                            break;
+                        int length = file[p + 4] | (file[p + 5] << 8);
+                        byte type = file[p + 6];
+                        if (type == 0 && length == 0) break;            // zero padding (preallocated)
+                        if (p + 7 + length > blockEnd) break;          // truncated tail (being written)
+                        int payload = p + 7;
+                        p = payload + length;
+                        switch (type)
+                        {
+                            case 1: // FULL
+                                ApplyBatch(file, payload, length, sink);
+                                inFragment = false; pending.SetLength(0);
+                                break;
+                            case 2: // FIRST
+                                pending.SetLength(0); pending.Write(file, payload, length); inFragment = true;
+                                break;
+                            case 3: // MIDDLE
+                                if (inFragment) pending.Write(file, payload, length);
+                                break;
+                            case 4: // LAST
+                                if (inFragment)
+                                {
+                                    pending.Write(file, payload, length);
+                                    byte[] rec = pending.ToArray();
+                                    ApplyBatch(rec, 0, rec.Length, sink);
+                                }
+                                inFragment = false; pending.SetLength(0);
+                                break;
+                            default:
+                                inFragment = false; pending.SetLength(0);
+                                break;
+                        }
                     }
+                    blockStart += LogBlockSize;
                 }
-                blockStart += LogBlockSize;
             }
         }
 

@@ -52,7 +52,7 @@ namespace GamesHub
                 if (!string.IsNullOrWhiteSpace(game.Exe) && Path.IsPathRooted(game.Exe))
                     return Path.GetDirectoryName(game.Exe);
             }
-            catch (Exception ex) { Log.Warn("PCGW: bad game path for " + game.Id, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("PCGW: bad game path for " + game.Id, ex); }
             return null;
         }
 
@@ -66,7 +66,7 @@ namespace GamesHub
                     if (!string.IsNullOrWhiteSpace(p)) return ExactCase(Path.GetFullPath(p.Replace('/', '\\')));
                 }
             }
-            catch (Exception ex) { Log.Warn("PCGW: cannot read SteamPath", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsRegistry(ex) || ExpectedErrors.IsFileSystem(ex)) { Log.Warn("PCGW: cannot read SteamPath", ex); }
             return null;
         }
 
@@ -81,21 +81,21 @@ namespace GamesHub
                 DirectoryInfo match = di.Parent.GetDirectories(di.Name).FirstOrDefault();
                 return Path.Combine(ExactCase(di.Parent.FullName), match?.Name ?? di.Name);
             }
-            catch (Exception ex) { Log.Warn("PCGW: cannot get exact case of " + dir, ex); return dir; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("PCGW: cannot get exact case of " + dir, ex); return dir; }
         }
 
         private static string UbisoftRoot()
         {
             try
             {
-                using (RegistryKey k = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                  .OpenSubKey(@"SOFTWARE\Ubisoft\Launcher"))
+                using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+                using (RegistryKey k = hklm.OpenSubKey(@"SOFTWARE\Ubisoft\Launcher"))
                 {
                     string p = k?.GetValue("InstallDir") as string;
                     if (!string.IsNullOrWhiteSpace(p)) return p.Replace('/', '\\').TrimEnd('\\');
                 }
             }
-            catch (Exception ex) { Log.Warn("PCGW: cannot read Ubisoft InstallDir", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsRegistry(ex)) { Log.Warn("PCGW: cannot read Ubisoft InstallDir", ex); }
             return null;
         }
 
@@ -114,7 +114,7 @@ namespace GamesHub
                 if (SHGetKnownFolderPath(id, 0, IntPtr.Zero, out p) != 0) return null;
                 return NullIfEmpty(Marshal.PtrToStringUni(p));
             }
-            catch (Exception ex) { Log.Warn("PCGW: SHGetKnownFolderPath failed", ex); return null; }
+            catch (Exception ex) when (ex is TypeLoadException || ExpectedErrors.IsOsCall(ex)) { Log.Warn("PCGW: SHGetKnownFolderPath failed", ex); return null; }
             finally { if (p != IntPtr.Zero) Marshal.FreeCoTaskMem(p); }
         }
     }

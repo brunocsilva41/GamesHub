@@ -114,6 +114,7 @@ namespace GamesHub
                     ScanAll(false);
                     EnsureInfrastructure();
                 }
+                // Resilience boundary: background task entry point; the error is logged and the app keeps running.
                 catch (Exception ex) { Log.Error("Library start failed", ex); }
             });
         }
@@ -126,6 +127,7 @@ namespace GamesHub
                 ScanAll(true);
                 EnsureInfrastructure();
             }
+            // Resilience boundary: user-triggered full scan across all sources; a failure must not reach the UI bridge.
             catch (Exception ex) { Log.Error("Library rescan failed", ex); }
         }
 
@@ -192,6 +194,7 @@ namespace GamesHub
             foreach (IExtraSource src in extras.Where(IsExtraSourceEnabled))
             {
                 try { extraGames.AddRange((src.Scan() ?? new List<Game>()).Where(g => g != null && !string.IsNullOrEmpty(g.Id)).Select(Normalize)); }
+                // Resilience boundary: pluggable importer parsing third-party launcher data (Riot, Hydra); one failing source must not stop the scan.
                 catch (Exception ex) { Log.Warn("Extra source '" + src.Name + "' failed", ex); }
             }
             _extraGames = extraGames;
@@ -250,6 +253,7 @@ namespace GamesHub
                 _resolvingThread = Thread.CurrentThread.ManagedThreadId;
                 _resolvingId = g.Id;
                 try { art = _art.Resolve(LibraryMerge.Clone(g)); }
+                // Resilience boundary: per-game artwork during a rebuild; one bad entry must not stop the rebuild.
                 catch (Exception ex) { Log.Warn("Artwork resolve failed for " + g.Id, ex); }
                 finally { _resolvingThread = 0; _resolvingId = null; }
             }
@@ -301,10 +305,15 @@ namespace GamesHub
                         if (g != null) updated[id] = ResolveArt(g, true);
                     }
                     if (updated.Count == 0) return;
-                    lock (_gate) foreach (var kv in updated) if (_byId.TryGetValue(kv.Key, out Game live)) live.Art = kv.Value;
+                    lock (_gate)
+                    {
+                        foreach (var kv in updated.Where(kv => _byId.ContainsKey(kv.Key)))
+                            _byId[kv.Key].Art = kv.Value;
+                    }
                 }
                 RaiseChanged();
             }
+            // Resilience boundary: timer-thread entry point; an unhandled exception would crash the process.
             catch (Exception ex) { Log.Error("Artwork refresh failed", ex); }
         }
 
@@ -323,6 +332,7 @@ namespace GamesHub
             Interlocked.Exchange(ref _changedArmed, 0);
             if (_disposed) return;
             try { Changed?.Invoke(); }
+            // Resilience boundary: raises an event to arbitrary subscribers on a timer thread.
             catch (Exception ex) { Log.Error("Library Changed handler failed", ex); }
         }
 

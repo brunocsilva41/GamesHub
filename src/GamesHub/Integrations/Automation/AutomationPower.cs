@@ -24,9 +24,7 @@ namespace GamesHub
 
         public static void SetActive(Guid scheme)
         {
-            bool known = false;
-            foreach (Guid g in Enumerate()) if (g == scheme) known = true;
-            if (!known) throw new ArgumentException("power plan not found: " + scheme);
+            if (!Enumerate().Contains(scheme)) throw new ArgumentException("power plan not found: " + scheme);
             uint rc = PowerSetActiveScheme(IntPtr.Zero, ref scheme);
             if (rc != 0) throw new InvalidOperationException("PowerSetActiveScheme failed: " + rc);
         }
@@ -71,7 +69,7 @@ namespace GamesHub
             var r = new List<NamedOption>();
             Guid active = Guid.Empty;
             try { active = GetActive(); }
-            catch (Exception ex) { Log.Warn("Automation: could not read active power plan", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsOsCall(ex)) { Log.Warn("Automation: could not read active power plan", ex); }
             foreach (Guid g in Enumerate())
                 r.Add(new NamedOption { Id = g.ToString("D"), Name = FriendlyName(g), Current = g == active });
             return r;

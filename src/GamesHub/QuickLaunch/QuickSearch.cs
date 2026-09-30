@@ -88,10 +88,8 @@ namespace GamesHub
 
         public static List<QuickEntry> BuildIndex(IEnumerable<Game> games)
         {
-            var list = new List<QuickEntry>();
-            if (games == null) return list;
-            foreach (Game g in games) if (g != null) list.Add(BuildEntry(g));
-            return list;
+            if (games == null) return new List<QuickEntry>();
+            return games.Where(g => g != null).Select(BuildEntry).ToList();
         }
 
         public static QuickEntry BuildEntry(Game g)
@@ -131,8 +129,8 @@ namespace GamesHub
             }
 
             foreach (string s in new[] { g.Platform }.Concat(g.Collections ?? new List<string>()))
-                foreach (string w in Fold(s).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
-                    if (!e.Extra.Contains(w)) e.Extra.Add(w);
+                foreach (string w in Fold(s).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(w => !e.Extra.Contains(w)))
+                    e.Extra.Add(w);   // Where is lazy, so words added earlier in this loop are seen too
             return e;
         }
 

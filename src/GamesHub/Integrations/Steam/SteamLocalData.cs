@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace GamesHub
@@ -48,6 +49,7 @@ namespace GamesHub
                     Log.Info("Steam local data: " + result.Count + " apps in " + sw.ElapsedMilliseconds + " ms");
                     return Copy(result);
                 }
+                // Resilience boundary: parses untrusted third-party Steam files (VDF/ACF/localconfig); the caller gets the last good data instead of an exception.
                 catch (Exception ex)
                 {
                     Log.Warn("Steam local data: Load failed; returning cached/partial data", ex);
@@ -65,21 +67,20 @@ namespace GamesHub
             files.Add(lfFile);
             libraries = SteamManifests.ParseLibraryFolders(TryParseFile(lfFile), root);
 
-            foreach (string lib in libraries)
+            foreach (string apps in libraries.Select(lib => Path.Combine(lib, "steamapps")))
             {
-                string apps = Path.Combine(lib, "steamapps");
                 try
                 {
                     if (Directory.Exists(apps)) files.AddRange(Directory.GetFiles(apps, "appmanifest_*.acf"));
                 }
-                catch (Exception ex) { Log.Warn("Steam: cannot list " + apps, ex); }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Steam: cannot list " + apps, ex); }
             }
 
             string loginUsers = Path.Combine(root, "config", "loginusers.vdf");
             files.Add(loginUsers);
             string id64 = SteamUsers.PickActiveUser(TryParseFile(loginUsers));
             try { localConfig = SteamUsers.FindLocalConfig(root, SteamUsers.AccountIdFromSteamId64(id64)); }
-            catch (Exception ex) { Log.Warn("Steam: cannot locate localconfig.vdf", ex); localConfig = null; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Steam: cannot locate localconfig.vdf", ex); localConfig = null; }
             if (localConfig != null) files.Add(localConfig);
             return files;
         }
@@ -95,7 +96,7 @@ namespace GamesHub
                     var fi = new FileInfo(f);
                     if (fi.Exists) { t = fi.LastWriteTimeUtc.Ticks; len = fi.Length; }
                 }
-                catch (Exception ex) { Log.Warn("Steam: stat failed " + f, ex); }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Steam: stat failed " + f, ex); }
                 sb.Append(f).Append('*').Append(t).Append('*').Append(len).Append('|');
             }
             return sb.ToString();
@@ -114,7 +115,7 @@ namespace GamesHub
                 string apps = Path.Combine(lib, "steamapps");
                 string[] acfs;
                 try { acfs = Directory.Exists(apps) ? Directory.GetFiles(apps, "appmanifest_*.acf") : new string[0]; }
-                catch (Exception ex) { Log.Warn("Steam: cannot list " + apps, ex); continue; }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Steam: cannot list " + apps, ex); continue; }
                 foreach (string acf in acfs)
                 {
                     SteamManifestInfo m = SteamManifests.ParseManifest(TryParseFile(acf), lib);
@@ -140,7 +141,7 @@ namespace GamesHub
                     using (var sr = new StreamReader(localConfig, Encoding.UTF8, true, 1 << 16))
                         play = SteamUsers.ReadPlayStats(sr);
                 }
-                catch (Exception ex) { Log.Warn("Steam: cannot read " + localConfig, ex); }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Steam: cannot read " + localConfig, ex); }
             }
 
             if (play != null)
@@ -159,8 +160,8 @@ namespace GamesHub
             }
 
             // Fallback: the manifest's machine-wide LastPlayed when the user's localconfig has none.
-            foreach (var kv in manifestLastPlayed)
-                if (result[kv.Key].LastPlayed == null) result[kv.Key].LastPlayed = SteamUsers.FromUnix(kv.Value);
+            foreach (var kv in manifestLastPlayed.Where(e => result[e.Key].LastPlayed == null))
+                result[kv.Key].LastPlayed = SteamUsers.FromUnix(kv.Value);
 
             return result;
         }
@@ -168,7 +169,7 @@ namespace GamesHub
         private static SteamKv TryParseFile(string file)
         {
             try { return File.Exists(file) ? SteamKvParser.ParseFile(file) : null; }
-            catch (Exception ex) { Log.Warn("Steam: cannot read " + file, ex); return null; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Steam: cannot read " + file, ex); return null; }
         }
 
         private static Dictionary<string, SteamLocalStats> Copy(Dictionary<string, SteamLocalStats> src)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -33,6 +34,9 @@ namespace GamesHub
         private long _lastTickMs;
         private bool _disposed;
 
+        /// <summary>Starts polling running processes every <see cref="IntervalMs"/> ms on a timer thread.</summary>
+        /// <param name="targets">Current games to look for (called on every poll).</param>
+        /// <param name="runningChanged">(id, running) when a game starts or stops.</param>
         /// <param name="played">(id, whole seconds played since the last report)</param>
         public PlayTracker(Func<List<TrackTarget>> targets, Action<string, bool> runningChanged, Action<string, long> played)
         {
@@ -45,6 +49,7 @@ namespace GamesHub
         private void SafePoll()
         {
             try { Poll(); }
+            // Resilience boundary: timer-thread entry point; processes can exit or deny access at any moment.
             catch (Exception ex) { Log.Warn("Play tracker poll failed", ex); }
         }
 
@@ -61,14 +66,11 @@ namespace GamesHub
                 List<TrackTarget> targets = _targets() ?? new List<TrackTarget>();
                 var nowRunning = targets.Count == 0 ? new HashSet<string>() : Detect(targets);
 
-                var started = new List<string>();
-                var stopped = new List<string>();
-                foreach (string id in nowRunning) if (!_running.Contains(id)) started.Add(id);
-                foreach (string id in _running) if (!nowRunning.Contains(id)) stopped.Add(id);
+                List<string> started = nowRunning.Where(id => !_running.Contains(id)).ToList();
+                List<string> stopped = _running.Where(id => !nowRunning.Contains(id)).ToList();
 
                 // Time for games that were running during the whole interval (whole seconds, remainder carried).
-                var continuing = new List<string>();
-                foreach (string id in _running) if (nowRunning.Contains(id)) continuing.Add(id);
+                List<string> continuing = _running.Where(nowRunning.Contains).ToList();
                 if (continuing.Count > 0)
                 {
                     _carrySeconds += elapsed;
@@ -87,10 +89,9 @@ namespace GamesHub
         {
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var alive = new HashSet<int>();
-            Process[] procs = Process.GetProcesses();
-            try
+            foreach (Process proc in Process.GetProcesses())
             {
-                foreach (Process p in procs)
+                using (Process p = proc)
                 {
                     int pid = p.Id;
                     if (pid <= 4 || pid == _selfPid) continue;
@@ -101,13 +102,10 @@ namespace GamesHub
                     if (e.Path != null) Match(e.Path, targets, result);
                 }
             }
-            finally { foreach (Process p in procs) p.Dispose(); }
 
             if (_procCache.Count > alive.Count)
             {
-                var dead = new List<int>();
-                foreach (int pid in _procCache.Keys) if (!alive.Contains(pid)) dead.Add(pid);
-                foreach (int pid in dead) _procCache.Remove(pid);
+                foreach (int pid in _procCache.Keys.Where(k => !alive.Contains(k)).ToList()) _procCache.Remove(pid);
             }
             return result;
         }
@@ -117,11 +115,14 @@ namespace GamesHub
         internal static void Match(string imagePath, List<TrackTarget> targets, HashSet<string> result)
         {
             bool exact = false;
-            foreach (TrackTarget t in targets)
-                if (t.Exe.Length > 0 && string.Equals(imagePath, t.Exe, StringComparison.OrdinalIgnoreCase)) { result.Add(t.Id); exact = true; }
+            foreach (TrackTarget t in targets.Where(x => x.Exe.Length > 0 && string.Equals(imagePath, x.Exe, StringComparison.OrdinalIgnoreCase)))
+            {
+                result.Add(t.Id);
+                exact = true;
+            }
             if (exact) return;
-            foreach (TrackTarget t in targets)
-                if (t.DirPrefix.Length > 0 && imagePath.StartsWith(t.DirPrefix, StringComparison.OrdinalIgnoreCase)) result.Add(t.Id);
+            result.UnionWith(targets.Where(x => x.DirPrefix.Length > 0 && imagePath.StartsWith(x.DirPrefix, StringComparison.OrdinalIgnoreCase))
+                                    .Select(x => x.Id));
         }
 
         /// <summary>Full image path, or null when the process can't be queried (protected/elevated).</summary>

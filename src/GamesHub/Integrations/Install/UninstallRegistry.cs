@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security;
 using Microsoft.Win32;
 
 namespace GamesHub
@@ -20,8 +22,10 @@ namespace GamesHub
                 var list = new List<UninstallEntry>();
                 var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (RegistryHive hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
-                foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                    ReadHive(hive, view, list, seen);
+                {
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+                        ReadHive(hive, view, list, seen);
+                }
                 _cached = list;
                 _cachedAt = DateTime.UtcNow;
                 return list;
@@ -59,12 +63,15 @@ namespace GamesHub
                                     list.Add(e);
                             }
                         }
-                        catch (Exception ex) { Log.Warn("UninstallRegistry: cannot read " + label + "\\" + name, ex); }
+                        catch (Exception ex) when (IsRegistryError(ex)) { Log.Warn("UninstallRegistry: cannot read " + label + "\\" + name, ex); }
                     }
                 }
             }
-            catch (Exception ex) { Log.Warn("UninstallRegistry: cannot open " + label, ex); }
+            catch (Exception ex) when (IsRegistryError(ex)) { Log.Warn("UninstallRegistry: cannot open " + label, ex); }
         }
+
+        private static bool IsRegistryError(Exception ex)
+            => ex is SecurityException || ex is UnauthorizedAccessException || ex is IOException;
 
         private static string Str(RegistryKey k, string name)
         {

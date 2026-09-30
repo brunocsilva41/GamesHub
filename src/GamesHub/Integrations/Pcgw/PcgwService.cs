@@ -56,6 +56,7 @@ namespace GamesHub
                 info.SaveLocations = Order(info.SaveLocations);
                 info.ConfigLocations = Order(info.ConfigLocations);
             }
+            // Resilience boundary: consumes untrusted PCGamingWiki / Ludusavi data (network, JSON, wikitext, YAML) and walks the file system with wiki-provided patterns; the UI gets an empty result instead.
             catch (Exception ex)
             {
                 Log.Warn("PCGW: GetInfoAsync failed for " + (game?.Id ?? steamAppId), ex);
@@ -83,9 +84,9 @@ namespace GamesHub
                     () => PcgwApi.FindByAppIdAsync(appId), m => m.FindTitleByAppId(appId)).ConfigureAwait(false);
                 if (t != null) return t;
             }
-            string norm = PcgwNames.Normalize(PcgwNames.CleanForSearch(game?.Name));
+            string name = game?.Name;
+            string norm = PcgwNames.Normalize(PcgwNames.CleanForSearch(name));
             if (norm.Length == 0) return null;
-            string name = game.Name;
             return await LookupAsync("name:" + norm,
                 () => PcgwApi.FindByNameAsync(name), m => m.FindTitleByName(name)).ConfigureAwait(false);
         }

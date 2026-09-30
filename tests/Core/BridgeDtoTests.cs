@@ -8,6 +8,26 @@ namespace GamesHub.Tests
     {
         private static long? Stamp(string rel) => rel.StartsWith("missing") ? (long?)null : 42;
 
+        public static void TestFileStampStaysInsideArtCache()
+        {
+            System.IO.Directory.CreateDirectory(AppPaths.ArtDir);
+            string outside = System.IO.Path.Combine(AppPaths.DataDir, "stamp-escape-probe.txt");
+            string inside = System.IO.Path.Combine(AppPaths.ArtDir, "stamp-probe.jpg");
+            System.IO.File.WriteAllText(outside, "x");
+            System.IO.File.WriteAllText(inside, "x");
+            try
+            {
+                Assert.NotNull(BridgeDto.FileStamp("stamp-probe.jpg"), "file inside the art cache");
+                Assert.Equal(null, BridgeDto.FileStamp("../stamp-escape-probe.txt"));
+                Assert.Equal(null, BridgeDto.FileStamp(outside));
+            }
+            finally
+            {
+                System.IO.File.Delete(outside);
+                System.IO.File.Delete(inside);
+            }
+        }
+
         public static void TestArtUrl()
         {
             Assert.Equal("https://art.gameshub.example/steam-730/hero.jpg?v=42", BridgeDto.ArtUrl("steam-730/hero.jpg", Stamp));

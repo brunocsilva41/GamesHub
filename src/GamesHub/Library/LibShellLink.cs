@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
@@ -68,9 +69,8 @@ namespace GamesHub
         {
             var info = new ShortcutInfo();
             bool inSection = false, sawHeader = false;
-            foreach (string raw in (content ?? "").Split('\n'))
+            foreach (string line in (content ?? "").Split('\n').Select(raw => raw.Trim()))
             {
-                string line = raw.Trim();
                 if (line.StartsWith("["))
                 {
                     inSection = line.Equals("[InternetShortcut]", StringComparison.OrdinalIgnoreCase);

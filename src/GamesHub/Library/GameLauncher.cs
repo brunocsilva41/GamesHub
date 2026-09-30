@@ -31,8 +31,8 @@ namespace GamesHub
             }
 
             // .lnk: without extra args let the shell run it (keeps run-as, window style, etc.).
-            string target = lnk?.Target ?? "";
-            if (args.Length == 0 || target.Length == 0 || !File.Exists(target)) return Shell(g.FilePath);
+            if (lnk == null || args.Length == 0 || string.IsNullOrEmpty(lnk.Target) || !File.Exists(lnk.Target)) return Shell(g.FilePath);
+            string target = lnk.Target;
             var p = Shell(target);
             p.Arguments = ((lnk.Arguments ?? "") + " " + args).Trim();
             p.WorkingDirectory = !string.IsNullOrEmpty(lnk.WorkingDir) && Directory.Exists(lnk.WorkingDir)

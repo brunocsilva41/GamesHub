@@ -98,13 +98,11 @@ namespace GamesHub
         {
             FetchResult r = await GetAsync(SteamEndpoints.SgdbAssets(sgdbGameId, kind)).ConfigureAwait(false);
             if (!r.Ok) return new KeyValuePair<FetchStatus, string>(r.Status, "");
-            foreach (IDictionary<string, object> e in DataArray(r.Text))
-            {
-                string url = Json.Str(e, "url");
-                if (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                    return new KeyValuePair<FetchStatus, string>(FetchStatus.Ok, url);
-            }
-            return new KeyValuePair<FetchStatus, string>(FetchStatus.NotFound, "");
+            string found = DataArray(r.Text).Select(e => Json.Str(e, "url"))
+                .FirstOrDefault(url => url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+            return found != null
+                ? new KeyValuePair<FetchStatus, string>(FetchStatus.Ok, found)
+                : new KeyValuePair<FetchStatus, string>(FetchStatus.NotFound, "");
         }
 
         private static IDictionary<string, object> Parse(string json)

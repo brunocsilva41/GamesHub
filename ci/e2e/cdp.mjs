@@ -8,6 +8,7 @@
 // Prints one JSON line to stdout: { checks: [{ name, pass, detail, ms }], errors: [...] }.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { jsLiteral } from './jsliteral.mjs';
 
 const MAIN_URL = 'https://app.gameshub.example/index.html';
 
@@ -167,7 +168,7 @@ async function screenshot(cdp, name) {
 
 // Page-side snippets ------------------------------------------------------------
 const IMPORTS = `const { store } = await import('/js/store.js'); const A = await import('/js/actions.js');`;
-const VISIBLE = (sel) => `(() => { const e = document.querySelector(${JSON.stringify(sel)}); return !!e && !e.hidden && e.getClientRects().length > 0; })()`;
+const VISIBLE = (sel) => `(() => { const e = document.querySelector(${jsLiteral(sel)}); return !!e && !e.hidden && e.getClientRects().length > 0; })()`;
 
 // ------------------------------------------------------------------ the suite
 
@@ -240,10 +241,10 @@ async function runSuite(cdp, until) {
   const target = games.find((g) => !g.broken && g.ext === '.lnk') || games.find((g) => !g.broken) || games[0];
   await check('ui: navigate to game details', async () => {
     if (!target) throw new Error('no game to open');
-    await cdp.eval(`${IMPORTS} A.openDetails(${JSON.stringify(target.id)}); return true;`);
+    await cdp.eval(`${IMPORTS} A.openDetails(${jsLiteral(target.id)}); return true;`);
     const r = await poll(cdp, `${IMPORTS} return { ok: store.state.route.view === 'game' && ${VISIBLE('#view-game')} && ${VISIBLE('#view-game .details-main')}
       && !document.querySelector('#view-library').offsetParent
-      && (document.querySelector('#view-game .hero-title') || {}).textContent === ${JSON.stringify(target.name)},
+      && (document.querySelector('#view-game .hero-title') || {}).textContent === ${jsLiteral(target.name)},
       route: store.state.route, heading: (document.querySelector('#view-game .hero-title') || {}).textContent };`,
     deadline(10), 'details view visible with the game title');
     return { detail: `${target.name} -> "${(r.heading || '').trim()}"` };
@@ -252,7 +253,7 @@ async function runSuite(cdp, until) {
 
   if (broken) {
     await check('ui: broken game details show warning', async () => {
-      await cdp.eval(`${IMPORTS} A.openDetails(${JSON.stringify(broken)}); return true;`);
+      await cdp.eval(`${IMPORTS} A.openDetails(${jsLiteral(broken)}); return true;`);
       await poll(cdp, `return { ok: ${VISIBLE('#view-game [data-broken]')} };`, deadline(10), 'broken panel visible');
       return { detail: 'panel [data-broken] visible' };
     });
@@ -315,7 +316,7 @@ async function runSuite(cdp, until) {
     } catch {
       return { detail: 'skipped: no game exposes an icon URL (autoArtwork=false)' };
     }
-    const f = await cdp.eval(`const res = await fetch(${JSON.stringify(r.url)}); const b = await res.arrayBuffer();
+    const f = await cdp.eval(`const res = await fetch(${jsLiteral(r.url)}); const b = await res.arrayBuffer();
       return { status: res.status, type: res.headers.get('content-type'), bytes: b.byteLength };`);
     if (f.status !== 200 || f.bytes === 0) throw new Error(`${r.url} -> HTTP ${f.status}, ${f.bytes} bytes`);
     return { detail: `${r.name}: HTTP ${f.status} ${f.type} ${f.bytes} B` };

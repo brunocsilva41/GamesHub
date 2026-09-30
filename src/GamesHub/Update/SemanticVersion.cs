@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace GamesHub
 {
-    public sealed class SemanticVersion : IComparable<SemanticVersion>
+    public sealed class SemanticVersion : IComparable<SemanticVersion>, IEquatable<SemanticVersion>
     {
         public int Major, Minor, Patch, Revision;
         /// <summary>Pre-release identifiers without the leading '-' ("" = release).</summary>
@@ -65,6 +65,24 @@ namespace GamesHub
         }
 
         public static int Compare(string a, string b) => Parse(a).CompareTo(Parse(b));
+
+        /// <summary>Equality consistent with CompareTo: versions that sort the same are equal ("2.0" == "v2.0.0").</summary>
+        public bool Equals(SemanticVersion other) => other != null && CompareTo(other) == 0;
+
+        public override bool Equals(object obj) => Equals(obj as SemanticVersion);
+
+        /// <summary>Hashes only the parts CompareTo treats identically (pre-release identifiers may be "01" vs "1").</summary>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int h = Major;
+                h = h * 31 + Minor;
+                h = h * 31 + Patch;
+                h = h * 31 + Revision;
+                return h * 31 + (IsPreRelease ? 1 : 0);
+            }
+        }
 
         public override string ToString()
         {

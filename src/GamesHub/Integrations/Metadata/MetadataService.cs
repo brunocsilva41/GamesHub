@@ -61,7 +61,7 @@ namespace GamesHub
                 MetadataCacheEntry e = _cache.Get(id);
                 return e != null && !e.Negative ? e.Info : null;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex))
             {
                 Log.Warn("Metadata: GetCached failed for app " + appId, ex);
                 return null;
@@ -80,8 +80,9 @@ namespace GamesHub
                 Outcome o = await Start(id, interactive: true).ConfigureAwait(false);
                 return o.Info;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex))
             {
+                // The network part cannot throw here (RunFetch catches); this covers the disk cache.
                 Log.Warn("Metadata: FetchAsync failed for app " + appId, ex);
                 return GetCached(appId);
             }
@@ -93,11 +94,8 @@ namespace GamesHub
             {
                 if (appIds == null || !_settings.FetchMetadata) return;
                 bool start = false;
-                foreach (string raw in appIds)
+                foreach (string id in appIds.Select(Normalize).Where(x => x != null && !_cache.IsFresh(_cache.Get(x))))
                 {
-                    string id = Normalize(raw);
-                    if (id == null) continue;
-                    if (_cache.IsFresh(_cache.Get(id))) continue;
                     lock (_gate)
                     {
                         if (!_queued.Add(id)) continue;
@@ -107,7 +105,7 @@ namespace GamesHub
                 }
                 if (start) Task.Run(WorkerLoop);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex))
             {
                 Log.Warn("Metadata: Prefetch failed", ex);
             }
@@ -169,6 +167,7 @@ namespace GamesHub
         private async Task<Outcome> RunFetch(string id, bool interactive)
         {
             try { return await FetchCore(id, interactive).ConfigureAwait(false); }
+            // Resilience boundary: the shared fetch task every caller awaits (injectable HTTP, third-party store JSON, disk cache); callers get the cached data instead of a faulted task.
             catch (Exception ex)
             {
                 Log.Warn("Metadata: fetch failed for app " + id, ex);
@@ -266,6 +265,7 @@ namespace GamesHub
                         }
                     }
                 }
+                // Resilience boundary: background worker loop; one app id must not stop the prefetch queue.
                 catch (Exception ex)
                 {
                     Log.Warn("Metadata: prefetch failed for app " + id, ex);
@@ -277,6 +277,7 @@ namespace GamesHub
         private void Raise(string id)
         {
             try { MetadataUpdated?.Invoke(id); }
+            // Resilience boundary: raises an event to arbitrary subscribers from a background fetch.
             catch (Exception ex) { Log.Warn("Metadata: MetadataUpdated handler threw for app " + id, ex); }
         }
     }

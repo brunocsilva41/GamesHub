@@ -54,7 +54,7 @@ namespace GamesHub
                     return new MetadataHttpResult { Status = (int)resp.StatusCode, Body = Encoding.UTF8.GetString(bytes) };
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsNetwork(ex))
             {
                 return new MetadataHttpResult { Status = 0, Error = ex };
             }

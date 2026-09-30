@@ -49,7 +49,11 @@ namespace GamesHub
         private static DebouncedWatcher TryWatch(string dir, Action onChange, Func<string, bool> filter, int delayMs)
         {
             try { return new DebouncedWatcher(dir, delayMs, onChange, filter); }
-            catch (Exception ex) { Log.Warn("Cannot watch " + dir, ex); return null; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex) || ex is System.ComponentModel.Win32Exception)
+            {
+                Log.Warn("Cannot watch " + dir, ex);
+                return null;
+            }
         }
 
         private void OnRunningChanged(string id, bool running)
@@ -60,6 +64,7 @@ namespace GamesHub
             Patch(id, g => { g.Running = running; if (!running) g.LastPlayed = now; });
             Log.Info("Game " + (running ? "started: " : "stopped: ") + id);
             try { RunningChanged?.Invoke(id, running); }
+            // Resilience boundary: raises an event to arbitrary subscribers from the play-tracker timer thread.
             catch (Exception ex) { Log.Error("RunningChanged handler failed", ex); }
         }
 

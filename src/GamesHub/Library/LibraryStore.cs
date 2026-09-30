@@ -52,7 +52,7 @@ namespace GamesHub
         {
             object raw = null;
             try { if (File.Exists(_file)) raw = Json.DeserializeObject(File.ReadAllText(_file)); }
-            catch (Exception ex) { Log.Warn("library.json is unreadable; starting empty", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("library.json is unreadable; starting empty", ex); }
             lock (_gate) FromJson(raw as IDictionary<string, object>);
         }
 
@@ -108,7 +108,7 @@ namespace GamesHub
             {
                 if (File.Exists(file)) map = MapLegacyPlaylog(Json.DeserializeObject(File.ReadAllText(file)) as IDictionary<string, object>);
             }
-            catch (Exception ex) { Log.Warn("Cannot import legacy playlog " + file, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("Cannot import legacy playlog " + file, ex); }
             lock (_gate)
             {
                 foreach (var kv in map)
@@ -168,7 +168,7 @@ namespace GamesHub
                     _dirty = false;
                 }
                 try { Json.WriteAllTextAtomic(_file, json); }
-                catch (Exception ex)
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex))
                 {
                     Log.Error("Cannot save " + _file, ex);
                     lock (_gate) _dirty = true;

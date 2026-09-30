@@ -60,6 +60,7 @@ namespace GamesHub
                 }
                 return _offsets != null;
             }
+            // Resilience boundary: downloads and indexes the untrusted third-party Ludusavi manifest (large YAML).
             catch (Exception ex)
             {
                 Log.Warn("PCGW: Ludusavi manifest unavailable", ex);
@@ -77,9 +78,7 @@ namespace GamesHub
         public string FindTitleByName(string name)
         {
             if (_byNorm == null) return null;
-            var candidates = new List<string>();
-            foreach (string q in PcgwNames.QueryVariants(name))
-                if (_byNorm.TryGetValue(q, out List<string> list)) candidates.AddRange(list);
+            List<string> candidates = PcgwNames.QueryVariants(name).Where(_byNorm.ContainsKey).SelectMany(q => _byNorm[q]).ToList();
             return PcgwNames.BestMatch(name, candidates);
         }
 
@@ -105,6 +104,7 @@ namespace GamesHub
                 }
                 return ParseEntry(lines);
             }
+            // Resilience boundary: reads and parses one entry of the untrusted third-party Ludusavi manifest.
             catch (Exception ex)
             {
                 Log.Warn("PCGW: cannot read manifest entry " + title, ex);
@@ -224,8 +224,8 @@ namespace GamesHub
         {
             public string Key = "";
             public bool Registry;
-            public List<string> Tags = new List<string>();
-            public List<Cond> When = new List<Cond>();
+            public readonly List<string> Tags = new List<string>();
+            public readonly List<Cond> When = new List<Cond>();
         }
 
         /// <summary>Parses one top-level entry (its lines, starting with the title line).</summary>

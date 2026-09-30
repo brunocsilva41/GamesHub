@@ -42,9 +42,12 @@ namespace GamesHub
                 PreRelease = Json.Bool(d, "prerelease"),
             };
             if (d.TryGetValue("assets", out object a) && a is IEnumerable<object> list)
-                foreach (object o in list)
-                    if (o is IDictionary<string, object> ad)
-                        r.Assets.Add(new ReleaseAsset { Name = Json.Str(ad, "name"), DownloadUrl = Json.Str(ad, "browser_download_url"), Size = Json.Long(ad, "size") });
+                r.Assets.AddRange(list.OfType<IDictionary<string, object>>().Select(ad => new ReleaseAsset
+                {
+                    Name = Json.Str(ad, "name"),
+                    DownloadUrl = Json.Str(ad, "browser_download_url"),
+                    Size = Json.Long(ad, "size"),
+                }));
             return r;
         }
 
@@ -87,9 +90,8 @@ namespace GamesHub
         {
             if (string.IsNullOrEmpty(text)) return null;
             string anyName = null;
-            foreach (string raw in text.Replace("\r", "").Split('\n'))
+            foreach (string line in text.Replace("\r", "").Split('\n').Select(raw => raw.Trim().TrimStart('﻿')))
             {
-                string line = raw.Trim().TrimStart('﻿');
                 if (line.Length == 0 || line.StartsWith("#")) continue;
                 string hash = null, name = null;
                 Match m = Gnu.Match(line);

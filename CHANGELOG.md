@@ -5,8 +5,24 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
-Suporte completo a controles genéricos: modelos no estilo Xbox que o Windows reconhece como "Android Gamepad" ou
-DirectInput agora funcionam com todos os botões no lugar certo.
+Suporte completo a controles genéricos, artes do SteamGridDB sem nenhuma configuração e uma rodada ampla de
+segurança e qualidade de código guiada pela análise estática (CodeQL).
+
+### Adicionado
+
+- Artes do **SteamGridDB** funcionam sem configuração: o GamesHub já inclui uma chave (a sua, se informada nas
+  Configurações, tem prioridade).
+
+### Segurança
+
+- Caminhos vindos de fora (manifestos da Steam, Epic, Riot e Hydra, PCGamingWiki, cache de artes, lixeira) não
+  conseguem mais escapar da pasta esperada: caminhos absolutos, `..` e fluxos alternativos são recusados.
+- Tratamento de erros mais preciso em todo o app: cada operação captura só os erros que pode realmente produzir;
+  proteções amplas ficaram restritas às bordas do app (tarefas em segundo plano, eventos e leitura de dados de
+  terceiros), todas documentadas.
+- Correções de todos os alertas do CodeQL (sanitização, perda de precisão, possíveis nulos, recursos não liberados)
+  e novas proteções no repositório: revisão obrigatória, portão de segurança para pull requests e Actions fixadas por
+  SHA.
 
 ### Corrigido
 

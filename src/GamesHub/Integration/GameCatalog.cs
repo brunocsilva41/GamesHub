@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -70,11 +71,19 @@ namespace GamesHub
                     if (n > 0) Log.Info("Automation: restored " + n + " pending setting(s) after an unclean exit");
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsServiceError(ex))
             {
                 Log.Warn("Automation crash-restore failed", ex);
             }
         }
+
+        /// <summary>Expected failures of the enrichment services: disk/registry access, launcher data that is
+        /// missing or malformed (VDF, JSON, LevelDB), and Win32/COM errors.</summary>
+        private static bool IsServiceError(Exception ex)
+            => ex is IOException || ex is InvalidDataException || ex is UnauthorizedAccessException
+               || ex is System.Security.SecurityException || ex is ArgumentException || ex is InvalidOperationException
+               || ex is FormatException || ex is NotSupportedException || ex is OverflowException || ex is TimeoutException
+               || ex is System.ComponentModel.Win32Exception || ex is System.Runtime.InteropServices.ExternalException;
 
         private void RaiseChanged()
         {
@@ -109,7 +118,7 @@ namespace GamesHub
             {
                 return Variants.Apply(games);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsServiceError(ex))
             {
                 Log.Warn("Variant grouping failed; showing ungrouped list", ex);
                 return games;
@@ -139,7 +148,7 @@ namespace GamesHub
             {
                 return (Art as ArtworkService)?.GetMatchedSteamAppId(g) ?? "";
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsServiceError(ex))
             {
                 Log.Warn("GetMatchedSteamAppId failed: " + g.Id, ex);
                 return "";
@@ -152,7 +161,7 @@ namespace GamesHub
             {
                 return Steam.Load() ?? new Dictionary<string, SteamLocalStats>();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsServiceError(ex))
             {
                 Log.Warn("Steam local data failed", ex);
                 return new Dictionary<string, SteamLocalStats>();
@@ -162,7 +171,7 @@ namespace GamesHub
         private GameInfo SafeMeta(string appId)
         {
             try { return Meta.GetCached(appId); }
-            catch (Exception ex) { Log.Warn("Metadata cache read failed: " + appId, ex); return null; }
+            catch (Exception ex) when (IsServiceError(ex)) { Log.Warn("Metadata cache read failed: " + appId, ex); return null; }
         }
 
         private void ApplySteam(Game g, Dictionary<string, SteamLocalStats> steam)
@@ -187,7 +196,7 @@ namespace GamesHub
             else
             {
                 try { h = Install.CheckHealth(g) ?? new InstallHealth(); }
-                catch (Exception ex) { Log.Warn("Health check failed: " + g.Id, ex); h = new InstallHealth(); }
+                catch (Exception ex) when (IsServiceError(ex)) { Log.Warn("Health check failed: " + g.Id, ex); h = new InstallHealth(); }
                 _health[key] = (DateTime.UtcNow, h);
             }
             g.Broken = h.Broken;
@@ -216,7 +225,7 @@ namespace GamesHub
                 if (_hydraInstalled == null || DateTime.UtcNow - _hydraAt > HealthTtl)
                 {
                     try { _hydraInstalled = new HashSet<string>(_hydra.Scan().Select(x => x.SteamAppId).Where(x => !string.IsNullOrEmpty(x))); }
-                    catch (Exception ex) { Log.Warn("Hydra scan for health failed", ex); _hydraInstalled = new HashSet<string>(); }
+                    catch (Exception ex) when (IsServiceError(ex)) { Log.Warn("Hydra scan for health failed", ex); _hydraInstalled = new HashSet<string>(); }
                     _hydraAt = DateTime.UtcNow;
                 }
                 return _hydraInstalled;
@@ -228,7 +237,7 @@ namespace GamesHub
             if (g.SizeBytes >= 0 || g.Broken) return;
             long cached = -1;
             try { cached = Install.GetCachedSizeBytes(g); }
-            catch (Exception ex) { Log.Warn("Size cache read failed: " + g.Id, ex); }
+            catch (Exception ex) when (IsServiceError(ex)) { Log.Warn("Size cache read failed: " + g.Id, ex); }
             if (cached >= 0)
             {
                 g.SizeBytes = cached;
@@ -244,6 +253,7 @@ namespace GamesHub
                     long size = await Install.GetSizeBytesAsync(copy).ConfigureAwait(false);
                     if (size >= 0) RaiseChanged();
                 }
+                // Resilience boundary: fire-and-forget background task entry point (Task.Run); nothing observes it.
                 catch (Exception ex)
                 {
                     Log.Warn("Size computation failed: " + copy.Id, ex);
@@ -268,6 +278,8 @@ namespace GamesHub
                     await Automation.RunBeforeAsync(g).ConfigureAwait(false);
                     _automationActive[g.Id] = 0;
                 }
+                // Resilience boundary: user-configured automation (processes, services, display, audio, power)
+                // must never prevent the game from launching, whatever it throws.
                 catch (Exception ex)
                 {
                     Log.Warn("Automation (before) failed: " + g.Id, ex);
@@ -284,6 +296,7 @@ namespace GamesHub
             Task.Run(async () =>
             {
                 try { await Automation.RunAfterAsync(g).ConfigureAwait(false); }
+                // Resilience boundary: fire-and-forget background task entry point (Task.Run); nothing observes it.
                 catch (Exception ex) { Log.Warn("Automation (after) failed: " + id, ex); }
             });
         }

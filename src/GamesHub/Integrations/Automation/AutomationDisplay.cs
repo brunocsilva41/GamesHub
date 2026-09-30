@@ -2,6 +2,7 @@
 // user's configured mode; the service restores the snapshot explicitly after the game exits.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace GamesHub
@@ -56,8 +57,7 @@ namespace GamesHub
                 maxBpp = Math.Max(maxBpp, dm.dmBitsPerPel);
             }
             int minBpp = Math.Min(32, maxBpp);
-            var modes = new List<ResolutionSpec>();
-            foreach (var kv in all) if (kv.Value >= minBpp) modes.Add(kv.Key);
+            List<ResolutionSpec> modes = all.Where(kv => kv.Value >= minBpp).Select(kv => kv.Key).ToList();
             return ResolutionSpec.SortDistinct(modes);
         }
 
@@ -82,7 +82,7 @@ namespace GamesHub
         {
             ResolutionSpec cur = default(ResolutionSpec);
             try { cur = Current(); }
-            catch (Exception ex) { Log.Warn("Automation: could not read current display mode", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsOsCall(ex)) { Log.Warn("Automation: could not read current display mode", ex); }
             var r = new List<NamedOption>();
             foreach (ResolutionSpec m in Modes())
                 r.Add(new NamedOption { Id = m.ToString(), Name = m.DisplayName, Current = m.Equals(cur) });

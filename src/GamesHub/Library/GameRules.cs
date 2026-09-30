@@ -37,9 +37,9 @@ namespace GamesHub
             {
                 changed = false;
                 name = name.Trim();
-                foreach (string suffix in ShortcutSuffixes)
-                    if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                    { name = name.Substring(0, name.Length - suffix.Length); changed = true; }
+                string suffix = ShortcutSuffixes.FirstOrDefault(s => name.EndsWith(s, StringComparison.OrdinalIgnoreCase));
+                if (suffix != null)
+                { name = name.Substring(0, name.Length - suffix.Length); changed = true; }
                 if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                 { name = name.Substring(0, name.Length - 4); changed = true; }
             }
@@ -63,9 +63,13 @@ namespace GamesHub
             return r.Length == 0 ? "Novo jogo" : r;
         }
 
-        /// <summary>Returns "dir\base.ext", or "dir\base (2).ext", ... for the first name not taken.</summary>
+        /// <summary>Returns "dir\base.ext", or "dir\base (2).ext", ... for the first name not taken.
+        /// Throws ArgumentException when base+ext is not a plain file name (separators, drive, "..").</summary>
         public static string UniquePath(string dir, string baseName, string ext, Func<string, bool> exists = null)
         {
+            string fileName = (baseName ?? "") + (ext ?? "");
+            if (fileName.Length == 0 || fileName == "." || fileName == ".." || Path.GetFileName(fileName) != fileName)
+                throw new ArgumentException("Not a plain file name: " + fileName, nameof(baseName));
             exists = exists ?? File.Exists;
             string p = Path.Combine(dir, baseName + ext);
             for (int i = 2; exists(p); i++) p = Path.Combine(dir, baseName + " (" + i + ")" + ext);
@@ -118,9 +122,8 @@ namespace GamesHub
         /// <summary>Steam app id from a target/URL, "" if none (ignores 64-bit non-Steam shortcut ids).</summary>
         public static string ExtractSteamAppId(string target)
         {
-            foreach (Regex r in AppIdPatterns)
+            foreach (Match m in AppIdPatterns.Select(r => r.Match(target ?? "")))
             {
-                Match m = r.Match(target ?? "");
                 if (m.Success && ulong.TryParse(m.Groups[1].Value, out ulong v) && v > 0 && v <= uint.MaxValue)
                     return v.ToString();
             }
@@ -203,7 +206,7 @@ namespace GamesHub
         {
             if (string.IsNullOrWhiteSpace(dir)) return "";
             try { return Path.GetFullPath(dir.Trim()).TrimEnd('\\', '/'); }
-            catch (Exception ex) { Log.Warn("NormalizeDir failed: " + dir, ex); return ""; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("NormalizeDir failed: " + dir, ex); return ""; }
         }
 
         /// <summary>True for folders too broad to identify a single game (drive roots, Windows, Program Files,

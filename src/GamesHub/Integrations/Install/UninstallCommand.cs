@@ -58,7 +58,7 @@ namespace GamesHub
         private static bool SafeExists(Func<string, bool> exists, string path)
         {
             try { return exists(path); }
-            catch (Exception ex) { Log.Warn("UninstallCommand: exists check failed for " + path, ex); return false; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("UninstallCommand: exists check failed for " + path, ex); return false; }
         }
 
         public static bool IsMsiExec(string file)

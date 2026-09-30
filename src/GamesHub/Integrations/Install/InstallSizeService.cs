@@ -88,6 +88,7 @@ namespace GamesHub
                 }
                 return bytes;
             }
+            // Resilience boundary: background task walking an arbitrary game folder (junctions, permissions, long paths); the caller gets -1 instead of a faulted task.
             catch (Exception ex)
             {
                 Log.Warn("InstallSizeService: sizing failed for " + key, ex);
@@ -103,7 +104,7 @@ namespace GamesHub
         private void SaveLocked()
         {
             try { Json.Save(_cacheFile, _cache); }
-            catch (Exception ex) { Log.Warn("InstallSizeService: cannot save " + _cacheFile, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("InstallSizeService: cannot save " + _cacheFile, ex); }
         }
 
         private static bool IsFresh(SizeCacheEntry e, string key)
@@ -115,7 +116,7 @@ namespace GamesHub
                 if (!Directory.Exists(key)) return false;
                 return Directory.GetLastWriteTimeUtc(key).Ticks == e.DirWriteUtcTicks;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex))
             {
                 Log.Warn("InstallSizeService: stat failed " + key, ex);
                 return false;

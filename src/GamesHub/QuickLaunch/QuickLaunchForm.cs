@@ -61,8 +61,9 @@ namespace GamesHub
         {
             try
             {
-                IntPtr unused = Handle;      // create the form handle without showing it
-                unused = _web.Handle;        // WebView2 initializes only once its control has a handle
+                // Reading Handle creates the form handle without showing it; WebView2 initializes only once
+                // its control has a handle too. Both getters throw on failure, so the guard never returns early.
+                if (Handle == IntPtr.Zero || _web.Handle == IntPtr.Zero) return;
                 ApplyCorners();
                 CoreWebView2Environment env = await WebViewEnv.GetAsync();
                 await _web.EnsureCoreWebView2Async(env);
@@ -104,6 +105,7 @@ namespace GamesHub
                 };
                 core.Navigate(StartUrl);
             }
+            // Resilience boundary: async void entry point; an escaping exception would crash the UI thread.
             catch (Exception ex)
             {
                 Log.Error("Quick-launch WebView2 initialization failed", ex);
@@ -120,10 +122,12 @@ namespace GamesHub
             if (!IsAppUri(e.Source)) return;
             IDictionary<string, object> msg;
             try { msg = Json.DeserializeObject(e.WebMessageAsJson) as IDictionary<string, object>; }
-            catch (Exception ex) { Log.Warn("Quick-launch: invalid page message", ex); return; }
+            catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException)
+            { Log.Warn("Quick-launch: invalid page message", ex); return; }
             if (msg == null) return;
             if (Json.Str(msg, "type") == "ready") PageReady = true;
             try { PageMessage?.Invoke(msg); }
+            // Resilience boundary: WebView2 event handler dispatching to arbitrary subscribers.
             catch (Exception ex) { Log.Error("Quick-launch: message handler failed (" + Json.Str(msg, "type") + ")", ex); }
         }
 
@@ -132,7 +136,8 @@ namespace GamesHub
         {
             if (!PageReady || _web.CoreWebView2 == null) return;
             try { _web.CoreWebView2.PostWebMessageAsJson(Json.Serialize(message)); }
-            catch (Exception ex) { Log.Warn("Quick-launch: PostWebMessageAsJson failed", ex); }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is System.Runtime.InteropServices.COMException)
+            { Log.Warn("Quick-launch: PostWebMessageAsJson failed", ex); }
         }
 
         // ------------------------------------------------------------ show / hide
@@ -219,7 +224,7 @@ namespace GamesHub
             ApplyTarget();
         }
 
-        private static int Scale(int logical, int dpi) => (int)Math.Round(logical * dpi / 96.0);
+        private static int Scale(int logical, int dpi) => (int)Math.Round((double)logical * dpi / 96.0);
 
         private void ApplyTarget()
         {

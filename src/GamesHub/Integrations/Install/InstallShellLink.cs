@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
@@ -32,7 +33,7 @@ namespace GamesHub
                 }
                 return Environment.ExpandEnvironmentVariables(raw.Trim().Trim('"'));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsInterop(ex) || ExpectedErrors.IsFileSystem(ex))
             {
                 Log.Warn("InstallShellLink: cannot read " + lnkPath, ex);
                 return "";
@@ -49,14 +50,13 @@ namespace GamesHub
             try
             {
                 bool inSection = false;
-                foreach (string line in File.ReadAllLines(urlFile))
+                foreach (string t in File.ReadAllLines(urlFile).Select(line => line.Trim()))
                 {
-                    string t = line.Trim();
                     if (t.StartsWith("[")) { inSection = t.Equals("[InternetShortcut]", StringComparison.OrdinalIgnoreCase); continue; }
                     if (inSection && t.StartsWith("URL=", StringComparison.OrdinalIgnoreCase)) return t.Substring(4).Trim();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex))
             {
                 Log.Warn("InstallShellLink: cannot read " + urlFile, ex);
             }
@@ -68,7 +68,7 @@ namespace GamesHub
         {
             if (string.IsNullOrEmpty(url) || !url.StartsWith("file:", StringComparison.OrdinalIgnoreCase)) return "";
             try { return new Uri(url).LocalPath; }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is UriFormatException || ex is InvalidOperationException)
             {
                 Log.Warn("InstallShellLink: bad file URL " + url, ex);
                 return "";

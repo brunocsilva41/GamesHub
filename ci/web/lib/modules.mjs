@@ -8,7 +8,7 @@
 // (only `a` is seen), array-destructuring exports.
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { scanJs, lineIndex, specifiers } from './scan.mjs';
+import { scanJs, lineIndex, specifiers, escapeRegExp } from './scan.mjs';
 
 const NB = '(?<![\\w$.])';
 const IMPORT_RE = new RegExp(`${NB}import(?![\\w$])\\s*(?:([\\w$]+)\\s*,?\\s*)?(?:\\{([^}]*)\\}|\\*\\s*as\\s+([\\w$]+))?\\s*(?:from\\s*)?(['"])([^'"\\n]+)\\4`, 'g');
@@ -77,7 +77,7 @@ export function parseModule(src) {
   // namespace member uses: A.foo
   const nsUses = [];
   for (const ns of namespaces) {
-    const re = new RegExp(`${NB}${ns.local.replace(/\$/g, '\\$')}\\s*\\.\\s*([\\w$]+)`, 'g');
+    const re = new RegExp(`${NB}${escapeRegExp(ns.local)}\\s*\\.\\s*([\\w$]+)`, 'g');
     for (const m of bare.matchAll(re)) nsUses.push({ ns: ns.local, spec: ns.spec, name: m[1], line: line(m.index) });
   }
   return { imports, exports: exportNames, starFrom, namespaces, nsUses };

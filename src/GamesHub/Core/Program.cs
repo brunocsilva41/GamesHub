@@ -115,7 +115,9 @@ namespace GamesHub
             {
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is DllNotFoundException || ex is EntryPointNotFoundException || ex is BadImageFormatException
+                                       || ex is System.IO.IOException || ex is System.Runtime.InteropServices.ExternalException
+                                       || ex is InvalidOperationException || ex is UnauthorizedAccessException)
             {
                 // e.g. WebView2Loader.dll missing: let initialization report the real error later.
                 Log.Warn("WebView2 runtime probe failed", ex);

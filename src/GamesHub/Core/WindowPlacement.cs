@@ -43,7 +43,8 @@ namespace GamesHub
                     ["maximized"] = p.Maximized, ["trayHintShown"] = p.TrayHintShown,
                 });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
+                                       || ex is NotSupportedException || ex is ArgumentException || ex is InvalidOperationException)
             {
                 Log.Warn("Could not save window.json", ex);
             }

@@ -77,14 +77,10 @@ namespace GamesHub
             List<string> all = titles?.Where(t => !string.IsNullOrEmpty(t)).Distinct().ToList() ?? new List<string>();
             if (all.Count == 0) return null;
             List<string> variants = QueryVariants(name);
-            foreach (string q in variants)
+            string exact = variants.Select(q => all.FirstOrDefault(t => Normalize(t) == q)).FirstOrDefault(t => t != null);
+            if (exact != null) return exact;
+            foreach (string q in variants.Where(v => v.Split(' ').Length >= 2))
             {
-                string exact = all.FirstOrDefault(t => Normalize(t) == q);
-                if (exact != null) return exact;
-            }
-            foreach (string q in variants)
-            {
-                if (q.Split(' ').Length < 2) continue;
                 List<string> sub = all.Where(t => NormalizeWithoutSubtitle(t) == q).ToList();
                 if (sub.Count == 1) return sub[0];
             }

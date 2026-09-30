@@ -66,7 +66,7 @@ namespace GamesHub
                     return new MetadataParseResult { Status = MetadataParseStatus.NotFound };
                 return new MetadataParseResult { Status = MetadataParseStatus.Ok, Info = Map(appId, data) };
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsJson(ex))
             {
                 Log.Warn("Metadata: invalid store JSON for app " + appId, ex);
                 return new MetadataParseResult { Status = MetadataParseStatus.Invalid };
@@ -103,10 +103,7 @@ namespace GamesHub
             // Generic "PvP" is redundant when a more specific PvP flavour is present.
             if (set.Contains(36) || set.Contains(47)) set.Remove(49);
 
-            var result = new List<string>();
-            foreach (var kv in CategoryMap)
-                if (set.Contains(kv.Key) && !result.Contains(kv.Value)) result.Add(kv.Value);
-            return result;
+            return CategoryMap.Where(kv => set.Contains(kv.Key)).Select(kv => kv.Value).Distinct().ToList();
         }
 
         /// <summary>Strips HTML tags, decodes entities and collapses whitespace.</summary>
@@ -124,10 +121,8 @@ namespace GamesHub
         private static IEnumerable<KeyValuePair<int, string>> Descriptions(IDictionary<string, object> d, string key)
         {
             if (!d.TryGetValue(key, out object v) || !(v is IEnumerable list) || v is string) yield break;
-            foreach (object o in list)
+            foreach (IDictionary<string, object> item in list.OfType<IDictionary<string, object>>())
             {
-                var item = o as IDictionary<string, object>;
-                if (item == null) continue;
                 int.TryParse(Json.Str(item, "id"), out int id);
                 yield return new KeyValuePair<int, string>(id, Json.Str(item, "description").Trim());
             }

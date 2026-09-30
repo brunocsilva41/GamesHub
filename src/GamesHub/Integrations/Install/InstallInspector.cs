@@ -45,7 +45,7 @@ namespace GamesHub
             var list = new List<DriveSpace>();
             DriveInfo[] drives;
             try { drives = DriveInfo.GetDrives(); }
-            catch (Exception ex) { Log.Warn("InstallInspector: GetDrives failed", ex); return list; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("InstallInspector: GetDrives failed", ex); return list; }
             foreach (DriveInfo d in drives)
             {
                 try
@@ -54,7 +54,7 @@ namespace GamesHub
                     if (!d.IsReady) continue;
                     list.Add(new DriveSpace { Name = d.Name, Label = d.VolumeLabel ?? "", TotalBytes = d.TotalSize, FreeBytes = d.AvailableFreeSpace });
                 }
-                catch (Exception ex) { Log.Warn("InstallInspector: drive " + d.Name + " unreadable", ex); }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("InstallInspector: drive " + d.Name + " unreadable", ex); }
             }
             return list;
         }
@@ -76,7 +76,10 @@ namespace GamesHub
                 if (e != null)
                     return new UninstallInfo { Method = "registry", Command = e.UninstallString, DisplayName = e.DisplayName };
             }
-            catch (Exception ex) { Log.Warn("InstallInspector: FindUninstaller failed for " + game.Id, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex) || ExpectedErrors.IsRegistry(ex))
+            {
+                Log.Warn("InstallInspector: FindUninstaller failed for " + game.Id, ex);
+            }
             return new UninstallInfo();
         }
 
@@ -85,7 +88,8 @@ namespace GamesHub
             string id = (g.SteamAppId ?? "").Trim();
             if (g.Source == "steam")
             {
-                if (id.Length == 0 && (g.Id ?? "").StartsWith("steam:")) id = g.Id.Substring(6);
+                string gameId = g.Id ?? "";
+                if (id.Length == 0 && gameId.StartsWith("steam:")) id = gameId.Substring(6);
                 return IsDigits(id) ? id : "";
             }
             return string.Equals(g.Platform, "Steam", StringComparison.OrdinalIgnoreCase) && IsDigits(id) ? id : "";
@@ -161,7 +165,7 @@ namespace GamesHub
             {
                 return OpResult.Fail("A desinstalação foi cancelada.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsProcess(ex) || ExpectedErrors.IsFileSystem(ex))
             {
                 Log.Warn("InstallInspector: RunUninstaller failed (" + info.Method + ": " + info.Command + ")", ex);
                 return OpResult.Fail("Não foi possível iniciar o desinstalador: " + ex.Message);

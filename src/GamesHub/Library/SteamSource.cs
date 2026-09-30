@@ -27,7 +27,7 @@ namespace GamesHub
                 using (RegistryKey k = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Valve\Steam", false))
                     return (k?.GetValue("InstallPath") as string) ?? "";
             }
-            catch (Exception ex) { Log.Warn("Cannot read Steam path from registry", ex); return ""; }
+            catch (Exception ex) when (ExpectedErrors.IsRegistry(ex)) { Log.Warn("Cannot read Steam path from registry", ex); return ""; }
         }
 
         /// <summary>Library folders (including the Steam folder itself), deduplicated, existing only.</summary>
@@ -36,12 +36,12 @@ namespace GamesHub
             var result = new List<string>();
             if (string.IsNullOrEmpty(steamPath)) return result;
             result.Add(steamPath);
-            foreach (string vdf in new[] { Path.Combine(steamPath, "steamapps", "libraryfolders.vdf"), Path.Combine(steamPath, "config", "libraryfolders.vdf") })
+            string vdf = new[] { Path.Combine(steamPath, "steamapps", "libraryfolders.vdf"), Path.Combine(steamPath, "config", "libraryfolders.vdf") }
+                .FirstOrDefault(File.Exists);
+            if (vdf != null)
             {
-                if (!File.Exists(vdf)) continue;
                 try { result.AddRange(ParseLibraryFolders(File.ReadAllText(vdf))); }
-                catch (Exception ex) { Log.Warn("Cannot read " + vdf, ex); }
-                break;
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Cannot read " + vdf, ex); }
             }
             return result.Select(GameRules.NormalizeDir).Where(d => d.Length > 0 && Directory.Exists(Path.Combine(d, "steamapps")))
                          .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -54,9 +54,8 @@ namespace GamesHub
             VdfNode root = VdfParser.Parse(vdfText);
             VdfNode lf = root.Node("libraryfolders") ?? root.Node("LibraryFolders");
             if (lf == null) return list;
-            foreach (string key in lf.Keys)
+            foreach (string key in lf.Keys.Where(k => Regex.IsMatch(k, @"^\d+$")))
             {
-                if (!Regex.IsMatch(key, @"^\d+$")) continue;
                 object v = lf.Items[key];
                 string path = v is VdfNode n ? n.Str("path") : v as string;
                 if (!string.IsNullOrEmpty(path)) list.Add(path);
@@ -74,7 +73,7 @@ namespace GamesHub
                 string apps = Path.Combine(lib, "steamapps");
                 IEnumerable<string> files;
                 try { files = Directory.EnumerateFiles(apps, "appmanifest_*.acf").ToList(); }
-                catch (Exception ex) { Log.Warn("Cannot list " + apps, ex); continue; }
+                catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Cannot list " + apps, ex); continue; }
                 foreach (string acf in files)
                 {
                     try
@@ -82,7 +81,7 @@ namespace GamesHub
                         Game g = ParseAppManifest(File.ReadAllText(acf), lib);
                         if (g != null && seen.Add(g.SteamAppId)) games.Add(g);
                     }
-                    catch (Exception ex) { Log.Warn("Cannot read " + acf, ex); }
+                    catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Cannot read " + acf, ex); }
                 }
             }
             return games;
@@ -106,7 +105,9 @@ namespace GamesHub
                 Platform = "Steam",
                 LaunchTarget = "steam://rungameid/" + appId,
                 SteamAppId = appId,
-                InstallDir = installDir.Length > 0 ? Path.Combine(libraryPath, "steamapps", "common", installDir) : "",
+                // installdir comes from the manifest: it must name a folder inside steamapps\common.
+                InstallDir = installDir.Length > 0
+                    ? SafePath.Combine(Path.Combine(libraryPath, "steamapps", "common"), installDir) ?? "" : "",
             };
         }
 

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace GamesHub
@@ -42,10 +43,11 @@ namespace GamesHub
                         Game g = ReadProduct(dir, client);
                         if (g != null && seen.Add(g.Id)) games.Add(g);
                     }
+                    // Resilience boundary: per-product parse of untrusted third-party Riot files; one bad product must not stop the scan.
                     catch (Exception ex) { Log.Warn("RiotSource: failed reading " + dir, ex); }
                 }
             }
-            catch (Exception ex) { Log.Warn("RiotSource: scan failed", ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("RiotSource: scan failed", ex); }
             return games;
         }
 
@@ -90,7 +92,7 @@ namespace GamesHub
                 var d = Json.DeserializeObject(File.ReadAllText(installsJson, Encoding.UTF8)) as IDictionary<string, object>;
                 list.AddRange(ParseClientPaths(d));
             }
-            catch (Exception ex) { Log.Warn("RiotSource: cannot read " + installsJson, ex); }
+            catch (Exception ex) when (ExpectedErrors.IsFileOrJson(ex)) { Log.Warn("RiotSource: cannot read " + installsJson, ex); }
             return list;
         }
 
@@ -101,10 +103,8 @@ namespace GamesHub
             void Add(string p) { p = RiotCatalog.NormalizePath(p); if (p != "" && !list.Contains(p)) list.Add(p); }
             Add(Json.Str(d, "rc_live"));
             Add(Json.Str(d, "rc_default"));
-            foreach (string section in new[] { "patchlines", "associated_client" })
+            foreach (var m in new[] { "patchlines", "associated_client" }.Select(section => Json.Obj(d, section)).Where(m => m != null))
             {
-                var m = Json.Obj(d, section);
-                if (m == null) continue;
                 foreach (var kv in m) Add(Convert.ToString(kv.Value));
             }
             return list;
@@ -119,7 +119,7 @@ namespace GamesHub
         private static DateTime SafeCreationTime(string file)
         {
             try { return File.GetCreationTime(file); }
-            catch (Exception ex) { Log.Warn("RiotSource: no creation time for " + file, ex); return DateTime.Now; }
+            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("RiotSource: no creation time for " + file, ex); return DateTime.Now; }
         }
     }
 }

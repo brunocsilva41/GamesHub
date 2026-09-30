@@ -48,9 +48,8 @@ namespace GamesHub
             foreach (Game f in folder)
             {
                 string epicName = GameRules.ExtractEpicAppName(f.LaunchTarget);
-                foreach (Game i in imported)
+                foreach (Game i in imported.Where(x => !dropped.Contains(x) && IsSameGame(f, x, epicName)))
                 {
-                    if (dropped.Contains(i) || !IsSameGame(f, i, epicName)) continue;
                     dropped.Add(i);
                     if (f.InstallDir.Length == 0) f.InstallDir = i.InstallDir;
                     if (f.Exe.Length == 0) f.Exe = i.Exe;
@@ -59,8 +58,11 @@ namespace GamesHub
             }
             var result = new List<Game>(folder);
             var ids = new HashSet<string>(folder.Select(g => g.Id), StringComparer.OrdinalIgnoreCase);
-            foreach (Game i in imported)
-                if (!dropped.Contains(i) && ids.Add(i.Id)) result.Add(i);
+            foreach (Game i in imported.Where(x => !dropped.Contains(x) && !ids.Contains(x.Id)))
+            {
+                ids.Add(i.Id);
+                result.Add(i);
+            }
             return result;
         }
 

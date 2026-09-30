@@ -60,7 +60,7 @@ $forbidden = @(
     @{ Name = 'generic secret assignment'; Rx = '(?i)\b(api[_-]?key|secret|token|password|passwd)\b\s*[:=]\s*["''][A-Za-z0-9_\-]{24,}["'']' },
     @{ Name = 'bearer credential';      Rx = '(?i)bearer\s+[a-f0-9]{32}\b' },
     # Fixture profile names used by tests/mocks are fine; anything else looks like a real profile.
-    @{ Name = 'personal Windows path';  Rx = '(?i)\b[A-Z]:\\+Users\\+(?!(Public|Default|User|Users|Usuario|Usuário|Test|Tester|Example|Me|Someone|Alice|Bob|Demo|Jogador|Player|x|y|u|<[^>]+>|%[^%]+%|\$|\{)(\\|"|''|$))[^\\\s"''`<>]+' },
+    @{ Name = 'personal Windows path';  Rx = '(?i)\b[A-Z]:\\+Users\\+(?!(Public|Default|User|Users|Usuario|Usuário|Test|Tester|Example|Me|Someone|Alice|Bob|Demo|Jogador|Player|x|y|u|\.\.|<[^>]+>|%[^%]+%|\$|\{)(\\|"|''|$))[^\\\s"''`<>]+' },
     @{ Name = 'personal email';         Rx = '(?i)\b[A-Z0-9._%+-]+@(gmail|hotmail|outlook|yahoo|bilhon|live|icloud)\.[a-z.]+\b' },
     @{ Name = 'merge conflict marker';  Rx = '^(<<<<<<<|>>>>>>>) ' },
     @{ Name = 'development leftover';   Rx = '(?i)(^|\s)(//|#|/\*)\s*OWNER:|^Owner:|Co-Authored-By:|\bwave[- ]?2\b|\b(CORE|LIB|ART|WEB|DIST|QUICK) agent\b' }

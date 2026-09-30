@@ -110,7 +110,8 @@ namespace GamesHub
             {
                 return _app.Library.AddFromFile(path, Path.GetFileNameWithoutExtension(path));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
+                                       || ex is ArgumentException || ex is NotSupportedException || ex is InvalidOperationException)
             {
                 Log.Error("AddFromFile failed: " + path, ex);
                 return OpResult.Fail("Não foi possível adicionar " + Path.GetFileName(path) + ".");

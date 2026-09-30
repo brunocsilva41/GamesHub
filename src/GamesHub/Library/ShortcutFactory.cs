@@ -82,7 +82,7 @@ namespace GamesHub
                 using (var reader = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                     return ParseAppDetailsName(reader.ReadToEnd(), appId);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedErrors.IsNetwork(ex) || ExpectedErrors.IsJson(ex))
             {
                 Log.Warn("Steam appdetails failed for " + appId, ex);
                 return "";

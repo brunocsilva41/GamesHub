@@ -76,7 +76,7 @@ namespace GamesHub
             {
                 json = Json.Serialize(message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
             {
                 Log.Error("Bridge: could not serialize message", ex);
                 return;
@@ -132,7 +132,8 @@ namespace GamesHub
                 msg = Json.DeserializeObject(e.WebMessageAsJson) as IDictionary<string, object>;
                 files = DroppedFiles(e); // only valid during this event
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException
+                                       || ex is System.Runtime.InteropServices.COMException)
             {
                 Log.Warn("Bridge: malformed message", ex);
                 return;
@@ -150,12 +151,9 @@ namespace GamesHub
 
         private static List<string> DroppedFiles(CoreWebView2WebMessageReceivedEventArgs e)
         {
-            var paths = new List<string>();
             IReadOnlyList<object> objects = e.AdditionalObjects;
-            if (objects == null) return paths;
-            foreach (object o in objects)
-                if (o is CoreWebView2File f && !string.IsNullOrEmpty(f.Path)) paths.Add(f.Path);
-            return paths;
+            if (objects == null) return new List<string>();
+            return objects.OfType<CoreWebView2File>().Select(f => f.Path).Where(p => !string.IsNullOrEmpty(p)).ToList();
         }
 
         /// <summary>Runs a command and replies exactly once. Continuations resume on the UI thread.</summary>
@@ -170,6 +168,7 @@ namespace GamesHub
             {
                 result = BridgeResult.Fail(ex.Message);
             }
+            // Resilience boundary: bridge command dispatcher (async void); every command must get exactly one reply.
             catch (Exception ex)
             {
                 Log.Error("Bridge: command '" + name + "' failed", ex);

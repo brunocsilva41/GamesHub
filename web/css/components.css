@@ -418,3 +418,39 @@ body.pad-active .toasts { bottom: 64px; }
 /* Hero with only an icon: color wash from the blurred icon + the crisp icon above the title. */
 .hero.bg-icon .hero-img { object-fit: contain; object-position: 75% 50%; filter: blur(70px) saturate(1.9) brightness(0.75); transform: scale(1.6); }
 .hero-logo.is-icon { max-height: 88px; max-width: 88px; margin-bottom: var(--sp-3); border-radius: var(--r-md); }
+
+/* ---------------------------------------------------------------- custom horizontal scroll (hscroll.js) */
+.hscroll { position: relative; }
+.hscroll-view { scrollbar-width: none; }
+.hscroll-view::-webkit-scrollbar { display: none; }
+/* Edge fades: only on the side that still has content to reveal. */
+.hscroll.fade-start .hscroll-view { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 56px); mask-image: linear-gradient(90deg, transparent 0, #000 56px); }
+.hscroll.fade-end .hscroll-view { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent 100%); mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent 100%); }
+.hscroll.fade-start.fade-end .hscroll-view {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 56px, #000 calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 56px, #000 calc(100% - 56px), transparent 100%);
+}
+.hscroll-track {
+  position: relative; height: 6px; margin-top: var(--sp-2); border-radius: 999px; background: var(--surface-2);
+  opacity: 0; transition: opacity var(--dur); cursor: pointer;
+}
+.hscroll.has-overflow .hscroll-track { opacity: 0.55; }
+.hscroll.has-overflow:hover .hscroll-track, .hscroll.has-overflow:focus-within .hscroll-track, .hscroll.dragging .hscroll-track { opacity: 1; }
+.hscroll-thumb {
+  position: absolute; left: 0; top: 0; height: 100%; min-width: 32px; border-radius: inherit;
+  background: linear-gradient(90deg, #7c5cff, #22d3ee); cursor: grab; touch-action: none;
+  transition: filter var(--dur-fast);
+}
+.hscroll-thumb:hover { filter: brightness(1.15); }
+.hscroll.dragging .hscroll-thumb { cursor: grabbing; filter: brightness(1.2); }
+.hscroll-nav { display: flex; gap: var(--sp-2); }
+.hscroll-btn {
+  width: 30px; height: 30px; display: grid; place-items: center; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--text-2);
+  transition: background var(--dur-fast), color var(--dur-fast), opacity var(--dur-fast);
+}
+.hscroll-btn:hover:not(:disabled) { background: var(--surface-3, var(--surface-2)); color: var(--text); border-color: var(--line-3, var(--line)); }
+.hscroll-btn:disabled { opacity: 0.35; cursor: default; }
+.hscroll-btn .ico { width: 16px; height: 16px; }
+.hscroll-nav-overlay { position: absolute; inset: 0 0 auto; height: 0; justify-content: space-between; pointer-events: none; }
+.hscroll-nav-overlay .hscroll-btn { pointer-events: auto; transform: translateY(60px); }

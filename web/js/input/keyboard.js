@@ -10,11 +10,16 @@ import { focusedGameId } from '../focus.js';
 import { openAddGame } from '../views/addgame.js';
 import * as C from './commands.js';
 import * as A from '../actions.js';
+import { padActedRecently } from './gamepad.js';
 
 const ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+// Keys that Steam Input (and similar tools) synthesize from controller buttons.
+const PAD_ECHO_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape', ' ', 'Tab', 'Backspace']);
 
 export function initKeyboard(onUserInput) {
   document.addEventListener('keydown', (e) => {
+    // The same controller press already acted through the Gamepad API: drop its keyboard echo.
+    if (PAD_ECHO_KEYS.has(e.key) && padActedRecently()) { e.preventDefault(); return; }
     onUserInput?.();
     const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key;

@@ -5,6 +5,21 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- Controle com botões trocados (X agindo como Y, B como LT…) quando o Windows expõe o mesmo controle duas vezes
+  (XInput e dispositivo genérico, comum com Steam Input e drivers): só controles com mapeamento padrão são usados.
+- Com o Steam aberto, cada botão do controle contava duas vezes (o Steam também o converte em teclas).
+- No modo janela, o controle parava de responder depois de Alt+Tab ou de redimensionar a janela.
+- Navegação pelo controle e pelas setas reorganizada por áreas (barra lateral, destaque, "Continuar jogando",
+  filtros e grade), lembrando o último item de cada área e sem pular para cards escondidos do carrossel.
+- A barra de busca ficava com contorno quadrado ao receber foco; agora é arredondada.
+
+### Adicionado
+
+- Barra de rolagem personalizada no carrossel "Continuar jogando", com botões ◀ ▶, arrasto, bordas esmaecidas e
+  rolagem pela roda do mouse.
+
 ## [2.0.0] - 2026-09-29
 
 Primeira versão pública. Reescrita completa do GamesHub (antigo "GamesLounge"): novo app, nova interface e novo

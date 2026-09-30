@@ -6,6 +6,7 @@ import { createCard, updateCard, createRow, updateRow } from '../components/card
 import { reconcile } from '../components/reconcile.js';
 import { createHero, updateHero, playButtonHtml } from '../components/hero.js';
 import { bindGameEvents } from '../components/cardevents.js';
+import { enhanceHScroll } from '../components/hscroll.js';
 import { icon } from '../components/icons.js';
 import { esc, plural } from '../util.js';
 import { renderLibraryState } from './states.js';
@@ -68,6 +69,7 @@ export function initLibrary(root) {
 
   bindGameEvents(gamesEl);
   bindGameEvents(shelfRow);
+  enhanceHScroll(shelfRow, { controls: shelf.querySelector('.section-head'), label: 'jogos recentes' });
   hero.addEventListener('click', (e) => {
     const b = e.target.closest('[data-hero]');
     if (!b) return;

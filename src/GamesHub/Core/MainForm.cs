@@ -188,6 +188,21 @@ namespace GamesHub
         public bool IsForeground => Visible && WindowState != FormWindowState.Minimized
                                     && CoreNative.GetForegroundWindow() == Handle;
 
+        /// <summary>Whenever the window becomes active (Alt+Tab, click on the resize border or the taskbar), the
+        /// page gets keyboard focus: the UI's keyboard and gamepad input only work while the WebView is focused.</summary>
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            if (_web.CoreWebView2 != null && !_web.ContainsFocus) _web.Focus();
+        }
+
+        /// <summary>After dragging the resize border or moving the window, focus returns to the page.</summary>
+        protected override void OnResizeEnd(EventArgs e)
+        {
+            base.OnResizeEnd(e);
+            if (_web.CoreWebView2 != null && !_web.ContainsFocus) _web.Focus();
+        }
+
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);

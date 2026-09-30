@@ -22,9 +22,10 @@ namespace GamesHub
             {
                 foreach (string k in new[] { g.Exe, g.LaunchTarget, g.Ext == ".exe" ? g.FilePath : "" }
                              .Where(x => !string.IsNullOrWhiteSpace(x) && x.Trim().Trim('"').EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                             .Select(DiscoveryRoots.Key))
+                             .Select(DiscoveryRoots.Key)
+                             .Where(key => key.Length > 0 && _exes.Add(key)))
                 {
-                    if (k.Length > 0 && _exes.Add(k)) _exeKeys.Add(k);
+                    _exeKeys.Add(k);
                 }
                 string dir = DiscoveryRoots.Key(g.InstallDir);
                 if (dir.Length > 0) _dirs.Add(dir);

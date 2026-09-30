@@ -5,6 +5,8 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.0.1] - 2026-09-30
+
 ### Corrigido
 
 - Controle com botões trocados (X agindo como Y, B como LT…) quando o Windows expõe o mesmo controle duas vezes
@@ -112,5 +114,6 @@ Versão original ("GamesLounge"), anterior a este repositório.
 - Grade de jogos a partir dos atalhos da pasta de jogos, capas da Steam, registro simples de jogadas e ícone na
   bandeja.
 
-[Não lançado]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.0...HEAD
+[Não lançado]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/brunocsilva41/GamesHub/releases/tag/v2.0.0

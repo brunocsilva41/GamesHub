@@ -5,6 +5,12 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- Controles genéricos no modo Android/D-input (por exemplo ShanWan, que aparecem como "Android Gamepad") tinham os
+  botões embaralhados: X favoritava, RT abria a tela cheia e Start não funcionava. Agora esses controles são
+  traduzidos para o layout padrão, incluindo o direcional digital.
+
 ## [2.0.1] - 2026-09-30
 
 ### Corrigido

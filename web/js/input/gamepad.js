@@ -11,6 +11,7 @@
 import { store } from '../store.js';
 import { getBridge } from '../actions.js';
 import * as C from './commands.js';
+import { normalizePad } from './padmap.js';
 
 const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, VIEW: 8, START: 9, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 };
 const REPEAT_DELAY = 380, REPEAT_RATE = 110, STICK = 0.55, TRIGGER = 0.5, DEDUPE_MS = 220;
@@ -66,11 +67,13 @@ export function initGamepad() {
   function frame(now) {
     raf = 0;
     if (document.hidden) return;
-    const pads = usablePads(Array.from(navigator.getGamepads()));
-    if (!pads.length) { primed = false; setActive(false); return; }
+    const raw = usablePads(Array.from(navigator.getGamepads()));
+    if (!raw.length) { primed = false; setActive(false); return; }
     let dir = null;
     const down = new Map(); // "pad:button" -> button index (per pad: two real controllers don't merge presses)
-    for (const pad of pads) {
+    for (const r of raw) {
+      if (r.mapping !== 'standard') logRawPresses(r);
+      const pad = normalizePad(r); // generic/Android/DirectInput controllers → standard button order
       pad.buttons.forEach((btn, i) => { if (isDown(btn)) down.set(`${pad.index}:${i}`, i); });
       dir = dir || direction(pad);
     }
@@ -102,11 +105,24 @@ export function initGamepad() {
     if (!raf && !document.hidden && connected()) raf = requestAnimationFrame(frame);
   }
 
+  // Diagnostics for non-standard controllers: each raw button number is logged once with what it became,
+  // so a wrong layout can be fixed from a user's log.
+  const seenRaw = new Set();
+  function logRawPresses(r) {
+    const layout = normalizePad(r).layout;
+    r.buttons.forEach((b, i) => {
+      const key = `${r.id}:${i}`;
+      if (!b?.pressed || seenRaw.has(key)) return;
+      seenRaw.add(key);
+      try { getBridge().call('log', { level: 'info', msg: `gamepad raw: "${r.id}" layout=${layout} button ${i} pressed` }).catch(() => {}); } catch { /* bridge not ready */ }
+    });
+  }
+
   /** Writes which controllers Windows exposes to the app log (diagnoses duplicated/remapped pads). */
   function logPads(reason) {
     const all = Array.from(navigator.getGamepads()).filter(Boolean);
     const used = new Set(usablePads(all).map((p) => p.index));
-    const text = all.map((p) => `#${p.index} "${p.id}" mapping=${p.mapping || 'none'} buttons=${p.buttons.length}${used.has(p.index) ? ' [used]' : ' [ignored]'}`).join(' | ');
+    const text = all.map((p) => `#${p.index} "${p.id}" mapping=${p.mapping || 'none'} buttons=${p.buttons.length} axes=${p.axes.length} layout=${normalizePad(p).layout}${used.has(p.index) ? ' [used]' : ' [ignored]'}`).join(' | ');
     try { getBridge().call('log', { level: 'info', msg: `gamepad ${reason}: ${text || 'none'}` }).catch(() => {}); } catch { /* bridge not ready */ }
   }
 

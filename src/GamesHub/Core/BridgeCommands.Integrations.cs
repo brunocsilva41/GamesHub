@@ -49,7 +49,58 @@ namespace GamesHub
                 case "setVariantLabel": return Lib(() => Cat.Variants.SetLabel(RequireString(args, "id"), Json.Str(args, "label")));
                 case "setVariantPrimary": return Lib(() => Cat.Variants.SetPrimary(RequireString(args, "groupId"), RequireString(args, "primaryId")));
                 case "dismissVariants": return Lib(() => Cat.Variants.DismissSuggestion(StringList(args, "ids")));
+
+                case "discoverGames": return DiscoverGames();
+                case "addDiscovered": return AddDiscovered(args);
                 default: return null;
+            }
+        }
+
+        // ------------------------------------------------------------------ discovery (Integrations/Discovery)
+
+        /// <summary>Executables the page may add via addDiscovered: only those returned by the last discoverGames.</summary>
+        private readonly DiscoverySession _discovered = new DiscoverySession();
+        private int _discovering;
+
+        private async Task<BridgeResult> DiscoverGames()
+        {
+            if (System.Threading.Interlocked.Exchange(ref _discovering, 1) == 1)
+                return BridgeResult.Fail("Uma busca já está em andamento.");
+            try
+            {
+                var progress = new CallbackProgress<string>(text => Emit("discoverProgress", Wrap("text", text)));
+                List<DiscoveredGame> found = await new GameDiscovery()
+                    .DiscoverAsync(Cat.Library.GetGames(), System.Threading.CancellationToken.None, progress);
+                _discovered.Remember(found);
+                return BridgeResult.Success(Wrap("candidates", Camel(found)));
+            }
+            finally
+            {
+                System.Threading.Interlocked.Exchange(ref _discovering, 0);
+            }
+        }
+
+        private async Task<BridgeResult> AddDiscovered(IDictionary<string, object> args)
+        {
+            args.TryGetValue("items", out object items);
+            List<DiscoverySession.Item> list = _discovered.Validate(items);
+            if (list.Count == 0) return BridgeResult.Fail("Nenhum jogo selecionado.");
+            List<OpResult> results = await Task.Run(() => list.Select(AddDiscoveredOne).ToList());
+            return BridgeResult.Success(Wrap("results", results.Select(BridgeDto.OpResultEntry).ToList()));
+        }
+
+        private OpResult AddDiscoveredOne(DiscoverySession.Item item)
+        {
+            if (item.Error != null) return OpResult.Fail(item.Error);
+            try
+            {
+                return _app.Library.AddFromFile(item.Exe, item.Name);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException
+                                       || ex is ArgumentException || ex is NotSupportedException || ex is InvalidOperationException)
+            {
+                Log.Error("AddDiscovered failed: " + item.Exe, ex);
+                return OpResult.Fail("Não foi possível adicionar " + item.Name + ".");
             }
         }
 

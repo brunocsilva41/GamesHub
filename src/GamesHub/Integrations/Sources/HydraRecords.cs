@@ -63,26 +63,8 @@ namespace GamesHub
         }
 
         /// <summary>Game root from its exe. Unreal "…\&lt;Game&gt;\&lt;Project&gt;\Binaries\Win64\x.exe" → "…\&lt;Game&gt;".
-        /// Never returns a drive root ("" instead).</summary>
-        public static string InstallDirFromExe(string exe)
-        {
-            try
-            {
-                string dir = Path.GetDirectoryName(exe) ?? "";
-                string leaf = Path.GetFileName(dir);
-                string parent = Path.GetDirectoryName(dir) ?? "";
-                if ((leaf.Equals("Win64", StringComparison.OrdinalIgnoreCase) || leaf.Equals("Win32", StringComparison.OrdinalIgnoreCase))
-                    && Path.GetFileName(parent).Equals("Binaries", StringComparison.OrdinalIgnoreCase))
-                {
-                    string project = Path.GetDirectoryName(parent) ?? "";          // <Project>
-                    string root = Path.GetDirectoryName(project) ?? "";            // <Game>
-                    if (root != "" && Path.GetPathRoot(root) != root) dir = root;
-                    else if (project != "") dir = project;
-                }
-                return dir == "" || Path.GetPathRoot(dir) == dir ? "" : dir;
-            }
-            catch (Exception ex) when (ExpectedErrors.IsFileSystem(ex)) { Log.Warn("Hydra: bad executable path " + exe, ex); return ""; }
-        }
+        /// Never returns a drive root or a library folder ("" instead). See <see cref="GameRootResolver"/>.</summary>
+        public static string InstallDirFromExe(string exe) => GameRootResolver.Resolve(exe);
 
         private static bool IsLocalPath(string p)
             => p.Length > 2 && ((char.IsLetter(p[0]) && p[1] == ':') || p.StartsWith(@"\\")) && p.IndexOfAny(Path.GetInvalidPathChars()) < 0;

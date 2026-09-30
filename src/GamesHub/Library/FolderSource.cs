@@ -76,8 +76,9 @@ namespace GamesHub
             return info;
         }
 
-        /// <summary>Pure: builds the folder Game for a file and its parsed shortcut data.</summary>
-        public static Game BuildGame(string filePath, ShortcutInfo info, string gamesDir)
+        /// <summary>Builds the folder Game for a file and its parsed shortcut data. Only the install-root detection
+        /// looks at the disk (through <paramref name="probe"/>; default: the real disk).</summary>
+        public static Game BuildGame(string filePath, ShortcutInfo info, string gamesDir, IGameRootProbe probe = null)
         {
             string fileName = Path.GetFileName(filePath);
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
@@ -99,16 +100,10 @@ namespace GamesHub
             if (target.Length > 0 && !GameRules.IsLauncherExe(target) && g.Platform != "Steam" && !GameRules.IsUri(target))
             {
                 if (target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) g.Exe = target;
-                string dir = SafeDir(target);
-                if (!GameRules.IsGenericDir(dir, gamesDir)) g.InstallDir = GameRules.NormalizeDir(dir);
+                // The target often sits deep inside the install (Unreal Binaries\Win64, bin\x64...): use the game root.
+                g.InstallDir = GameRootResolver.Resolve(target, null, gamesDir, probe);
             }
             return g;
-        }
-
-        private static string SafeDir(string path)
-        {
-            try { return Path.GetDirectoryName(path) ?? ""; }
-            catch (ArgumentException ex) { Log.Warn("Bad path in shortcut: " + path, ex); return ""; }
         }
 
         private static readonly Dictionary<string, string> RiotProducts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

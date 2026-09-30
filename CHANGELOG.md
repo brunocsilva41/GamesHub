@@ -11,6 +11,18 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
   maior para o menor, com o tamanho em GB e a porcentagem do disco, e a barra da unidade separa jogos, outros
   arquivos e espaço livre. Jogos que compartilham a mesma pasta (como um jogo e seu launcher de mods) são contados
   uma vez só; clicar num jogo abre os detalhes.
+- **Encontrar jogos no PC** (Adicionar jogo): busca jogos instalados fora da Steam, Epic, Riot e Hydra — pelas
+  marcas de motor (Unity, Unreal, Godot…), de loja (GOG, Xbox, Ubisoft) e pelos programas instalados no Windows —
+  e mostra cada candidato com o nível de confiança para você escolher o que adicionar.
+- **Abrir launchers minimizados** (Configurações › Fontes e dados, ligado por padrão): a Steam inicia só na bandeja
+  quando um jogo dela é aberto, e janelas da Steam, Epic, Riot, Battle.net, EA, Ubisoft, GOG e Hydra que surgem ao
+  abrir o jogo são minimizadas.
+
+### Corrigido
+
+- O tamanho e o disco dos jogos adicionados por atalho ou executável agora usam a **pasta raiz da instalação**
+  (detectada por desinstalador, marcas de loja, estrutura Unity/Unreal etc.), e não a subpasta do executável
+  (como `Binaries\Win64`).
 
 ## [2.0.2] - 2026-09-30
 

@@ -325,7 +325,10 @@ namespace GamesHub
                     Log.Warn("Automation (before) failed: " + g.Id, ex);
                 }
             }
-            return Library.Launch(target);
+            if (Settings.MinimizeLaunchers) await LauncherQuiet.PrepareAsync(g).ConfigureAwait(false);
+            OpResult result = Library.Launch(target);
+            if (result != null && result.Ok && Settings.MinimizeLaunchers) LauncherQuiet.MinimizeLauncherWindowsSoon();
+            return result;
         }
 
         private void OnRunningChanged(string id, bool running)

@@ -51,7 +51,9 @@ namespace GamesHub
                 foreach (Game i in imported.Where(x => !dropped.Contains(x) && IsSameGame(f, x, epicName)))
                 {
                     dropped.Add(i);
-                    if (f.InstallDir.Length == 0) f.InstallDir = i.InstallDir;
+                    // The imported install dir also wins when the folder entry only knows a sub-folder of it
+                    // (shortcut to an exe deep inside the install).
+                    if (i.InstallDir.Length > 0 && (f.InstallDir.Length == 0 || IsUnder(f.InstallDir, i.InstallDir))) f.InstallDir = i.InstallDir;
                     if (f.Exe.Length == 0) f.Exe = i.Exe;
                     if (f.SteamAppId.Length == 0) f.SteamAppId = i.SteamAppId;
                 }

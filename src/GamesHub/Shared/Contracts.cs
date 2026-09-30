@@ -153,6 +153,8 @@ namespace GamesHub
         public bool QuickLaunchEnabled = true;
         public string QuickLaunchHotkey = "Ctrl+Shift+Space";
         public bool AutomationEnabled = true;
+        /// <summary>Start Steam silently and minimize launcher windows (Steam, Epic, Riot…) when a game starts.</summary>
+        public bool MinimizeLaunchers = true;
     }
 
     // ------------------------------------------------------------------ services

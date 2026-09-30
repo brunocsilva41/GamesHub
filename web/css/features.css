@@ -157,3 +157,24 @@ gh-hotkey-input { vertical-align: middle; }
   .auto-params { grid-column: 1 / -1; grid-row: 2; }
 }
 .dg-row.is-shared .dg-name { color: var(--text-2); }
+
+/* ---------------------------------------------------------------- encontrar jogos no PC (add game modal) */
+.disc { min-height: 220px; }
+.disc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.disc-actions .btn-primary:last-child { margin-left: auto; }
+.disc-running { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-6) var(--sp-2); }
+.disc-running .spinner { width: 20px; height: 20px; margin: 0; }
+.disc-running div { display: flex; flex-direction: column; gap: 2px; }
+.disc-empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); text-align: center; padding: var(--sp-6) var(--sp-4); }
+.disc-empty .ico { width: 28px; height: 28px; color: var(--text-3); }
+.disc-scroll { display: flex; flex-direction: column; gap: var(--sp-3); max-height: 46vh; overflow-y: auto; padding: 2px; }
+.disc-group { display: flex; flex-direction: column; gap: var(--sp-2); }
+.disc-list { list-style: none; display: flex; flex-direction: column; gap: var(--sp-1); }
+.disc-row { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--bg); border: 1px solid var(--line); }
+.disc-row:focus-within { border-color: var(--accent-line); }
+.disc-row > input[type="checkbox"] { accent-color: var(--violet); width: 16px; height: 16px; flex: none; margin-top: 8px; }
+.disc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.disc-name.input { height: 32px; font-weight: var(--fw-semibold); }
+.disc-meta, .disc-path { font-size: var(--fs-xs); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disc-meta { color: var(--text-2); }
+.disc-conf { flex: none; margin-top: 6px; font-variant-numeric: tabular-nums; }

@@ -10,6 +10,8 @@ const TIMEOUTS = {
   // integrations (network / disk bound)
   getGameInfo: 45000, getPcgw: 45000, getDrives: 20000, cleanupBroken: 60000, automationOptions: 20000,
   uninstallGame: 30000, validateGame: 20000, variantSuggestions: 20000,
+  // game discovery scans the registry and every fixed drive (bounded to ~12 s on the C# side)
+  discoverGames: 90000, addDiscovered: 120000,
 };
 
 export class BridgeError extends Error {

@@ -1,11 +1,14 @@
-// "Adicionar jogo" modal: file drop zone / native picker, and a Steam tab (search -> addSteam).
+// "Adicionar jogo" modal: file drop zone / native picker, a Steam tab (search -> addSteam) and "Encontrar jogos no PC"
+// (discover.js: discoverGames -> addDiscovered).
 import { openModal } from '../components/modal.js';
 import { makeDropTarget } from '../components/dropzone.js';
 import { icon } from '../components/icons.js';
 import { debounce } from '../util.js';
 import { searchSteamInto } from './steamsearch.js';
 import * as A from '../actions.js';
+import { mountDiscover } from './discover.js';
 
+const TABS = ['file', 'steam', 'pc'];
 let open = null;
 
 export function openAddGame(tab = 'file') {
@@ -16,6 +19,7 @@ export function openAddGame(tab = 'file') {
     <div class="tabs" role="tablist" aria-label="Como adicionar">
       <button type="button" class="tab" role="tab" id="tab-file" aria-controls="pane-file" data-tab="file">${icon('file')}Arquivo</button>
       <button type="button" class="tab" role="tab" id="tab-steam" aria-controls="pane-steam" data-tab="steam">${icon('steam')}Steam</button>
+      <button type="button" class="tab" role="tab" id="tab-pc" aria-controls="pane-pc" data-tab="pc">${icon('search')}Encontrar jogos no PC</button>
     </div>
     <div class="tab-pane" role="tabpanel" id="pane-file" aria-labelledby="tab-file">
       <div class="dropzone" tabindex="-1">
@@ -32,7 +36,8 @@ export function openAddGame(tab = 'file') {
         <input class="input" type="search" data-steam-q placeholder="Nome do jogo ou App ID" aria-label="Buscar na Steam" spellcheck="false">
       </div>
       <div class="steam-results steam-results-tall" role="listbox" aria-label="Resultados"><p class="muted">Busque por nome (ex.: “Hollow Knight”) ou App ID (ex.: 367520).</p></div>
-    </div>`;
+    </div>
+    <div class="tab-pane" role="tabpanel" id="pane-pc" aria-labelledby="tab-pc" hidden></div>`;
 
   const results = body.querySelector('.add-results');
   const showResults = (list) => {
@@ -68,23 +73,25 @@ export function openAddGame(tab = 'file') {
     else b.disabled = false;
   });
 
+  let discover = null; // mounted on first visit of the "Encontrar jogos no PC" tab
   function selectTab(name) {
+    if (!TABS.includes(name)) name = 'file';
     for (const t of body.querySelectorAll('[data-tab]')) {
       const on = t.dataset.tab === name;
       t.setAttribute('aria-selected', String(on));
       t.tabIndex = on ? 0 : -1;
     }
-    body.querySelector('#pane-file').hidden = name !== 'file';
-    body.querySelector('#pane-steam').hidden = name !== 'steam';
+    for (const tab of TABS) body.querySelector(`#pane-${tab}`).hidden = name !== tab;
     if (name === 'steam') steamQ.focus();
+    else if (name === 'pc') (discover = discover || mountDiscover(body.querySelector('#pane-pc'))).focus();
     else body.querySelector('[data-add="pick"]').focus();
   }
   body.querySelector('.tabs').addEventListener('click', (e) => { const t = e.target.closest('[data-tab]'); if (t) selectTab(t.dataset.tab); });
   body.querySelector('.tabs').addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
-      const cur = body.querySelector('[data-tab][aria-selected="true"]').dataset.tab;
-      selectTab(cur === 'file' ? 'steam' : 'file');
+      const cur = TABS.indexOf(body.querySelector('[data-tab][aria-selected="true"]').dataset.tab);
+      selectTab(TABS[(cur + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length]);
       body.querySelector('[data-tab][aria-selected="true"]').focus();
     }
   });

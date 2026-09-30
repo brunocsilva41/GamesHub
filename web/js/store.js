@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS = {
   trackPlaytime: true, checkUpdates: true, updateRepo: '', language: 'pt-BR',
   // integrations
   importRiot: true, importHydra: true, importSteamPlaytime: true, fetchMetadata: true, pcgwEnabled: true,
-  quickLaunchEnabled: true, quickLaunchHotkey: 'Ctrl+Shift+Space', automationEnabled: true,
+  quickLaunchEnabled: true, quickLaunchHotkey: 'Ctrl+Shift+Space', automationEnabled: true, minimizeLaunchers: true,
 };
 
 export const LIBRARY_SECTIONS = [

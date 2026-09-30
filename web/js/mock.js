@@ -3,6 +3,7 @@
 import { sampleGames, makeArt, STEAM_CATALOG } from './mock-data.js';
 import { DEFAULT_SETTINGS } from './store.js';
 import { featureCommands } from './mock-features.js';
+import { discoveryCommands } from './mock-discovery.js';
 
 const LATENCY = 60;
 const ok = (message, gameId = null, undoToken = null) => ({ ok: true, data: { message, gameId, undoToken } });
@@ -224,7 +225,8 @@ export function createMockHost() {
     log({ level = 'info', msg }) { (console[level] || console.log)('[ui]', msg); return { ok: true, data: {} }; },
     quit: () => ({ ok: true, data: {} }), openDataFolder: () => ({ ok: true, data: {} }),
   };
-  Object.assign(commands, featureCommands({ games, find, emitGames, event, addUndo, settings, ok, fail, wait }));
+  Object.assign(commands, featureCommands({ games, find, emitGames, event, addUndo, settings, ok, fail, wait }),
+    discoveryCommands({ games, emitGames, event, newGame, fail, wait }));
 
   async function handle(msg, files) {
     if (!msg || msg.type !== 'cmd') return;

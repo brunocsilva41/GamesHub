@@ -22,7 +22,8 @@ export const sourcesGroupHtml = () => group('sources', 'Fontes e dados',
   sw('importHydra', 'Importar jogos do Hydra Launcher', 'Jogos instalados pelo Hydra aparecem na biblioteca.') +
   sw('importSteamPlaytime', 'Importar tempo de jogo da Steam', 'Usa o tempo e a última sessão registrados pela Steam neste PC.') +
   sw('fetchMetadata', 'Buscar informações dos jogos', 'Gêneros, descrição e lançamento vindos da loja da Steam.') +
-  sw('pcgwEnabled', 'Consultar o PCGamingWiki', 'Links de correções e locais de saves e configurações.'));
+  sw('pcgwEnabled', 'Consultar o PCGamingWiki', 'Links de correções e locais de saves e configurações.') +
+  sw('minimizeLaunchers', 'Abrir launchers minimizados', 'Steam inicia só na bandeja e janelas da Steam, Epic, Riot e outros launchers são minimizadas ao abrir um jogo.'));
 
 export const automationGroupHtml = () => group('auto', 'Automação padrão',
   sw('automationEnabled', 'Automação antes e depois de jogar', 'Abre ou fecha programas e ajusta energia, áudio e resolução ao jogar.') +

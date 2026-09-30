@@ -28,6 +28,7 @@ const OP_ENTRY = ['gameId', 'message', 'ok', 'undoToken'];
 const WINDOW = ['fullscreen', 'maximized', 'pinned'];
 const settingsShape = (d) => assert.deepEqual(sortedKeys(d), sortedKeys(DEFAULT_SETTINGS));
 const fieldsOf = (cls) => csFields(CONTRACTS, cls).sort();
+const DISCOVERED = csFields(readRepo('src/GamesHub/Integrations/Discovery/DiscoveredGame.cs'), 'DiscoveredGame').sort();
 
 const PROFILE = { enabled: true, useDefault: false, before: [{ type: 'wait', target: '', args: '', seconds: 3, enabled: true }], after: [] };
 
@@ -93,6 +94,8 @@ const CASES = {
   setVariantLabel: [{ id: 'folder:minecraft.lnk', label: 'Java' }, 'ok', (d) => assert.ok(isOp(d))],
   setVariantPrimary: [{ groupId: 'vg1', primaryId: 'folder:minecraft.lnk' }, 'ok', (d) => assert.ok(isOp(d))],
   dismissVariants: [{ ids: ['a', 'b'] }, 'ok', (d) => assert.ok(isOp(d))],
+  discoverGames: [{}, 'ok', (d) => { assert.ok(d.candidates.length); for (const c of d.candidates) assert.deepEqual(sortedKeys(c), DISCOVERED); }],
+  addDiscovered: [{ items: [] }, 'fail'],
 };
 
 describe('mock covers the bridge contract', () => {

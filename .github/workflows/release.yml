@@ -47,6 +47,7 @@ jobs:
     secrets:
       GAMESHUB_SIGN_PFX_BASE64: ${{ secrets.GAMESHUB_SIGN_PFX_BASE64 }}
       GAMESHUB_SIGN_PFX_PASSWORD: ${{ secrets.GAMESHUB_SIGN_PFX_PASSWORD }}
+      GAMESHUB_SGDB_KEY: ${{ secrets.GAMESHUB_SGDB_KEY }}
 
   publish:
     name: Attest & publish

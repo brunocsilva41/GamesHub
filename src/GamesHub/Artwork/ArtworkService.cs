@@ -40,7 +40,9 @@ namespace GamesHub
             _index = new ArtIndex(Path.Combine(artDir, "index.json"));
             _http = new HttpFetcher();
             _steam = new SteamClient(_http);
-            _sgdb = new SteamGridDbClient(_http, () => _settings.SteamGridDbKey);
+            // The user's own key wins; otherwise the key embedded in this build (if any).
+            _sgdb = new SteamGridDbClient(_http, () =>
+                string.IsNullOrWhiteSpace(_settings.SteamGridDbKey) ? BuildSecrets.SteamGridDbKey : _settings.SteamGridDbKey);
             _retryTimer = new Timer(_ => RetryDeferred(), null, Timeout.Infinite, Timeout.Infinite);
         }
 

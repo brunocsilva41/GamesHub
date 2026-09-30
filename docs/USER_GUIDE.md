@@ -84,10 +84,11 @@ Para jogos fora da Steam, o GamesHub procura o jogo pelo nome. Se ele errar:
 
 - informe o **Steam App ID** correto em **Editar** (há uma busca "Encontrar na Steam" ali mesmo); ou
 - use **0** como Steam App ID para dizer que o jogo **não está na Steam** — ele deixa de ser confundido com jogos da
-  Steam e passa a usar só as artes do SteamGridDB (se configurado) ou o ícone.
+  Steam e passa a usar só as artes do SteamGridDB ou o ícone.
 
-Com uma chave gratuita do **SteamGridDB** (**Configurações → Artes → Chave da SteamGridDB**, link "Obter uma
-chave") o GamesHub também busca artes lá — ótimo para jogos da Riot, Roblox e outros que não estão na Steam.
+O GamesHub também busca artes no **SteamGridDB** automaticamente — ótimo para jogos da Riot, Roblox e outros que
+não estão na Steam. Não precisa configurar nada; se preferir usar a sua própria chave, informe-a em
+**Configurações → Artes → Chave da SteamGridDB**.
 
 Para personalizar: em **Imagens**, na página de detalhes, **arraste uma imagem** sobre o espaço que quer trocar ou
 clique nele e escolha um arquivo. O botão de restaurar de cada espaço volta para a arte automática e **Buscar artes

@@ -33,7 +33,7 @@ export function initSettings(root) {
         sel('language', 'Idioma', '', [['pt-BR', 'Português (Brasil)']]))}
       ${group('art', 'Artes',
         sw('autoArtwork', 'Buscar artes automaticamente', 'Baixa capas, fundos e logotipos da Steam.') +
-        row('Chave da SteamGridDB', 'Opcional. Melhora as artes de jogos fora da Steam. <a href="#" data-link="https://www.steamgriddb.com/profile/preferences/api">Obter uma chave</a>',
+        row('Chave da SteamGridDB', 'Opcional: o GamesHub já inclui uma chave. Use a sua só se preferir. <a href="#" data-link="https://www.steamgriddb.com/profile/preferences/api">Obter uma chave</a>',
           '<span class="input-group input-group-sm"><input class="input input-sm" type="password" data-nav data-text="steamGridDbKey" placeholder="Cole sua chave" autocomplete="off" spellcheck="false">' +
           `<button type="button" class="icon-btn" data-toggle-secret aria-label="Mostrar chave" title="Mostrar chave">${icon('eye')}</button></span>`))}
       ${group('time', 'Tempo de jogo',

@@ -1,0 +1,12 @@
+# Every change needs the maintainer's review (branch protection requires code-owner approval).
+*                         @brunocsilva41
+
+# Sensitive areas, listed explicitly so the rule survives future catch-all changes.
+/.github/                 @brunocsilva41
+/ci/                      @brunocsilva41
+/tools/                   @brunocsilva41
+/build.ps1                @brunocsilva41
+/lib/                     @brunocsilva41
+/assets/manifests/        @brunocsilva41
+/src/Installer/           @brunocsilva41
+/src/GamesHub/Update/     @brunocsilva41

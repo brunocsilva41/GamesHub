@@ -56,9 +56,9 @@ O resultado fica em `%TEMP%\GamesHub\setup-result.txt` (`OK:<pasta>` ou `ERRO:<m
   aparecem sozinhos; **F5** reescaneia na hora.
 - **Adicionar jogos** arrastando um atalho ou executável para a janela, pelo seletor de arquivos (**Ctrl+N**) ou
   buscando na loja da Steam.
-- **Artes em HD** (capa, cabeçalho, fundo, logotipo e ícone) baixadas automaticamente da Steam. Com uma chave
-  **gratuita** do [SteamGridDB](https://www.steamgriddb.com/profile/preferences/api) (opcional), também para jogos
-  fora da Steam, como os da Riot e o Roblox. Qualquer arte pode ser trocada arrastando uma imagem.
+- **Artes em HD** (capa, cabeçalho, fundo, logotipo e ícone) baixadas automaticamente da Steam e do
+  [SteamGridDB](https://www.steamgriddb.com/), inclusive para jogos fora da Steam, como os da Riot e o Roblox — sem
+  nenhuma configuração. Qualquer arte pode ser trocada arrastando uma imagem.
 - **Página de detalhes** com gêneros, descrição, desenvolvedora, data de lançamento e nota do Metacritic (da loja
   da Steam), tempo de jogo, tamanho em disco, aviso de atualização pendente, **Verificar arquivos** (Steam) e
   **Desinstalar** pela plataforma ou pelo desinstalador do Windows.
@@ -102,11 +102,11 @@ O GamesHub não tem conta, telemetria, análise de uso nem anúncios, e todos os
 | Destino | Quando | Como desligar |
 |---|---|---|
 | CDN e loja da Steam (`steamstatic.com`, `store.steampowered.com`, `steamcommunity.com`) | Para baixar artes, identificar jogos fora da Steam pelo nome, buscar na tela "Adicionar" e obter gêneros e descrições (com cache de 30 dias) | Configurações → **Artes** → "Buscar artes automaticamente" e Configurações → **Fontes e dados** → "Buscar informações dos jogos" |
-| SteamGridDB (`steamgriddb.com`) | Só se você informar sua própria chave de API | Apague a chave |
+| SteamGridDB (`steamgriddb.com`) | Para baixar artes de jogos que a Steam não tem (usa a chave do GamesHub ou a sua, se você informar uma) | Configurações → **Artes** → "Buscar artes automaticamente" |
 | PCGamingWiki (`pcgamingwiki.com`) e manifesto Ludusavi (`raw.githubusercontent.com`) | Quando você pede para localizar saves e configurações de um jogo | Configurações → **Fontes e dados** → "Consultar o PCGamingWiki" |
 | GitHub (`api.github.com`, `github.com`) | Ao iniciar, para ver se há versão nova, e ao baixar uma atualização que você aceitou | Configurações → **Atualizações** → "Verificar atualizações ao iniciar" |
 
-As requisições enviam apenas App IDs, nomes de jogos (nas buscas) e, no SteamGridDB, a chave que você forneceu.
+As requisições enviam apenas App IDs, nomes de jogos (nas buscas) e, no SteamGridDB, a chave de API.
 Links que você abre (loja, PCGamingWiki, notas da versão) vão para o seu navegador. Detalhes técnicos em
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#rede-e-privacidade).
 

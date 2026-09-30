@@ -1,0 +1,43 @@
+name: PR security
+
+# Runs on every pull request with the PR's own code but WITHOUT secrets and with a read-only token
+# (`pull_request`, never `pull_request_target`). Re-runs when labels change, so the maintainer's
+# "seguranca-aprovada" label can unblock a reviewed external contribution.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: PR security gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Review the diff for malicious or risky changes
+        shell: pwsh
+        env:
+          # Passed through env (never interpolated into the script) so PR-controlled text cannot inject commands.
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          AUTHOR: ${{ github.event.pull_request.author_association }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: ./ci/security/Test-PullRequest.ps1 -Base $env:BASE_SHA -Head $env:HEAD_SHA -Author $env:AUTHOR -Labels $env:LABELS
+
+      - name: Dependency review (known-vulnerable or disallowed dependencies)
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: low
+          comment-summary-in-pr: never

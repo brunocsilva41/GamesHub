@@ -15,3 +15,6 @@
 /obj/
 *.pdb
 *.tmp
+
+# Local-only secrets (e.g. .local/sgdb.key for builds with the built-in SteamGridDB key)
+/.local/

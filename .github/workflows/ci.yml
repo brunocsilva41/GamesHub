@@ -17,6 +17,8 @@ on:
         required: false
       GAMESHUB_SIGN_PFX_PASSWORD:
         required: false
+      GAMESHUB_SGDB_KEY:
+        required: false
 
 permissions:
   contents: read
@@ -101,6 +103,8 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Strict build, unit tests, reproducibility
+        env:
+          GAMESHUB_SGDB_KEY: ${{ secrets.GAMESHUB_SGDB_KEY }}
         run: ./ci/stages/Build.ps1
 
       - name: Package & verify installer
@@ -108,6 +112,7 @@ jobs:
           GAMESHUB_SIGN_PFX_BASE64: ${{ inputs.release && secrets.GAMESHUB_SIGN_PFX_BASE64 || '' }}
           GAMESHUB_SIGN_PFX_PASSWORD: ${{ inputs.release && secrets.GAMESHUB_SIGN_PFX_PASSWORD || '' }}
           GAMESHUB_REQUIRE_SIGNATURE: ${{ inputs.release && secrets.GAMESHUB_SIGN_PFX_BASE64 != '' && '1' || '0' }}
+          GAMESHUB_SGDB_KEY: ${{ secrets.GAMESHUB_SGDB_KEY }}
         run: ./ci/stages/Package.ps1
 
       - name: Upload installer

@@ -5,6 +5,9 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+Suporte completo a controles genéricos: modelos no estilo Xbox que o Windows reconhece como "Android Gamepad" ou
+DirectInput agora funcionam com todos os botões no lugar certo.
+
 ### Corrigido
 
 - Controles genéricos no modo Android/D-input (por exemplo ShanWan, que aparecem como "Android Gamepad") tinham os
@@ -12,6 +15,9 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
   traduzidos para o layout padrão, incluindo o direcional digital.
 
 ## [2.0.1] - 2026-09-30
+
+Controle mais confiável em janela e em tela cheia, navegação organizada por áreas e uma nova rolagem para o
+carrossel "Continuar jogando".
 
 ### Corrigido
 

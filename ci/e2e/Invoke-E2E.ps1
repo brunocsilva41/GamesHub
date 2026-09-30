@@ -324,8 +324,14 @@ function Invoke-AppSuite([string]$Exe, [string]$GamesDir, [string]$Label) {
             if (-not (Wait-Until { (Read-AppLog $data) -match 'Activation from another instance' } 5000)) { throw "no 'Activation from another instance' in the log" }
             $procs = @(Get-ExeProcesses $Exe)
             if ($procs.Count -ne 1) { throw "$($procs.Count) GamesHub processes for this exe" }
-            $pages = @(Get-DevToolsList $port | Where-Object { $_.type -eq 'page' -and $_.url -eq $MainUrl })
-            if ($pages.Count -ne 1) { throw "$($pages.Count) main windows" }
+            # The activation re-shows the window; on a slow runner the DevTools list can be briefly empty or
+            # mid-update, so poll for a stable answer instead of trusting a single snapshot.
+            $script:count = -1
+            $stable = Wait-Until {
+                $script:count = try { @(Get-DevToolsList $port | Where-Object { $_.type -eq 'page' -and ($_.url -split '[?#]')[0] -eq $MainUrl }).Count } catch { -1 }
+                $script:count -eq 1
+            } 5000 250
+            if (-not $stable) { throw "$script:count main windows (expected exactly 1)" }
             "exit 0 in $([int]($second.ExitTime - $second.StartTime).TotalMilliseconds) ms, activation logged, 1 process, 1 window"
         } | Out-Null
 

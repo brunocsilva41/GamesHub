@@ -14,11 +14,11 @@ namespace GamesHub
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (string.IsNullOrEmpty(text)) return result;
-            // Only top-level "key: value" lines: skip blanks, nested/indented lines, comments and list items.
+            // Only top-level "key: value" lines: skip blanks, nested/indented lines, comments, list items and
+            // document markers ("---" / "...").
             foreach (string line in text.Split('\n').Select(raw => raw.TrimEnd('\r'))
-                                        .Where(l => l.Length > 0 && " \t#-".IndexOf(l[0]) < 0))
+                                        .Where(l => l.Length > 0 && " \t#-".IndexOf(l[0]) < 0 && !l.StartsWith("...")))
             {
-                if (line.StartsWith("---") || line.StartsWith("...")) continue;
                 int colon = FindKeyColon(line);
                 if (colon <= 0) continue;
                 string key = Unquote(line.Substring(0, colon).Trim());

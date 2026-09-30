@@ -20,10 +20,10 @@ namespace GamesHub
         {
             foreach (Game g in (games ?? Enumerable.Empty<Game>()).Where(x => x != null))
             {
-                foreach (string p in new[] { g.Exe, g.LaunchTarget, g.Ext == ".exe" ? g.FilePath : "" }
-                             .Where(x => !string.IsNullOrWhiteSpace(x) && x.Trim().Trim('"').EndsWith(".exe", StringComparison.OrdinalIgnoreCase)))
+                foreach (string k in new[] { g.Exe, g.LaunchTarget, g.Ext == ".exe" ? g.FilePath : "" }
+                             .Where(x => !string.IsNullOrWhiteSpace(x) && x.Trim().Trim('"').EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                             .Select(DiscoveryRoots.Key))
                 {
-                    string k = DiscoveryRoots.Key(p);
                     if (k.Length > 0 && _exes.Add(k)) _exeKeys.Add(k);
                 }
                 string dir = DiscoveryRoots.Key(g.InstallDir);

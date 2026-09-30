@@ -44,8 +44,8 @@ namespace GamesHub
                 // Secondary drives often hold games (or publisher folders) right at the root: "D:\Zepetto\PointBlank".
                 if (!string.Equals(drive, SystemDrive(), StringComparison.OrdinalIgnoreCase)) roots.Add(new ScanRoot(drive, "programs"));
             }
-            foreach (string p in new[] { Environment.SpecialFolder.MyDocuments, Environment.SpecialFolder.DesktopDirectory }.Select(Environment.GetFolderPath))
-                if (p.Length > 0) roots.Add(new ScanRoot(p, "user", false));
+            foreach (string p in new[] { Environment.SpecialFolder.MyDocuments, Environment.SpecialFolder.DesktopDirectory }.Select(Environment.GetFolderPath).Where(s => s.Length > 0))
+                roots.Add(new ScanRoot(p, "user", false));
             var seen = new HashSet<string>();
             return roots.Where(r => seen.Add(Key(r.Path)) && SafeExists(r.Path)).ToList();
         }
@@ -110,9 +110,9 @@ namespace GamesHub
                     Environment.SpecialFolder.UserProfile, Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.MyDocuments,
                     Environment.SpecialFolder.ApplicationData, Environment.SpecialFolder.LocalApplicationData,
                     Environment.SpecialFolder.CommonProgramFiles, Environment.SpecialFolder.CommonProgramFilesX86 }
-                    .Select(f => Key(Environment.GetFolderPath(f))))
+                    .Select(f => Key(Environment.GetFolderPath(f))).Where(s => s.Length > 0))
                 {
-                    if (k.Length > 0) set.Add(k);
+                    set.Add(k);
                 }
                 string w6432 = Key(Environment.GetEnvironmentVariable("ProgramW6432"));
                 if (w6432.Length > 0) set.Add(w6432);

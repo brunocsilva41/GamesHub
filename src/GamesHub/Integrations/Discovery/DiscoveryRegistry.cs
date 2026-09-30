@@ -42,10 +42,8 @@ namespace GamesHub
                 using (RegistryKey root = baseKey.OpenSubKey(UninstallKey, false))
                 {
                     if (root == null) return;
-                    foreach (RegistryApp app in root.GetSubKeyNames().Select(sub => ReadEntry(root, sub)))
-                    {
-                        if (app != null && seen.Add(app.Name + "|" + app.InstallLocation + "|" + app.DisplayIcon)) list.Add(app);
-                    }
+                    list.AddRange(root.GetSubKeyNames().Select(sub => ReadEntry(root, sub))
+                        .Where(app => app != null && seen.Add(app.Name + "|" + app.InstallLocation + "|" + app.DisplayIcon)));
                 }
             }
             catch (Exception ex) when (DiscoveryErrors.IsIo(ex)) { Log.Warn("Discovery: cannot open Uninstall key " + hive + "/" + view, ex); }

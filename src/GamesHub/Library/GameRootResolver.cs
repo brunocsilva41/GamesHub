@@ -110,10 +110,7 @@ namespace GamesHub
 
         private static HashSet<string> Keys(IEnumerable<string> locations)
         {
-            var set = new HashSet<string>(StringComparer.Ordinal);
-            foreach (string k in locations.Select(InstallPaths.Key))
-                if (k.Length > 3) set.Add(k);
-            return set;
+            return new HashSet<string>(locations.Select(InstallPaths.Key).Where(k => k.Length > 3), StringComparer.Ordinal);
         }
     }
 

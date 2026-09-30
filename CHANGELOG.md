@@ -5,6 +5,8 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [2.0.3] - 2026-09-30
+
 ### Adicionado
 
 - **Configurações › Discos** mostra onde cada jogo está instalado: cada unidade abre uma lista dos seus jogos, do
@@ -183,7 +185,8 @@ Versão original ("GamesLounge"), anterior a este repositório.
 - Grade de jogos a partir dos atalhos da pasta de jogos, capas da Steam, registro simples de jogadas e ícone na
   bandeja.
 
-[Não lançado]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.2...HEAD
+[Não lançado]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.3...HEAD
+[2.0.3]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/brunocsilva41/GamesHub/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/brunocsilva41/GamesHub/releases/tag/v2.0.0

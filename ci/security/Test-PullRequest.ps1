@@ -55,7 +55,7 @@ try {
     # ---- risky patterns in ADDED lines
     $patterns = @(
         @{ Rx = '\bProcess\.Start\b|ShellExecute|CreateProcess|\bcmd(\.exe)?\s+/c\b|Start-Process|\bpowershell(\.exe)?\s+-(e|enc|encodedcommand)\b'; Why = 'starts processes' },
-        @{ Rx = 'Invoke-Expression|\biex\b|\beval\s*\(|new\s+Function\s*\(|setTimeout\s*\(\s*["''`]|Assembly\.Load|Reflection\.Emit|CSharpCodeProvider|Add-Type\s+-TypeDefinition'; Why = 'runs dynamically generated code' },
+        @{ Rx = 'Invoke-Expression|\biex\b|\beval\b|new\s+Function\s*\(|setTimeout\s*\(\s*["''`]|Assembly\.Load|Reflection\.Emit|CSharpCodeProvider|Add-Type\s+-TypeDefinition'; Why = 'runs dynamically generated code' },
         @{ Rx = 'DownloadFile|DownloadString|DownloadData|Invoke-WebRequest|Invoke-RestMethod|\bcurl\b|\bwget\b|WebClient|HttpClient|fetch\s*\(\s*["''`]https?:'; Why = 'network download' },
         @{ Rx = 'Registry(Key)?\.(SetValue|CreateSubKey|DeleteSubKey|DeleteValue)|reg(\.exe)?\s+(add|delete)|HKLM:|HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'; Why = 'writes to the Windows registry / autostart' },
         @{ Rx = '[A-Za-z0-9+/]{160,}={0,2}|(\\x[0-9a-fA-F]{2}){24,}|(0x[0-9a-fA-F]{2},\s*){24,}'; Why = 'long encoded blob (possible obfuscated payload)' },

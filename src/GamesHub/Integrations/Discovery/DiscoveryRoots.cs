@@ -44,11 +44,8 @@ namespace GamesHub
                 // Secondary drives often hold games (or publisher folders) right at the root: "D:\Zepetto\PointBlank".
                 if (!string.Equals(drive, SystemDrive(), StringComparison.OrdinalIgnoreCase)) roots.Add(new ScanRoot(drive, "programs"));
             }
-            foreach (Environment.SpecialFolder f in new[] { Environment.SpecialFolder.MyDocuments, Environment.SpecialFolder.DesktopDirectory })
-            {
-                string p = Environment.GetFolderPath(f);
+            foreach (string p in new[] { Environment.SpecialFolder.MyDocuments, Environment.SpecialFolder.DesktopDirectory }.Select(Environment.GetFolderPath))
                 if (p.Length > 0) roots.Add(new ScanRoot(p, "user", false));
-            }
             var seen = new HashSet<string>();
             return roots.Where(r => seen.Add(Key(r.Path)) && SafeExists(r.Path)).ToList();
         }
@@ -107,14 +104,14 @@ namespace GamesHub
             if (_forbidden == null)
             {
                 var set = new HashSet<string>();
-                foreach (Environment.SpecialFolder f in new[] {
+                foreach (string k in new[] {
                     Environment.SpecialFolder.Windows, Environment.SpecialFolder.System, Environment.SpecialFolder.ProgramFiles,
                     Environment.SpecialFolder.ProgramFilesX86, Environment.SpecialFolder.CommonApplicationData,
                     Environment.SpecialFolder.UserProfile, Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.MyDocuments,
                     Environment.SpecialFolder.ApplicationData, Environment.SpecialFolder.LocalApplicationData,
-                    Environment.SpecialFolder.CommonProgramFiles, Environment.SpecialFolder.CommonProgramFilesX86 })
+                    Environment.SpecialFolder.CommonProgramFiles, Environment.SpecialFolder.CommonProgramFilesX86 }
+                    .Select(f => Key(Environment.GetFolderPath(f))))
                 {
-                    string k = Key(Environment.GetFolderPath(f));
                     if (k.Length > 0) set.Add(k);
                 }
                 string w6432 = Key(Environment.GetEnvironmentVariable("ProgramW6432"));

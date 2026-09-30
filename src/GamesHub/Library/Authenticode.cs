@@ -124,28 +124,29 @@ namespace GamesHub
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private sealed class WintrustFileInfo
         {
-            public uint cbStruct = (uint)Marshal.SizeOf(typeof(WintrustFileInfo));
+            public readonly uint cbStruct = (uint)Marshal.SizeOf(typeof(WintrustFileInfo));
             public string pcwszFilePath;
-            public IntPtr hFile = IntPtr.Zero;
-            public IntPtr pgKnownSubject = IntPtr.Zero;
+            public readonly IntPtr hFile = IntPtr.Zero;
+            public readonly IntPtr pgKnownSubject = IntPtr.Zero;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         private sealed class WintrustData
         {
-            public uint cbStruct = (uint)Marshal.SizeOf(typeof(WintrustData));
-            public IntPtr pPolicyCallbackData = IntPtr.Zero;
-            public IntPtr pSIPClientData = IntPtr.Zero;
-            public uint dwUIChoice = WTD_UI_NONE;
-            public uint fdwRevocationChecks = WTD_REVOKE_NONE;
-            public uint dwUnionChoice = WTD_CHOICE_FILE;
+            public readonly uint cbStruct = (uint)Marshal.SizeOf(typeof(WintrustData));
+            public readonly IntPtr pPolicyCallbackData = IntPtr.Zero;
+            public readonly IntPtr pSIPClientData = IntPtr.Zero;
+            public readonly uint dwUIChoice = WTD_UI_NONE;
+            public readonly uint fdwRevocationChecks = WTD_REVOKE_NONE;
+            public readonly uint dwUnionChoice = WTD_CHOICE_FILE;
             public IntPtr pFile;
             public uint dwStateAction = WTD_STATEACTION_VERIFY;
-            public IntPtr hWVTStateData = IntPtr.Zero;
-            public IntPtr pwszURLReference = IntPtr.Zero;
-            public uint dwProvFlags = WTD_CACHE_ONLY_URL_RETRIEVAL;
-            public uint dwUIContext;
-            public IntPtr pSignatureSettings = IntPtr.Zero;
+            // Written by wintrust through the pinned (blittable) instance; readonly only restricts managed code.
+            public readonly IntPtr hWVTStateData = IntPtr.Zero;
+            public readonly IntPtr pwszURLReference = IntPtr.Zero;
+            public readonly uint dwProvFlags = WTD_CACHE_ONLY_URL_RETRIEVAL;
+            public readonly uint dwUIContext;
+            public readonly IntPtr pSignatureSettings = IntPtr.Zero;
         }
 
         [DllImport("wintrust.dll", ExactSpelling = true, SetLastError = false, CharSet = CharSet.Unicode)]

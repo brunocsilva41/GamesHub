@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace GamesHub
 {
@@ -57,8 +58,7 @@ namespace GamesHub
         public static string UrlLaunchTarget(string url, string urlFile)
         {
             string u = (url ?? "").Trim();
-            bool clean = u.Length > 0 && u.Length <= 2048;
-            foreach (char c in u) if (char.IsWhiteSpace(c) || char.IsControl(c) || c == '"') { clean = false; break; }
+            bool clean = u.Length > 0 && u.Length <= 2048 && u.All(c => !char.IsWhiteSpace(c) && !char.IsControl(c) && c != '"');
             if (clean && Uri.TryCreate(u, UriKind.Absolute, out Uri uri) && !uri.IsUnc && !uri.IsFile
                 && UrlSchemes.Contains(uri.Scheme) && u.StartsWith(uri.Scheme + ":", StringComparison.OrdinalIgnoreCase)
                 && u.TrimEnd('/').Length > uri.Scheme.Length + 1)

@@ -58,9 +58,9 @@ namespace GamesHub
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var pending = new Dictionary<string, Pending>();
             progress?.Report("Lendo os programas instalados…");
-            foreach (RegistryApp app in Registry() ?? new List<RegistryApp>())
+            foreach (RegistryApp app in (Registry() ?? new List<RegistryApp>())
+                         .Where(a => !DiscoveryRules.IsNotAGame(a.Name) && !DiscoveryRules.IsUtilityPublisher(a.Publisher)))
             {
-                if (DiscoveryRules.IsNotAGame(app.Name) || DiscoveryRules.IsUtilityPublisher(app.Publisher)) continue;
                 string dir = app.InstallLocation;
                 if (DiscoveryRoots.Key(dir).Length == 0 || !DiscoveryRoots.SafeExists(dir))
                 {
@@ -78,10 +78,10 @@ namespace GamesHub
                 if (budget.Exhausted) break;
                 progress?.Report("Procurando em " + root.Path + "…");
                 // XboxGames holds only games (their names may start with "Microsoft"), plus the GameSave folder.
-                foreach (DirectoryInfo d in DiscoveryRoots.SubDirs(root.Path, budget))
-                    if ((root.Kind == "xbox" ? !d.Name.Equals("GameSave", StringComparison.OrdinalIgnoreCase) : !IsSkippedFolder(d.Name))
-                        && !rootKeys.Contains(DiscoveryRoots.Key(d.FullName)))
-                        AddPending(pending, d.FullName, null, root);
+                foreach (DirectoryInfo d in DiscoveryRoots.SubDirs(root.Path, budget)
+                             .Where(x => (root.Kind == "xbox" ? !x.Name.Equals("GameSave", StringComparison.OrdinalIgnoreCase) : !IsSkippedFolder(x.Name))
+                                         && !rootKeys.Contains(DiscoveryRoots.Key(x.FullName))))
+                    AddPending(pending, d.FullName, null, root);
             }
 
             foreach (string k in rootKeys) pending.Remove(k); // a registry InstallLocation of "D:\Games" is not one game
@@ -93,9 +93,9 @@ namespace GamesHub
 
             var deeper = new Dictionary<string, Pending>();
             foreach (Pending c in containers)
-                foreach (DirectoryInfo d in DiscoveryRoots.SubDirs(c.Dir, budget, 30))
-                    if (!IsSkippedFolder(d.Name) && !pending.ContainsKey(DiscoveryRoots.Key(d.FullName)))
-                        AddPending(deeper, d.FullName, null, new ScanRoot(c.Root.Path, c.Root.Kind, false));
+                foreach (DirectoryInfo d in DiscoveryRoots.SubDirs(c.Dir, budget, 30)
+                             .Where(x => !IsSkippedFolder(x.Name) && !pending.ContainsKey(DiscoveryRoots.Key(x.FullName))))
+                    AddPending(deeper, d.FullName, null, new ScanRoot(c.Root.Path, c.Root.Kind, false));
             if (deeper.Count > 0)
             {
                 progress?.Report("Analisando mais " + deeper.Count + " pastas…");
@@ -156,8 +156,9 @@ namespace GamesHub
             if (!snap.Readable) return null;
             Evidence ev = GameEvidence.Analyze(snap);
             string folderName = Path.GetFileName(p.Dir.TrimEnd('\\'));
-            string regName = p.FromRegistry ? DiscoveryRules.CleanDisplayName(p.App.Name) : "";
-            string preferred = p.FromRegistry ? DiscoveryRegistry.IconExe(p.App.DisplayIcon) : "";
+            RegistryApp app = p.App;
+            string regName = app != null ? DiscoveryRules.CleanDisplayName(app.Name) : "";
+            string preferred = app != null ? DiscoveryRegistry.IconExe(app.DisplayIcon) : "";
             FolderSnapshot.Entry exe = MainExePicker.Pick(snap, new[] { regName, ev.XboxName, folderName }, preferred);
             bool rootExe = snap.Exes.Any(e => e.Depth == 0 && !DiscoveryRules.IsHelperExe(e.Name));
             // Several sub-folders with their own executables and none at the top: a folder of games, not a game.

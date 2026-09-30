@@ -111,11 +111,8 @@ namespace GamesHub
         private static HashSet<string> Keys(IEnumerable<string> locations)
         {
             var set = new HashSet<string>(StringComparer.Ordinal);
-            foreach (string loc in locations)
-            {
-                string k = InstallPaths.Key(loc);
+            foreach (string k in locations.Select(InstallPaths.Key))
                 if (k.Length > 3) set.Add(k);
-            }
             return set;
         }
     }
@@ -276,9 +273,8 @@ namespace GamesHub
         private static bool HostsOtherPrograms(Context ctx, string parent, string self)
         {
             int checkedDirs = 0;
-            foreach (string d in ctx.List(parent).Dirs)
+            foreach (string d in ctx.List(parent).Dirs.Where(x => !x.Equals(self, StringComparison.OrdinalIgnoreCase) && !HelperDirs.Contains(x) && !x.StartsWith(".")))
             {
-                if (d.Equals(self, StringComparison.OrdinalIgnoreCase) || HelperDirs.Contains(d) || d.StartsWith(".")) continue;
                 if (++checkedDirs > 32) return true;
                 if (ctx.List(Path.Combine(parent, d)).Files.Any(IsExe)) return true;
             }

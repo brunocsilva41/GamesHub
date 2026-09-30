@@ -46,9 +46,8 @@ namespace GamesHub
             var result = new List<Item>();
             if (!(items is IEnumerable list) || items is string) return result;
             var seen = new HashSet<string>();
-            foreach (object o in list.Cast<object>().Take(MaxItems))
+            foreach (IDictionary<string, object> d in list.Cast<object>().Take(MaxItems).OfType<IDictionary<string, object>>())
             {
-                if (!(o is IDictionary<string, object> d)) continue;
                 string exe = Json.Str(d, "exe");
                 string key = DiscoveryRoots.Key(exe);
                 if (!seen.Add(key)) continue;

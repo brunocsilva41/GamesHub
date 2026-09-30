@@ -18,12 +18,11 @@ namespace GamesHub
 
         public KnownGames(IEnumerable<Game> games)
         {
-            foreach (Game g in games ?? Enumerable.Empty<Game>())
+            foreach (Game g in (games ?? Enumerable.Empty<Game>()).Where(x => x != null))
             {
-                if (g == null) continue;
-                foreach (string p in new[] { g.Exe, g.LaunchTarget, g.Ext == ".exe" ? g.FilePath : "" })
+                foreach (string p in new[] { g.Exe, g.LaunchTarget, g.Ext == ".exe" ? g.FilePath : "" }
+                             .Where(x => !string.IsNullOrWhiteSpace(x) && x.Trim().Trim('"').EndsWith(".exe", StringComparison.OrdinalIgnoreCase)))
                 {
-                    if (string.IsNullOrWhiteSpace(p) || !p.Trim().Trim('"').EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
                     string k = DiscoveryRoots.Key(p);
                     if (k.Length > 0 && _exes.Add(k)) _exeKeys.Add(k);
                 }
@@ -39,7 +38,7 @@ namespace GamesHub
         /// <summary>Scan roots (e.g. "D:\Jogos") are never treated as a known game's install folder.</summary>
         public void AddContainers(IEnumerable<string> keys)
         {
-            foreach (string k in keys ?? Enumerable.Empty<string>()) if (!string.IsNullOrEmpty(k)) _containers.Add(k);
+            foreach (string k in (keys ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrEmpty(x))) _containers.Add(k);
         }
 
         public bool Contains(DiscoveredGame c)

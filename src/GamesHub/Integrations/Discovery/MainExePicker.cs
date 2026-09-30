@@ -44,11 +44,8 @@ namespace GamesHub
             score += 1.5 * e.Size / max;
             if (stem.EndsWith("-Shipping", StringComparison.OrdinalIgnoreCase)) score += 0.5;
             string lower = stem.ToLowerInvariant();
-            foreach (string p in Penalized)
-            {
-                if (!lower.Contains(p)) continue;
+            foreach (string p in Penalized.Where(x => lower.Contains(x)))
                 score -= p == "launcher" ? 1.5 : p == "32" || p == "mod" ? 0.3 : 2;
-            }
             return score;
         }
     }

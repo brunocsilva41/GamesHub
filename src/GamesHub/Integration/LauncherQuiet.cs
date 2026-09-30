@@ -69,9 +69,8 @@ namespace GamesHub
                     while (DateTime.UtcNow < deadline)
                     {
                         await Task.Delay(400).ConfigureAwait(false);
-                        foreach (IntPtr h in LauncherWindows())
+                        foreach (IntPtr h in LauncherWindows().Where(x => handled.Add(x) && !IsIconic(x)))
                         {
-                            if (!handled.Add(h) || IsIconic(h)) continue;
                             ShowWindowAsync(h, SW_SHOWMINNOACTIVE);
                             Log.Info("Launchers: minimized window \"" + Title(h) + "\"");
                         }

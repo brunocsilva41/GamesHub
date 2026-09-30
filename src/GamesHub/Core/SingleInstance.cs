@@ -147,13 +147,18 @@ namespace GamesHub
                     PipeNative.PIPE_ACCESS_INBOUND | PipeNative.FILE_FLAG_OVERLAPPED | PipeNative.FILE_FLAG_FIRST_PIPE_INSTANCE,
                     PipeNative.PIPE_TYPE_BYTE | PipeNative.PIPE_READMODE_BYTE | PipeNative.PIPE_WAIT | PipeNative.PIPE_REJECT_REMOTE_CLIENTS,
                     1, 4096, 4096, 0, ref sa);
-                if (h.IsInvalid)
+                bool owned = false;
+                try
                 {
-                    int err = Marshal.GetLastWin32Error();
-                    h.Dispose();
-                    throw new IOException("CreateNamedPipe failed", new Win32Exception(err));
+                    if (h.IsInvalid) throw new IOException("CreateNamedPipe failed", new Win32Exception(Marshal.GetLastWin32Error()));
+                    var server = new NamedPipeServerStream(PipeDirection.In, true, false, h);
+                    owned = true; // the stream now owns the handle
+                    return server;
                 }
-                return new NamedPipeServerStream(PipeDirection.In, true, false, h);
+                finally
+                {
+                    if (!owned) h.Dispose();
+                }
             }
             finally
             {

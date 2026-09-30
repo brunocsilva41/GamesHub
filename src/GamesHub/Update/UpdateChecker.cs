@@ -26,6 +26,9 @@ namespace GamesHub
         private static readonly string[] ApiHosts = { "api.github.com" };
         private static int cleanedUp;
 
+        /// <summary>True only for the first caller in this process (clean-up of old downloads runs once per run).</summary>
+        private static bool FirstCheckInProcess() => System.Threading.Interlocked.Exchange(ref cleanedUp, 1) == 0;
+
         private readonly AppSettings settings;
         private GitHubRelease lastRelease;
 
@@ -50,7 +53,7 @@ namespace GamesHub
         {
             LastError = null;
             // The installer of the previous update cannot delete itself: clean up once per run.
-            if (System.Threading.Interlocked.Exchange(ref cleanedUp, 1) == 0) CleanDownloads();
+            if (FirstCheckInProcess()) CleanDownloads();
             string repo = Repo;
             try
             {
@@ -185,7 +188,8 @@ namespace GamesHub
         private bool RefuseUnverified(UpdateInfo info, string reason)
         {
             Log.Warn("Update NOT installed, authenticity could not be verified: " + reason);
-            string page = GitHubRelease.IsGitHubPage(info?.PageUrl) ? info.PageUrl : AppInfo.RepoUrl + "/releases";
+            string pageUrl = info?.PageUrl;
+            string page = GitHubRelease.IsGitHubPage(pageUrl) ? pageUrl : AppInfo.RepoUrl + "/releases";
             bool opened = ShellActions.OpenUrl(page);
             LastError = "Não foi possível confirmar que esta atualização é autêntica, por isso ela não foi instalada. "
                         + (opened ? "A página da versão foi aberta no navegador para você baixar o instalador manualmente."
@@ -251,13 +255,26 @@ namespace GamesHub
             {
                 if (!allowed(url)) throw new InvalidOperationException("Update URL not allowed: " + url.GetLeftPart(UriPartial.Authority));
                 var req = new HttpRequestMessage(HttpMethod.Get, url);
-                prepare?.Invoke(req);
-                HttpResponseMessage resp = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-                int code = (int)resp.StatusCode;
-                if (code < 300 || code > 399 || code == 304) return resp;
-                Uri next = resp.Headers.Location;
-                resp.Dispose();
-                req.Dispose();
+                bool returned = false;
+                int code;
+                Uri next;
+                try
+                {
+                    prepare?.Invoke(req);
+                    HttpResponseMessage resp = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                    code = (int)resp.StatusCode;
+                    if (code < 300 || code > 399 || code == 304)
+                    {
+                        returned = true; // the response keeps its request (RequestMessage)
+                        return resp;
+                    }
+                    next = resp.Headers.Location;
+                    resp.Dispose();
+                }
+                finally
+                {
+                    if (!returned) req.Dispose();
+                }
                 if (next == null || hop >= MaxRedirects) throw new HttpRequestException("Invalid or too many redirects (" + code + ")");
                 url = next.IsAbsoluteUri ? next : new Uri(url, next);
             }

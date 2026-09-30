@@ -137,9 +137,8 @@ namespace GamesHub
         /// <summary>Drive root ("D:\") of the game's install folder, else of its executable; "" when unknown.</summary>
         internal static string DriveOf(Game g)
         {
-            foreach (string p in new[] { g.InstallDir, g.Exe, g.Ext == ".exe" ? g.FilePath : "" })
+            foreach (string p in new[] { g.InstallDir, g.Exe, g.Ext == ".exe" ? g.FilePath : "" }.Where(x => !string.IsNullOrWhiteSpace(x)))
             {
-                if (string.IsNullOrWhiteSpace(p)) continue;
                 try
                 {
                     string root = Path.GetPathRoot(p);

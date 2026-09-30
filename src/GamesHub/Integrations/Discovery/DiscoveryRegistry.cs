@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Win32;
 
 namespace GamesHub
@@ -26,8 +27,10 @@ namespace GamesHub
             var list = new List<RegistryApp>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (RegistryHive hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
-            foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                ReadView(hive, view, list, seen);
+            {
+                foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+                    ReadView(hive, view, list, seen);
+            }
             return list;
         }
 
@@ -39,9 +42,8 @@ namespace GamesHub
                 using (RegistryKey root = baseKey.OpenSubKey(UninstallKey, false))
                 {
                     if (root == null) return;
-                    foreach (string sub in root.GetSubKeyNames())
+                    foreach (RegistryApp app in root.GetSubKeyNames().Select(sub => ReadEntry(root, sub)))
                     {
-                        RegistryApp app = ReadEntry(root, sub);
                         if (app != null && seen.Add(app.Name + "|" + app.InstallLocation + "|" + app.DisplayIcon)) list.Add(app);
                     }
                 }

@@ -350,9 +350,25 @@ input[type="search"]::-webkit-search-cancel-button { filter: invert(0.7); cursor
   border: 1px solid var(--accent-line); animation: rise-in var(--dur) var(--ease) both; flex: none;
 }
 .ub-ic { color: var(--accent); display: grid; }
-.ub-text { flex: 1; min-width: 0; display: flex; gap: var(--sp-2); align-items: baseline; font-size: var(--fs-md); }
-.ub-notes { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ub-actions { display: flex; gap: var(--sp-2); align-items: center; }
+.ub-text { flex: 1; min-width: 0; display: flex; gap: var(--sp-3); align-items: center; font-size: var(--fs-md); }
+.ub-text strong { flex: none; white-space: nowrap; }
+.ub-notes { flex: 1; min-width: 0; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ub-actions { flex: none; display: flex; gap: var(--sp-2); align-items: center; }
+.ub-actions .btn { white-space: nowrap; }
+@media (max-width: 760px) { .ub-notes { display: none; } }
+
+/* "Novidades" dialog (release notes as plain structured text) */
+.modal-notes { width: min(680px, 100%); }
+.modal-foot { display: flex; justify-content: flex-end; gap: var(--sp-2); padding: var(--sp-4) var(--sp-6) var(--sp-5); border-top: 1px solid var(--line); flex: none; }
+.rn { display: flex; flex-direction: column; gap: var(--sp-5); }
+.rn-sec h3 {
+  font-size: var(--fs-sm); font-weight: var(--fw-bold); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: var(--sp-2);
+}
+.rn-sec ul { display: flex; flex-direction: column; gap: var(--sp-2); padding-left: var(--sp-5); margin: 0; }
+.rn-sec li { color: var(--text-2); line-height: 1.55; overflow-wrap: anywhere; }
+.rn-sec li::marker { color: var(--accent); }
+.rn-sec li b { color: var(--text); font-weight: var(--fw-semibold); }
 .ub-progress { display: flex; align-items: center; gap: var(--sp-3); min-width: 260px; padding-right: var(--sp-3); font-size: var(--fs-sm); color: var(--text-2); }
 .progress { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
 .progress i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: inherit; transition: width 200ms linear; }

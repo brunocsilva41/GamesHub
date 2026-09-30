@@ -38,6 +38,11 @@ $sections = [regex]::Matches($changes, '(?ms)^### ([^\n]+)\n(.*?)(?=^### |\z)') 
 # continuation lines are joined back into their bullet.
 $changeMd = ($sections | ForEach-Object { "### $($titles[$_.Name] ?? $_.Name)`n`n$($_.Text -replace '\n[ \t]+(?=\S)', ' ')" }) -join "`n`n"
 $summary = $summary -replace '\s*\n\s*', ' '
+# Plain-text first line (no Markdown/HTML): apps up to 2.0.3 show the start of the notes verbatim in their update
+# banner, so the page opens with the highlights (bold leads of the first section) before any markup.
+$first = $sections | Select-Object -First 1
+$leads = if ($first) { [regex]::Matches($first.Text, '(?m)^- \*\*(.+?)\*\*') | ForEach-Object { $_.Groups[1].Value.Trim().TrimEnd(':', '.') } | Select-Object -First 3 } else { @() }
+$headline = if ($leads) { "$($titles[$first.Name] -replace '^\S+\s+', ''): $($leads -join ' · ')" } else { "Versão $Version do GamesHub" }
 
 # Previous release (highest vX.Y.Z tag below this one) for the comparison link.
 function Parse([string]$v) { $c, $p = $v.TrimStart('v') -split '-', 2; [pscustomobject]@{ Core = [version]$c; Pre = $p } }
@@ -58,10 +63,13 @@ $months = 'janeiro','fevereiro','março','abril','maio','junho','julho','agosto'
 $dateText = "$($date.Day) de $($months[$date.Month - 1]) de $($date.Year)"
 
 $notes = @"
+$headline
+
+**Versão $Version** · lançada em $dateText · [ver todas as mudanças]($compare)
+
 <p align="center"><img src="$(& $shot 'biblioteca.png')" alt="Biblioteca do GamesHub" width="820"></p>
 
 $(if ($summary) { "> $($summary -replace "`n", ' ')`n" })
-**Versão $Version** · lançada em $dateText · [ver todas as mudanças]($compare)
 
 ## 📋 O que mudou
 

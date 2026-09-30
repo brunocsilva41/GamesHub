@@ -236,7 +236,7 @@ export function createMockHost() {
     catch (err) { console.error('[mock]', err); res = fail('Erro interno na demonstração.'); }
     send({ type: 'reply', id: msg.id, ...res });
     if (msg.name === 'getState' && settings.checkUpdates) {
-      setTimeout(() => event('update', { version: '2.1.0', notes: 'Melhorias de desempenho e correções.', pageUrl: 'https://github.com/demo/gameshub/releases' }), 6000);
+      setTimeout(() => event('update', { version: '2.1.0', notes: DEMO_NOTES, pageUrl: 'https://github.com/demo/gameshub/releases' }), 6000);
     }
   }
 
@@ -249,3 +249,26 @@ export function createMockHost() {
     postMessageWithAdditionalObjects(msg, objs) { handle(msg, Array.from(objs || [])); },
   };
 }
+
+// Release notes in the same shape the real releases use (HTML header + Markdown sections).
+const DEMO_NOTES = `<p align="center"><img src="docs/screenshots/biblioteca.png" alt="Biblioteca" width="820"></p>
+
+**Versão 2.1.0** · lançada em 1 de outubro · [ver todas as mudanças](https://github.com/demo/gameshub/commits)
+
+## 📋 O que mudou
+
+### ✨ Novidades
+
+- **Encontrar jogos no PC** (Adicionar jogo): busca jogos instalados fora dos launchers.
+- **Abrir launchers minimizados**: a Steam inicia só na bandeja ao abrir um jogo dela.
+- **Configurações › Discos** mostra onde cada jogo está instalado.
+
+### 🐛 Correções
+
+- O tamanho dos jogos usa a **pasta raiz da instalação**, e não a subpasta do executável (\`Binaries\\Win64\`).
+
+## ⬇️ Download
+
+| Arquivo | Tamanho |
+|---|---|
+`;

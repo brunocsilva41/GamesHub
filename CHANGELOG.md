@@ -5,6 +5,12 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- **Aviso de nova versão:** a faixa mostrava o texto bruto das notas (HTML e Markdown). Agora exibe só os destaques
+  numa linha, e **Novidades** abre uma janela centralizada com as mudanças organizadas por tipo e os botões
+  "Ver no GitHub" e "Atualizar agora".
+
 ## [2.0.3] - 2026-09-30
 
 ### Adicionado

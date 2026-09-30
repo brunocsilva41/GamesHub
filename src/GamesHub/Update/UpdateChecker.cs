@@ -104,7 +104,7 @@ namespace GamesHub
             ReleaseAsset installer = rel.FindInstaller();
             info.Available = true;
             info.Version = latest.ToString();
-            info.Notes = Truncate(rel.Body ?? "", 4000);
+            info.Notes = Truncate(rel.Body ?? "", 16000);
             info.PageUrl = GitHubRelease.IsGitHubPage(rel.HtmlUrl) ? rel.HtmlUrl : "";
             info.DownloadUrl = installer != null && GitHubRelease.IsAllowedDownloadUrl(installer.DownloadUrl) ? installer.DownloadUrl : "";
             return info;

@@ -84,7 +84,7 @@ try {
     # (git reads attributes from the checked-out tree, which in CI is the PR's own merge commit)
     [IO.File]::WriteAllText((Join-Path $tmp '.gitattributes'), "*.cs -diff`n")
     $r = Invoke-Gate (New-Commit $base @{ 'src/Hidden.cs' = "Process.Start(x);`n" })
-    Remove-Item -LiteralPath (Join-Path $tmp '.gitattributes')
+    Remove-Item -LiteralPath (Join-Path $tmp '.gitattributes') -Force
     Add-Check 'text file diffed as binary is flagged' (Test-Finding $r 'src/Hidden.cs' 'diff parse*')
 
     # clean change from a contributor passes

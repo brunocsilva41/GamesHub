@@ -13,7 +13,9 @@ $files = Get-TrackedFiles
 # ------------------------------------------------------------------ required files
 $required = 'LICENSE', 'README.md', 'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING.md', '.gitattributes', '.gitignore',
             'docs/ARCHITECTURE.md', 'docs/PIPELINE.md', 'lib/checksums.sha256', 'build.ps1',
-            'src/GamesHub/Properties/AssemblyInfo.cs', '.github/workflows/ci.yml', '.github/workflows/release.yml'
+            'src/GamesHub/Properties/AssemblyInfo.cs', '.github/workflows/ci.yml', '.github/workflows/release.yml',
+            '.github/workflows/codeql.yml', '.github/workflows/pr-guard.yml', '.github/CODEOWNERS',
+            '.github/codeql/codeql-config.yml', 'ci/security/Test-PullRequest.ps1'
 foreach ($r in $required) { Add-Check "required file: $r" ($files -contains $r) }
 
 # ------------------------------------------------------------------ binaries
@@ -22,7 +24,7 @@ $allowedBinaryDirs = '^(lib/|assets/|web/(fonts/|[^/]+\.(png|ico)$)|docs/screens
 $maxBytes = 3MB
 foreach ($f in $files) {
     $full = Join-Path $root $f
-    if (-not (Test-Path $full)) { continue }   # deleted in the working tree
+    if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { continue }   # deleted, or a nested repository/worktree
     $ext = [IO.Path]::GetExtension($f).ToLowerInvariant()
     $size = (Get-Item -LiteralPath $full -Force).Length
     if ($size -gt $maxBytes) { Add-Check 'file size ≤ 3 MB' $false "$([math]::Round($size / 1MB, 1)) MB" -File $f }

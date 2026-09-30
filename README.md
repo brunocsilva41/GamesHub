@@ -1,7 +1,9 @@
 # GamesHub
 
 [![CI](https://github.com/brunocsilva41/GamesHub/actions/workflows/ci.yml/badge.svg)](https://github.com/brunocsilva41/GamesHub/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/brunocsilva41/GamesHub/actions/workflows/codeql.yml/badge.svg)](https://github.com/brunocsilva41/GamesHub/actions/workflows/codeql.yml)
 [![Última versão](https://img.shields.io/github/v/release/brunocsilva41/GamesHub?label=vers%C3%A3o)](https://github.com/brunocsilva41/GamesHub/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/brunocsilva41/GamesHub/total?label=downloads)](https://github.com/brunocsilva41/GamesHub/releases)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue.svg)](LICENSE)
 [![Plataforma: Windows 10/11](https://img.shields.io/badge/plataforma-Windows%2010%20%7C%2011-0078D6.svg)](#requisitos)
 
@@ -19,7 +21,9 @@ tem anúncios nem telemetria e não deixa nenhum serviço rodando em segundo pla
 ## Download
 
 **[Baixe a versão mais recente](https://github.com/brunocsilva41/GamesHub/releases/latest)**: arquivo
-`GamesHub-Setup-<versão>.exe`.
+`GamesHub-Setup-<versão>.exe`. Cada versão tem uma página com o resumo, a lista do que mudou (novidades,
+melhorias, correções e segurança), capturas de tela, tamanho e SHA-256 do instalador, e o link para comparar
+com a versão anterior — veja todas em [Releases](https://github.com/brunocsilva41/GamesHub/releases).
 
 1. Execute o instalador e siga o assistente. A instalação é só para o seu usuário e não pede administrador.
 2. Se o Windows SmartScreen avisar que o app não é reconhecido, é porque o instalador não tem assinatura de código
@@ -27,11 +31,15 @@ tem anúncios nem telemetria e não deixa nenhum serviço rodando em segundo pla
 3. Quem já usava a versão 1.x ("GamesLounge") é atualizado no mesmo lugar, mantendo pasta de jogos, capas e
    histórico.
 
-Para conferir o arquivo baixado:
+**Atualizações automáticas:** com o GamesHub instalado, novas versões chegam sozinhas — o app avisa quando há
+uma atualização, baixa o instalador oficial desta página, confere o SHA-256 e atualiza mantendo suas
+configurações, horas jogadas e artes. Dá para desligar em **Configurações → Atualizações**.
+
+Para conferir o arquivo baixado (troque `<versão>` pelo número da versão):
 
 ```powershell
-Get-FileHash .\GamesHub-Setup-2.0.0.exe -Algorithm SHA256          # compare com o .sha256 da Release
-gh attestation verify .\GamesHub-Setup-2.0.0.exe --repo brunocsilva41/GamesHub
+Get-FileHash .\GamesHub-Setup-<versão>.exe -Algorithm SHA256          # compare com o .sha256 da Release
+gh attestation verify .\GamesHub-Setup-<versão>.exe --repo brunocsilva41/GamesHub
 ```
 
 Detalhes em [docs/PIPELINE.md](docs/PIPELINE.md#como-verificar-um-download).
@@ -40,7 +48,7 @@ Detalhes em [docs/PIPELINE.md](docs/PIPELINE.md#como-verificar-um-download).
 <summary>Instalação e remoção silenciosas (scripts)</summary>
 
 ```powershell
-.\GamesHub-Setup-2.0.0.exe /silent [/dir "C:\Apps\GamesHub"] [/games "D:\Jogos"] [/nodesktop] [/nostartmenu] [/autostart]
+.\GamesHub-Setup-<versão>.exe /silent [/dir "C:\Apps\GamesHub"] [/games "D:\Jogos"] [/nodesktop] [/nostartmenu] [/autostart]
 ```
 
 O resultado fica em `%TEMP%\GamesHub\setup-result.txt` (`OK:<pasta>` ou `ERRO:<mensagem>`) e o log em
@@ -163,11 +171,30 @@ Windows limpo (instalar, abrir, atualizar e desinstalar) e análise de seguranç
 publicadas a partir de tags `vX.Y.Z`, com SHA-256 e atestação de proveniência. Veja
 [docs/PIPELINE.md](docs/PIPELINE.md) e [docs/RELEASING.md](docs/RELEASING.md).
 
+### Proteções do repositório
+
+- **Revisão obrigatória:** todo pull request pede automaticamente a revisão do mantenedor (`CODEOWNERS`) e só
+  pode ser integrado depois de aprovado; uma aprovação cai se o PR receber novos commits.
+- **Checks obrigatórios:** pipeline completo, CodeQL (C# e JavaScript) e o **portão de segurança de PR**, todos
+  verdes, com a branch atualizada e todas as conversas resolvidas.
+- **Portão de segurança de PR:** analisa o diff de quem não é mantenedor em busca de mudanças em áreas sensíveis
+  (workflows, pipeline, build, instalador, atualizador, binários) e de código de risco (execução de processos,
+  download e execução, código dinâmico, registro do Windows, conteúdo ofuscado, novos endereços de rede,
+  enfraquecimento da CSP/WebView2/TLS). Achados bloqueiam o PR até o mantenedor revisar cada item e aplicar a
+  etiqueta `seguranca-aprovada`. Dependências vulneráveis também são barradas.
+- **GitHub Actions:** workflows de colaboradores externos só rodam com aprovação do mantenedor, sem acesso a
+  segredos e com token somente leitura; só Actions oficiais do GitHub, obrigatoriamente fixadas por SHA.
+- **Segredos e dependências:** varredura de segredos com bloqueio no push, alertas e correções automáticas do
+  Dependabot, e histórico da `main` protegido contra force-push e exclusão.
+
 ## Contribuindo
 
-Contribuições são bem-vindas! Leia o [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir um pull request. Para
-relatar um problema, use as [issues](https://github.com/brunocsilva41/GamesHub/issues); para vulnerabilidades,
-siga o [SECURITY.md](SECURITY.md). O histórico de versões está no [CHANGELOG.md](CHANGELOG.md).
+Contribuições são bem-vindas! Leia o [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir um pull request: rode
+`./ci/Invoke-Pipeline.ps1` localmente, e saiba que todo PR passa pela revisão do mantenedor e pelos checks
+descritos em [Proteções do repositório](#proteções-do-repositório). Dúvidas e ideias:
+[Discussions](https://github.com/brunocsilva41/GamesHub/discussions). Para relatar um problema, use as
+[issues](https://github.com/brunocsilva41/GamesHub/issues); para vulnerabilidades, siga o [SECURITY.md](SECURITY.md)
+(relato privado). O histórico de versões está no [CHANGELOG.md](CHANGELOG.md).
 
 ## Licença
 

@@ -1,0 +1,28 @@
+# CodeQL configuration for GamesHub.
+# All security queries run (security-extended) plus the code-quality suite. The few quality rules below are
+# excluded because they do not apply to this application; each exclusion is documented. Security rules are
+# never excluded.
+name: GamesHub CodeQL
+
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+query-filters:
+  # GamesHub is a Windows desktop launcher: native Windows APIs (icons, window chrome, DWM, audio devices,
+  # display modes, power plans, shell links, hotkeys, process image paths) are its job, not a smell. Every
+  # P/Invoke declaration lives in a dedicated *Native.cs / interop file and is reviewed there.
+  - exclude:
+      id: cs/unmanaged-code
+  - exclude:
+      id: cs/call-to-unmanaged-code
+
+  # The rule recommends Path.Join, which does not exist on .NET Framework 4.8 (the app's runtime). Paths built
+  # from untrusted input are validated to stay inside their base folder where they are built (see ArtCache,
+  # trash/undo, PCGamingWiki resolution); constant segments need no change.
+  - exclude:
+      id: cs/path-combine
+
+paths-ignore:
+  - dist
+  - tests/web

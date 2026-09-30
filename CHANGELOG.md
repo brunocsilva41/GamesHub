@@ -5,6 +5,13 @@ e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Configurações › Discos** mostra onde cada jogo está instalado: cada unidade abre uma lista dos seus jogos, do
+  maior para o menor, com o tamanho em GB e a porcentagem do disco, e a barra da unidade separa jogos, outros
+  arquivos e espaço livre. Jogos que compartilham a mesma pasta (como um jogo e seu launcher de mods) são contados
+  uma vez só; clicar num jogo abre os detalhes.
+
 ## [2.0.2] - 2026-09-30
 
 Suporte completo a controles genéricos, artes do SteamGridDB sem nenhuma configuração e uma rodada ampla de

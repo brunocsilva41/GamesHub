@@ -3,10 +3,10 @@
 import '../../quick/hotkey-input.js';
 import { store } from '../store.js';
 import { icon } from '../components/icons.js';
-import { esc, fmtBytes } from '../util.js';
 import { sw, row, group } from './setui.js';
 import { createAutomationEditor } from './automation.js';
 import * as A from '../actions.js';
+import { drivesHtml } from './drives.js';
 
 const hk = (key, label) =>
   `<gh-hotkey-input data-nav data-hk="${key}" label="${label}" allow-empty="false"></gh-hotkey-input>`;
@@ -29,24 +29,11 @@ export const automationGroupHtml = () => group('auto', 'Automação padrão',
   '<div class="set-block"><p class="set-desc">Executada para todos os jogos (cada jogo pode desligá-la em Detalhes › Antes e depois de jogar).</p><div data-auto-default></div></div>');
 
 export const drivesGroupHtml = () => group('drives', 'Discos',
-  row('Espaço em disco', 'Quanto cada unidade tem livre para novos jogos.',
+  row('Espaço em disco', 'Quanto cada unidade tem livre e quais jogos estão nela. Clique numa unidade para ver os jogos.',
     `<button type="button" class="btn btn-ghost btn-sm" data-nav data-cmd="drives">${icon('refresh')}Atualizar</button>`) +
   '<div class="drives" data-drives aria-live="polite"></div>');
 
-/** Markup for getDrives (pure; exported for tests). */
-export function drivesHtml(drives) {
-  if (!drives?.length) return '<p class="muted">Nenhuma unidade encontrada.</p>';
-  return drives.map((d) => {
-    const total = Number(d.totalBytes) || 0;
-    const free = Math.max(0, Number(d.freeBytes) || 0);
-    const used = total > 0 ? Math.min(100, Math.round(((total - free) / total) * 100)) : 0;
-    const low = total > 0 && free / total < 0.1;
-    const name = `${d.name}${d.label ? ` ${d.label}` : ''}`;
-    return `<div class="drive${low ? ' is-low' : ''}"><div class="drive-head">${icon('drive')}<b>${esc(name)}</b>` +
-      `<span>${esc(fmtBytes(free))} livres de ${esc(fmtBytes(total))}${low ? ' · pouco espaço' : ''}</span></div>` +
-      `<div class="progress drive-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${used}" aria-label="${esc(name)}: ${used}% usado"><i style="width:${used}%"></i></div></div>`;
-  }).join('');
-}
+export { drivesHtml } from './drives.js';
 
 export function initSettingsExtra(root, flashSaved) {
   const editor = createAutomationEditor(root.querySelector('[data-auto-default]'), { perGame: false });
@@ -55,8 +42,11 @@ export function initSettingsExtra(root, flashSaved) {
 
   async function loadDrives() {
     drivesEl.innerHTML = '<p class="muted"><span class="spinner" aria-hidden="true"></span>Verificando discos…</p>';
+    // Keep expanded drives open across refreshes.
+    const open = new Set(Array.from(drivesEl.querySelectorAll('details[open] b')).map((b) => b.textContent));
     const d = await A.run('getDrives');
-    drivesEl.innerHTML = d ? drivesHtml(d.drives) : '<p class="muted err">Não foi possível ler os discos.</p>';
+    drivesEl.innerHTML = d ? drivesHtml(d) : '<p class="muted err">Não foi possível ler os discos.</p>';
+    for (const det of drivesEl.querySelectorAll('details')) if (open.has(det.querySelector('b')?.textContent)) det.open = true;
   }
 
   // Hotkeys: save on change; a rejected combo reverts and shows the backend message under the field.
@@ -78,6 +68,8 @@ export function initSettingsExtra(root, flashSaved) {
     const host = e.target.closest?.('gh-hotkey-input');
     if (host && e.composedPath()[0] === host) host.shadowRoot?.querySelector('button')?.click();
     if (e.target.closest('[data-cmd="drives"]')) loadDrives();
+    const game = e.target.closest('[data-open-game]');
+    if (game) A.openDetails(game.dataset.openGame);
   });
 
   return function render(changed) {

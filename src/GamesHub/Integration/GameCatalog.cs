@@ -30,6 +30,7 @@ namespace GamesHub
         private readonly ConcurrentDictionary<string, (DateTime at, InstallHealth health)> _health =
             new ConcurrentDictionary<string, (DateTime, InstallHealth)>();
         private readonly ConcurrentDictionary<string, byte> _sizing = new ConcurrentDictionary<string, byte>();
+        private readonly ConcurrentDictionary<string, byte> _sizeUnavailable = new ConcurrentDictionary<string, byte>();
         private readonly ConcurrentDictionary<string, byte> _prefetched = new ConcurrentDictionary<string, byte>();
         private readonly ConcurrentDictionary<string, byte> _automationActive = new ConcurrentDictionary<string, byte>();
         private readonly HydraSource _hydra = new HydraSource();
@@ -244,6 +245,9 @@ namespace GamesHub
                 return;
             }
             if (string.IsNullOrEmpty(g.InstallDir) && string.IsNullOrEmpty(g.Exe)) return;
+            // A loose .exe/shortcut target sitting in the games folder is not an install: measuring its folder would
+            // report the size of the whole games folder.
+            if (IsGamesFolder(InstallFolderOf(g))) { _sizeUnavailable.TryAdd(g.Id, 0); return; }
             if (!_sizing.TryAdd(g.Id, 0)) return; // one attempt per session
             Game copy = g;
             Task.Run(async () =>
@@ -252,6 +256,7 @@ namespace GamesHub
                 {
                     long size = await Install.GetSizeBytesAsync(copy).ConfigureAwait(false);
                     if (size >= 0) RaiseChanged();
+                    else _sizeUnavailable.TryAdd(copy.Id, 0); // refused (system/launcher folder) or unreadable
                 }
                 // Resilience boundary: fire-and-forget background task entry point (Task.Run); nothing observes it.
                 catch (Exception ex)
@@ -259,6 +264,41 @@ namespace GamesHub
                     Log.Warn("Size computation failed: " + copy.Id, ex);
                 }
             });
+        }
+
+        /// <summary>"known" | "measuring" | "unavailable" (could not / must not be measured).</summary>
+        public string SizeState(Game g)
+        {
+            if (g.SizeBytes >= 0) return "known";
+            if (_sizeUnavailable.ContainsKey(g.Id)) return "unavailable";
+            if (string.IsNullOrEmpty(g.InstallDir) && string.IsNullOrEmpty(g.Exe)) return "unavailable";
+            return "measuring";
+        }
+
+        /// <summary>The folder a game is installed in (install dir, else the executable's folder), normalized;
+        /// "" when unknown. Games sharing it (a game and its mod launcher) share their disk usage.</summary>
+        public static string InstallFolderOf(Game g)
+        {
+            string dir = !string.IsNullOrWhiteSpace(g.InstallDir) ? g.InstallDir
+                : !string.IsNullOrWhiteSpace(g.Exe) ? System.IO.Path.GetDirectoryName(g.Exe) : "";
+            if (string.IsNullOrWhiteSpace(dir)) return "";
+            try { return System.IO.Path.GetFullPath(dir).TrimEnd(PathSeparators).ToLowerInvariant(); }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is System.IO.PathTooLongException || ex is System.Security.SecurityException)
+            {
+                return dir.TrimEnd(PathSeparators).ToLowerInvariant();
+            }
+        }
+
+        private static readonly char[] PathSeparators = { System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar };
+
+        private bool IsGamesFolder(string folder)
+        {
+            if (folder.Length == 0 || string.IsNullOrWhiteSpace(Settings.GamesDir)) return false;
+            try { return string.Equals(folder, System.IO.Path.GetFullPath(Settings.GamesDir).TrimEnd(PathSeparators), StringComparison.OrdinalIgnoreCase); }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is System.IO.PathTooLongException || ex is System.Security.SecurityException)
+            {
+                return false;
+            }
         }
 
         // ------------------------------------------------------------------ launch / automation

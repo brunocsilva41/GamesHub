@@ -6,6 +6,16 @@ namespace GamesHub.Tests
 {
     public static class BridgeDtoTests
     {
+        public static void TestDriveOfGame()
+        {
+            Assert.Equal(@"D:\", Bridge.DriveOf(new Game { InstallDir = @"d:\SteamLibrary\steamapps\common\Portal 2" }), "install dir");
+            Assert.Equal(@"E:\", Bridge.DriveOf(new Game { Exe = @"E:\Riot Games\League of Legends\Game\League of Legends.exe" }), "exe");
+            Assert.Equal(@"C:\", Bridge.DriveOf(new Game { Ext = ".exe", FilePath = @"C:\Jogos\TEKKEN 7.exe" }), "exe file");
+            Assert.Equal(@"F:\", Bridge.DriveOf(new Game { InstallDir = @"F:\A", Exe = @"C:\B\b.exe" }), "install dir wins");
+            Assert.Equal("", Bridge.DriveOf(new Game { Ext = ".url", LaunchTarget = "steam://rungameid/730" }), "URI only: unknown");
+            Assert.Equal("", Bridge.DriveOf(new Game { InstallDir = @"\server\share\game" }), "network share: not a local drive");
+        }
+
         private static long? Stamp(string rel) => rel.StartsWith("missing") ? (long?)null : 42;
 
         public static void TestFileStampStaysInsideArtCache()

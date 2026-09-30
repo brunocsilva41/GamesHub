@@ -140,6 +140,12 @@ export function featureCommands(ctx) {
             { name: 'D:\\', label: 'Jogos', totalBytes: 931 * GB, freeBytes: 38 * GB },
             { name: 'E:\\', label: '', totalBytes: 1863 * GB, freeBytes: 1320 * GB },
           ],
+          // Demo placement: spread the library over the drives, a few still being measured / with unknown location.
+          games: games.map((g, i) => ({
+            id: g.id, name: g.name, platform: g.platform,
+            sizeBytes: i % 7 === 3 ? -1 : Math.round((4 + ((i * 37) % 90)) * GB),
+            drive: i % 9 === 8 ? '' : ['C:\\', 'D:\\', 'D:\\', 'E:\\'][i % 4],
+          })),
         },
       };
     },

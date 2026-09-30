@@ -28,7 +28,7 @@ namespace GamesHub
                 case "openPath": return Done(OpenPath(args));
                 case "validateGame": return Done(ValidateGame(args));
                 case "uninstallGame": return Lib(() => UninstallGame(RequireString(args, "id")));
-                case "getDrives": return Work(() => Wrap("drives", Camel(Cat.Install.GetDrives())));
+                case "getDrives": return Work(DriveUsage);
                 case "cleanupBroken": return Work(() => Wrap("results", Cat.CleanupBroken().Select(BridgeDto.OpResultEntry).ToList()));
                 case "getGenres": return Work(() => Wrap("genres", Cat.GetGames().SelectMany(g => g.Genres ?? new List<string>())
                     .Distinct(StringComparer.CurrentCultureIgnoreCase).OrderBy(s => s, StringComparer.CurrentCulture).ToList()));
@@ -56,6 +56,45 @@ namespace GamesHub
         private static async Task<BridgeResult> Work(Func<object> fn) => BridgeResult.Success(await Task.Run(fn));
 
         private static Dictionary<string, object> Wrap(string key, object value) => new Dictionary<string, object> { [key] = value };
+
+        /// <summary>Drives plus every game with the drive it is installed on ("" when the location is unknown,
+        /// e.g. launcher shortcuts without an install folder). Sizes of -1 are still being measured.</summary>
+        private Dictionary<string, object> DriveUsage()
+        {
+            List<DriveSpace> drives = Cat.Install.GetDrives();
+            var roots = new HashSet<string>(drives.Select(d => d.Name), StringComparer.OrdinalIgnoreCase);
+            var games = Cat.GetGames().Select(g =>
+            {
+                string root = DriveOf(g);
+                return new Dictionary<string, object>
+                {
+                    ["id"] = g.Id, ["name"] = g.Name, ["platform"] = g.Platform, ["sizeBytes"] = g.SizeBytes,
+                    ["sizeState"] = Cat.SizeState(g), ["folder"] = GameCatalog.InstallFolderOf(g),
+                    ["drive"] = roots.Contains(root) ? root : "",
+                };
+            }).ToList();
+            return new Dictionary<string, object> { ["drives"] = Camel(drives), ["games"] = games };
+        }
+
+        /// <summary>Drive root ("D:\") of the game's install folder, else of its executable; "" when unknown.</summary>
+        internal static string DriveOf(Game g)
+        {
+            foreach (string p in new[] { g.InstallDir, g.Exe, g.Ext == ".exe" ? g.FilePath : "" })
+            {
+                if (string.IsNullOrWhiteSpace(p)) continue;
+                try
+                {
+                    string root = Path.GetPathRoot(p);
+                    if (!string.IsNullOrEmpty(root) && root.Length >= 2 && root[1] == ':')
+                        return char.ToUpperInvariant(root[0]) + ":\\";
+                }
+                catch (ArgumentException ex)
+                {
+                    Log.Warn("Invalid path for " + g.Id, ex);
+                }
+            }
+            return "";
+        }
 
         private Game RequireCatalogGame(IDictionary<string, object> args)
         {
